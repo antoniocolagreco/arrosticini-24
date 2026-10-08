@@ -1,0 +1,8 @@
+{
+  "notFoundTitle": "This sheep has lost its way.",
+  "notFoundBody": "The page you are looking for does not exist.",
+  "unexpectedTitle": "The sheep is in overdrive.",
+  "unexpectedBody": "We could not complete your request. Please try again shortly.",
+  "backHome": "Back to home",
+  "requestId": "Request ID"
+}

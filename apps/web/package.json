@@ -1,0 +1,50 @@
+{
+  "name": "@arrosticini/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "tsx watch --env-file-if-exists=../../.env.local server.ts",
+    "start": "NODE_ENV=production tsx server.ts",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "lint": "biome check .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@arrosticini/kernel": "workspace:*",
+    "@arrosticini/ops": "workspace:*",
+    "@react-router/express": "catalog:",
+    "@react-router/node": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "express": "catalog:",
+    "i18next": "catalog:",
+    "lucide-react": "catalog:",
+    "motion": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:",
+    "react-router": "catalog:",
+    "remix-i18next": "catalog:",
+    "tailwind-merge": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@arrosticini/tsconfig": "workspace:*",
+    "@react-router/dev": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@types/express": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/supertest": "catalog:",
+    "supertest": "catalog:",
+    "tailwindcss": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}
