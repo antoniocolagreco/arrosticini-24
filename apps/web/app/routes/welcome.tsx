@@ -1,6 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
-import type { PointerEvent } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Button } from "../components/ui/button.js";
@@ -8,28 +7,10 @@ import { Button } from "../components/ui/button.js";
 export default function Welcome() {
   const { t, i18n } = useTranslation("common");
   const reducedMotion = useReducedMotion();
-  const pointerX = useMotionValue(0);
-  const pointerY = useMotionValue(0);
-  const x = useSpring(pointerX, { stiffness: 70, damping: 24 });
-  const y = useSpring(pointerY, { stiffness: 70, damping: 24 });
-
-  function moveScene(event: PointerEvent<HTMLElement>) {
-    if (reducedMotion || event.pointerType !== "mouse") return;
-    const bounds: DOMRect = event.currentTarget.getBoundingClientRect();
-    pointerX.set(((event.clientX - bounds.left - bounds.width / 2) / bounds.width) * 14);
-    pointerY.set(((event.clientY - bounds.top - bounds.height / 2) / bounds.height) * 10);
-  }
 
   return (
     <>
-      <section
-        className="hero"
-        onPointerMove={moveScene}
-        onPointerLeave={() => {
-          pointerX.set(0);
-          pointerY.set(0);
-        }}
-      >
+      <section className="hero">
         <div className="shell hero-content">
           <p className="eyebrow">{t("tagline")}</p>
           <h1>
@@ -52,7 +33,7 @@ export default function Welcome() {
             width="1774"
             height="887"
           />
-          <motion.div className="hero-flight" style={{ x, y }}>
+          <div className="hero-flight">
             <motion.img
               className="hero-airplane"
               src="/images/airplane.webp"
@@ -60,19 +41,13 @@ export default function Welcome() {
               width="1774"
               height="887"
               fetchPriority="high"
-              animate={reducedMotion ? {} : { y: [0, -7, 0], rotate: [0, -0.4, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+              animate={reducedMotion ? {} : { y: [0, -8, 0], rotate: [0, -1, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
             />
-          </motion.div>
+          </div>
         </div>
       </section>
-      <motion.section
-        className="value-props shell"
-        initial={false}
-        whileInView={reducedMotion ? {} : { opacity: [0.65, 1], y: [12, 0] }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.65 }}
-      >
+      <section className="value-props shell">
         <div>
           <img src="/images/town.webp" alt="" width="130" height="90" />
           <span>
@@ -94,7 +69,7 @@ export default function Welcome() {
             <p>{t("worldText")}</p>
           </span>
         </div>
-      </motion.section>
+      </section>
     </>
   );
 }

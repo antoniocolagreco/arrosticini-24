@@ -1,8 +1,8 @@
 import type { ProductDto } from "@arrosticini/contracts";
 import type { Locale } from "@arrosticini/kernel";
-import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { Price } from "./price.js";
 import { ProductImage } from "./product-image.js";
 
 export function ProductCard({
@@ -15,21 +15,26 @@ export function ProductCard({
   const { t, i18n } = useTranslation("shop");
   const locale: Locale = i18n.language === "en" ? "en" : "it";
   return (
-    <Link className="product-card" to={`/${locale}/products/${product.slug}`}>
-      <ProductImage src={image} name={product.name[locale]} />
+    <article className="product-card">
+      <Link
+        className="product-media"
+        to={`/${locale}/products/${product.slug}`}
+        tabIndex={-1}
+        aria-hidden="true"
+      >
+        <ProductImage src={image} name="" />
+      </Link>
       <div className="product-card-body">
-        <h2>{product.name[locale]}</h2>
-        {product.pieces !== undefined && <p>{t("pieces", { count: product.pieces })}</p>}
+        <h2>
+          <Link to={`/${locale}/products/${product.slug}`}>{product.name[locale]}</Link>
+        </h2>
+        <p className="product-card-pieces">
+          {product.pieces !== undefined ? t("pieces", { count: product.pieces }) : null}
+        </p>
         <div className="product-card-footer">
-          <strong>
-            {new Intl.NumberFormat(locale, {
-              style: "currency",
-              currency: product.currency,
-            }).format(product.priceCents / 100)}
-          </strong>
-          <ArrowRight aria-hidden="true" size={22} />
+          <Price cents={product.priceCents} locale={locale} />
         </div>
       </div>
-    </Link>
+    </article>
   );
 }

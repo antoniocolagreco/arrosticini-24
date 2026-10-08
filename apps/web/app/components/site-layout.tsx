@@ -1,4 +1,5 @@
-import { Globe } from "lucide-react";
+import { ChevronDown, Globe } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, useLocation } from "react-router";
@@ -31,18 +32,36 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
           <NavLink to={`/${locale}/story`}>{t("story")}</NavLink>
           <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
         </nav>
-        <Link
-          className="language-link"
-          to={`${languagePath}${location.search}${location.hash}`}
-          aria-label={t("language")}
-        >
-          <Globe aria-hidden="true" size={22} />
-          <span>{other.toUpperCase()} / EUR</span>
-        </Link>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button className="language-link" type="button" aria-label={t("language")}>
+              <Globe aria-hidden="true" size={20} />
+              <span>{locale.toUpperCase()} / EUR</span>
+              <ChevronDown className="language-chevron" aria-hidden="true" size={16} />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content className="language-menu" align="end" sideOffset={8}>
+              <DropdownMenu.Item asChild>
+                <Link
+                  to={`${location.pathname}${location.search}${location.hash}`}
+                  aria-current="true"
+                >
+                  {locale === "it" ? "Italiano" : "English"}
+                </Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link to={`${languagePath}${location.search}${location.hash}`}>
+                  {other === "it" ? "Italiano" : "English"}
+                </Link>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </header>
       <main id="content">{children}</main>
       <footer className="site-footer shell">
-        <span>{t("footer")}</span>
+        <span className="footer-tag">{t("footer")}</span>
         <span className="footer-meta">
           {t("demo")} · {version}
         </span>

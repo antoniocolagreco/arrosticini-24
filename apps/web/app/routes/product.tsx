@@ -3,6 +3,7 @@ import type { Locale } from "@arrosticini/kernel";
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { Price } from "../components/price.js";
 import { ProductImage } from "../components/product-image.js";
 import { api, getApiError } from "../lib/api.server.js";
 import { productImages } from "../lib/product.server.js";
@@ -31,11 +32,11 @@ export default function Product({ loaderData }: Route.ComponentProps) {
       </Link>
       <div className="product-detail">
         <div className="product-gallery">
-          <ProductImage src={images[0]} name={product.name[locale]} />
+          <ProductImage src={images[0]} name="" />
           {images.length > 1 && (
             <div className="product-thumbnails">
               {images.slice(1).map((image) => (
-                <ProductImage key={image} src={image} name={product.name[locale]} />
+                <ProductImage key={image} src={image} name="" />
               ))}
             </div>
           )}
@@ -45,10 +46,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
           <h1>{product.name[locale]}</h1>
           {product.pieces !== undefined && <p>{t("pieces", { count: product.pieces })}</p>}
           <p className="product-price">
-            {new Intl.NumberFormat(locale, {
-              style: "currency",
-              currency: product.currency,
-            }).format(product.priceCents / 100)}
+            <Price cents={product.priceCents} locale={locale} />
           </p>
           <p className="product-description">{product.description[locale]}</p>
         </div>
