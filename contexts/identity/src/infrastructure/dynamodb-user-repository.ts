@@ -15,12 +15,12 @@ interface ProfileItem {
   PK: string;
   SK: "PROFILE";
   id: Id;
-  username: string;
+  email: string;
   passwordHash: string;
   salt: string;
   role: Role;
-  displayName?: string;
-  email?: string;
+  firstName: string;
+  lastName: string;
   preferredLocale: Locale;
   createdAt: string;
 }
@@ -30,7 +30,7 @@ type AddressItem = Address & { PK: string; SK: string };
 type TransactItem = NonNullable<TransactWriteCommandInput["TransactItems"]>[number];
 
 const userPk = (id: Id) => `USER#${id}`;
-const usernamePk = (username: string) => `USERNAME#${username}`;
+const emailPk = (email: string) => `EMAIL#${email}`;
 const addressSk = (id: Id) => `ADDRESS#${id}`;
 
 function profileItem(user: User): ProfileItem {
@@ -38,12 +38,12 @@ function profileItem(user: User): ProfileItem {
     PK: userPk(user.id),
     SK: "PROFILE",
     id: user.id,
-    username: user.username,
+    email: user.email,
     passwordHash: user.password.hash,
     salt: user.password.salt,
     role: user.role,
-    ...(user.displayName === undefined ? {} : { displayName: user.displayName }),
-    ...(user.email === undefined ? {} : { email: user.email }),
+    firstName: user.firstName,
+    lastName: user.lastName,
     preferredLocale: user.preferredLocale,
     createdAt: user.createdAt.toISOString(),
   };
@@ -79,22 +79,22 @@ export class DynamoDbUserRepository implements UserRepository {
     );
     return User.restore({
       id: profile.id,
-      username: profile.username,
+      email: profile.email,
       password: { hash: profile.passwordHash, salt: profile.salt },
       role: profile.role,
-      ...(profile.displayName === undefined ? {} : { displayName: profile.displayName }),
-      ...(profile.email === undefined ? {} : { email: profile.email }),
+      firstName: profile.firstName,
+      lastName: profile.lastName,
       preferredLocale: profile.preferredLocale,
       createdAt: new Date(profile.createdAt),
       addresses,
     });
   }
 
-  async findByUsername(username: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | undefined> {
     const { Item } = await this.#client.send(
       new GetCommand({
         TableName: this.#tableName,
-        Key: { PK: usernamePk(username), SK: "LOOKUP" },
+        Key: { PK: emailPk(email), SK: "LOOKUP" },
       }),
     );
     return Item === undefined ? undefined : this.findById(Item.userId as Id);
@@ -115,7 +115,7 @@ export class DynamoDbUserRepository implements UserRepository {
             {
               Put: {
                 TableName: this.#tableName,
-                Item: { PK: usernamePk(user.username), SK: "LOOKUP", userId: user.id },
+                Item: { PK: emailPk(user.email), SK: "LOOKUP", userId: user.id },
                 ConditionExpression: "attribute_not_exists(PK)",
               },
             },
@@ -127,7 +127,7 @@ export class DynamoDbUserRepository implements UserRepository {
         error instanceof TransactionCanceledException &&
         error.CancellationReasons?.[1]?.Code === "ConditionalCheckFailed"
       ) {
-        throw new DomainError("USERNAME_TAKEN", `Username already taken: ${user.username}`);
+        throw new DomainError("EMAIL_TAKEN", `Email already registered: ${user.email}`);
       }
       throw error;
     }

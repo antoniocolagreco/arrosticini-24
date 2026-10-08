@@ -18,7 +18,7 @@ export const ShippingAddressDto = z.object({
   city: z.string(),
   postalCode: z.string(),
   country: z.string(),
-  phone: z.string().optional(),
+  phone: z.string(),
 });
 
 export const OrderDto = z.object({

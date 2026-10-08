@@ -17,12 +17,12 @@ export {
 export { CurrencyDto, IdDto, LocaleDto, localizedTextDto } from "./common.js";
 export {
   AddressDto,
+  Email,
   identityContract,
   MAX_ADDRESSES_PER_USER,
   Password,
   Role,
   UserDto,
-  Username,
 } from "./identity.js";
 export { opsContract, WhoAmIDto } from "./ops.js";
 export {

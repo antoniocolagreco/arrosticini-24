@@ -15,17 +15,34 @@ const client = new DynamoDBClient({
 });
 const repository = new DynamoDbUserRepository(DynamoDBDocumentClient.from(client), tableName);
 
-function user(id: string, username: string): User {
+function user(id: string, email: string): User {
   return User.register(
     {
       id,
-      username,
+      email,
       password: { hash: "aGFzaA==", salt: "c2FsdA==" },
       role: "customer",
-      displayName: "Mario",
+      firstName: "Mario",
+      lastName: "Rossi",
       preferredLocale: "en",
     },
     new Date("2026-10-08T10:00:00.000Z"),
+  );
+}
+
+function plain(target: User | undefined) {
+  return (
+    target && {
+      id: target.id,
+      email: target.email,
+      password: target.password,
+      role: target.role,
+      firstName: target.firstName,
+      lastName: target.lastName,
+      preferredLocale: target.preferredLocale,
+      createdAt: target.createdAt,
+      addresses: target.addresses,
+    }
   );
 }
 
@@ -38,32 +55,34 @@ afterAll(async () => {
 });
 
 describe("DynamoDbUserRepository", () => {
-  it("creates a user and finds it by id and username", async () => {
-    const mario = user("01JB2Q7Z8X4M3N5P6R7S8T9V0W", "mario.r");
+  it("creates a user and finds it by id and email", async () => {
+    const mario = user("01JB2Q7Z8X4M3N5P6R7S8T9V0W", "mario.rossi@example.com");
 
     await repository.create(mario);
 
-    expect(await repository.findById(mario.id)).toEqual(mario);
-    expect(await repository.findByUsername("mario.r")).toEqual(mario);
+    expect(plain(await repository.findById(mario.id))).toEqual(plain(mario));
+    expect(plain(await repository.findByEmail("mario.rossi@example.com"))).toEqual(plain(mario));
   });
 
-  it("rejects a taken username", async () => {
-    await repository.create(user("01JB2Q7Z8X4M3N5P6R7S8T9V0X", "luigi.v"));
+  it("rejects an email that is already registered", async () => {
+    await repository.create(user("01JB2Q7Z8X4M3N5P6R7S8T9V0X", "luigi.verdi@example.com"));
 
-    await expect(repository.create(user("01JB2Q7Z8X4M3N5P6R7S8T9V0Y", "luigi.v"))).rejects.toThrow(
-      new DomainError("USERNAME_TAKEN", "Username already taken: luigi.v"),
+    await expect(
+      repository.create(user("01JB2Q7Z8X4M3N5P6R7S8T9V0Y", "luigi.verdi@example.com")),
+    ).rejects.toThrow(
+      new DomainError("EMAIL_TAKEN", "Email already registered: luigi.verdi@example.com"),
     );
   });
 
   it("returns undefined for unknown users", async () => {
     expect(await repository.findById("01JB2Q7Z8X4M3N5P6R7S8T9V0Z")).toBeUndefined();
-    expect(await repository.findByUsername("nobody")).toBeUndefined();
+    expect(await repository.findByEmail("nobody@example.com")).toBeUndefined();
   });
 
   it("saves profile changes, added and removed addresses", async () => {
-    const anna = user("01JB2Q7Z8X4M3N5P6R7S8T9V10", "anna.b");
+    const anna = user("01JB2Q7Z8X4M3N5P6R7S8T9V10", "anna.bianchi@example.com");
     await repository.create(anna);
-    anna.updateProfile({ email: "anna@example.com", preferredLocale: "it" });
+    anna.updateProfile({ firstName: "Anna", lastName: "Bianchi", preferredLocale: "it" });
     anna.addAddress(
       "01JB2Q7Z8X4M3N5P6R7S8T9V11",
       {
@@ -72,17 +91,19 @@ describe("DynamoDbUserRepository", () => {
         city: "Chieti",
         postalCode: "66100",
         country: "IT",
+        phone: "+39 333 0000001",
       },
       false,
     );
     anna.addAddress(
       "01JB2Q7Z8X4M3N5P6R7S8T9V12",
       {
-        fullName: "Anna Bianchi",
+        fullName: "Giulia Bianchi",
         line1: "Corso Marrucino 5",
         city: "Chieti",
         postalCode: "66100",
         country: "IT",
+        phone: "+39 333 0000002",
       },
       false,
     );
@@ -91,7 +112,8 @@ describe("DynamoDbUserRepository", () => {
     anna.removeAddress("01JB2Q7Z8X4M3N5P6R7S8T9V11");
     await repository.save(anna);
 
-    expect(await repository.findById(anna.id)).toEqual(anna);
+    expect(plain(await repository.findById(anna.id))).toEqual(plain(anna));
+    expect(anna.firstName).toBe("Anna");
     expect(anna.addresses.map(({ id, isDefault }) => ({ id, isDefault }))).toEqual([
       { id: "01JB2Q7Z8X4M3N5P6R7S8T9V12", isDefault: true },
     ]);

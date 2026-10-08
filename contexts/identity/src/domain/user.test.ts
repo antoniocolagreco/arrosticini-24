@@ -8,9 +8,11 @@ function user(): User {
   return User.register(
     {
       id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
-      username: "mario.r",
+      email: "mario.rossi@example.com",
       password: { hash: "aGFzaA==", salt: "c2FsdA==" },
       role: "customer",
+      firstName: "Mario",
+      lastName: "Rossi",
       preferredLocale: "it",
     },
     now,
@@ -23,6 +25,7 @@ const home: AddressFields = {
   city: "Chieti",
   postalCode: "66100",
   country: "IT",
+  phone: "+39 333 0000000",
 };
 
 const office: AddressFields = {
@@ -49,20 +52,25 @@ function defaults(target: User) {
 }
 
 describe("User.register", () => {
-  it.each(["Mario", "ab", "mario rossi"])("rejects username %o", (username) => {
-    expect(() =>
-      User.register(
-        {
-          id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
-          username,
-          password: { hash: "aGFzaA==", salt: "c2FsdA==" },
-          role: "customer",
-          preferredLocale: "it",
-        },
-        now,
-      ),
-    ).toThrow(DomainError);
-  });
+  it.each(["mario", "Mario.Rossi@example.com", "mario rossi@example.com"])(
+    "rejects email %o",
+    (email) => {
+      expect(() =>
+        User.register(
+          {
+            id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+            email,
+            password: { hash: "aGFzaA==", salt: "c2FsdA==" },
+            role: "customer",
+            firstName: "Mario",
+            lastName: "Rossi",
+            preferredLocale: "it",
+          },
+          now,
+        ),
+      ).toThrow(new DomainError("INVALID_EMAIL", `Invalid email: ${email}`));
+    },
+  );
 });
 
 describe("User addresses", () => {
@@ -97,7 +105,7 @@ describe("User addresses", () => {
     );
   });
 
-  it("updates fields and clears optional ones with null", () => {
+  it("updates fields and clears the second address line with null", () => {
     const target = user();
     target.addAddress(ids[0] as string, office, false);
 
@@ -140,6 +148,18 @@ describe("User addresses", () => {
     target.removeAddress(ids[0] as string);
 
     expect(defaults(target)).toEqual([{ id: ids[1], isDefault: true }]);
+  });
+
+  it("updates the profile names", () => {
+    const target = user();
+
+    target.updateProfile({ firstName: "Lucia", lastName: "Bianchi" });
+
+    expect([target.firstName, target.lastName, target.email]).toEqual([
+      "Lucia",
+      "Bianchi",
+      "mario.rossi@example.com",
+    ]);
   });
 
   it("fails on an unknown address", () => {

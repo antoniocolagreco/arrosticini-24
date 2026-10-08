@@ -4,27 +4,23 @@ import { authed, IdDto, LocaleDto } from "./common.js";
 
 export const MAX_ADDRESSES_PER_USER = 5;
 
-export const Username = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .regex(/^[a-z0-9._-]{3,32}$/);
+export const Email = z.string().trim().toLowerCase().max(254).pipe(z.email());
 
 export const Password = z.string().min(8).max(128);
 
 export const Role = z.enum(["customer", "admin"]);
 
+const PersonName = z.string().trim().min(1).max(60);
+
 export const UserDto = z.object({
   id: IdDto,
-  username: Username,
+  email: Email,
   role: Role,
-  displayName: z.string().optional(),
-  email: z.email().optional(),
+  firstName: PersonName,
+  lastName: PersonName,
   preferredLocale: LocaleDto,
   createdAt: z.iso.datetime(),
 });
-
-const DisplayName = z.string().trim().min(1).max(60);
 
 const AddressFields = {
   fullName: z.string().trim().min(1).max(100),
@@ -33,7 +29,7 @@ const AddressFields = {
   city: z.string().trim().min(1).max(100),
   postalCode: z.string().trim().min(1).max(20),
   country: z.string().regex(/^[A-Z]{2}$/),
-  phone: z.string().trim().min(1).max(30).optional(),
+  phone: z.string().trim().min(1).max(30),
 };
 
 export const AddressDto = z.object({
@@ -42,7 +38,7 @@ export const AddressDto = z.object({
   isDefault: z.boolean(),
 });
 
-export type Username = z.infer<typeof Username>;
+export type Email = z.infer<typeof Email>;
 export type Role = z.infer<typeof Role>;
 export type UserDto = z.infer<typeof UserDto>;
 export type AddressDto = z.infer<typeof AddressDto>;
@@ -53,19 +49,19 @@ export const registerUser = oc
   .route({ method: "POST", path: "/identity/users", successStatus: 201 })
   .input(
     z.object({
-      username: Username,
+      email: Email,
       password: Password,
+      firstName: PersonName,
+      lastName: PersonName,
       preferredLocale: LocaleDto,
-      displayName: DisplayName.optional(),
-      email: z.email().optional(),
     }),
   )
   .output(UserDto)
-  .errors({ USERNAME_TAKEN: { status: 409 } });
+  .errors({ EMAIL_TAKEN: { status: 409 } });
 
 export const verifyCredentials = oc
   .route({ method: "POST", path: "/identity/credentials/verify" })
-  .input(z.object({ username: Username, password: z.string().min(1).max(128) }))
+  .input(z.object({ email: Email, password: z.string().min(1).max(128) }))
   .output(UserDto)
   .errors({ INVALID_CREDENTIALS: { status: 401 } });
 
@@ -75,8 +71,8 @@ export const updateMe = authed
   .route({ method: "PATCH", path: "/identity/me" })
   .input(
     z.object({
-      displayName: DisplayName.optional(),
-      email: z.email().optional(),
+      firstName: PersonName.optional(),
+      lastName: PersonName.optional(),
       preferredLocale: LocaleDto.optional(),
     }),
   )
@@ -109,7 +105,7 @@ export const updateAddress = authed
       city: AddressFields.city.optional(),
       postalCode: AddressFields.postalCode.optional(),
       country: AddressFields.country.optional(),
-      phone: AddressFields.phone.nullable(),
+      phone: AddressFields.phone.optional(),
       isDefault: z.literal(true).optional(),
     }),
   )

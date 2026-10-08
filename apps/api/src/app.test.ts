@@ -166,51 +166,68 @@ describe("identity", () => {
     city: "Chieti",
     postalCode: "66100",
     country: "IT",
+    phone: "+39 333 0000000",
   };
   let mario: { userId: string; role: "customer" };
 
   beforeAll(async () => {
     const registered = await client().identity.registerUser({
-      username: " Mario.R ",
+      email: " Mario.Rossi@Example.com ",
       password: "arrosticini-24",
+      firstName: "Mario",
+      lastName: "Rossi",
       preferredLocale: "it",
     });
     mario = { userId: registered.id, role: "customer" };
   });
 
-  it("registers customers with a normalized username", async () => {
+  it("registers customers with a normalized email", async () => {
     const registered = await client().identity.registerUser({
-      username: "Luigi.V",
+      email: "Luigi.Verdi@Example.com",
       password: "arrosticini-24",
+      firstName: "Luigi",
+      lastName: "Verdi",
       preferredLocale: "en",
-      displayName: "Luigi",
     });
 
     expect(registered).toEqual({
       id: expect.stringMatching(/^[0-9A-HJKMNP-TV-Z]{26}$/),
-      username: "luigi.v",
+      email: "luigi.verdi@example.com",
       role: "customer",
-      displayName: "Luigi",
+      firstName: "Luigi",
+      lastName: "Verdi",
       preferredLocale: "en",
       createdAt: expect.any(String),
     });
   });
 
-  it("answers USERNAME_TAKEN on a duplicate username", async () => {
+  it("requires first and last name", async () => {
+    const response = await request(app).post("/identity/users").send({
+      email: "anna.bianchi@example.com",
+      password: "arrosticini-24",
+      preferredLocale: "it",
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("answers EMAIL_TAKEN on an email already registered", async () => {
     const error = await client()
       .identity.registerUser({
-        username: "mario.r",
+        email: "MARIO.ROSSI@example.com",
         password: "arrosticini-24",
+        firstName: "Mario",
+        lastName: "Rossi",
         preferredLocale: "it",
       })
       .catch((caught: unknown) => caught);
 
-    expect(error).toMatchObject({ code: "USERNAME_TAKEN", status: 409, defined: true });
+    expect(error).toMatchObject({ code: "EMAIL_TAKEN", status: 409, defined: true });
   });
 
   it("verifies credentials", async () => {
     const verified = await client().identity.verifyCredentials({
-      username: "mario.r",
+      email: "mario.rossi@example.com",
       password: "arrosticini-24",
     });
 
@@ -219,10 +236,10 @@ describe("identity", () => {
 
   it("answers INVALID_CREDENTIALS on a wrong password or unknown user", async () => {
     const wrongPassword = await client()
-      .identity.verifyCredentials({ username: "mario.r", password: "wrong-password" })
+      .identity.verifyCredentials({ email: "mario.rossi@example.com", password: "wrong-password" })
       .catch((caught: unknown) => caught);
     const unknownUser = await client()
-      .identity.verifyCredentials({ username: "nobody", password: "arrosticini-24" })
+      .identity.verifyCredentials({ email: "nobody@example.com", password: "arrosticini-24" })
       .catch((caught: unknown) => caught);
 
     expect(wrongPassword).toMatchObject({
@@ -243,11 +260,16 @@ describe("identity", () => {
 
   it("updates the profile", async () => {
     const updated = await client(mario).identity.updateMe({
-      email: "mario@example.com",
+      firstName: "Mariano",
       preferredLocale: "en",
     });
 
-    expect(updated).toMatchObject({ email: "mario@example.com", preferredLocale: "en" });
+    expect(updated).toMatchObject({
+      email: "mario.rossi@example.com",
+      firstName: "Mariano",
+      lastName: "Rossi",
+      preferredLocale: "en",
+    });
     expect(await client(mario).identity.getMe()).toEqual(updated);
   });
 
@@ -266,7 +288,7 @@ describe("identity", () => {
     });
 
     const verified = await client().identity.verifyCredentials({
-      username: "mario.r",
+      email: "mario.rossi@example.com",
       password: "pecora-in-overdrive",
     });
     expect(verified.id).toBe(mario.userId);
@@ -288,8 +310,16 @@ describe("identity", () => {
       city: "Pescara",
       postalCode: "66100",
       country: "IT",
+      phone: "+39 333 0000000",
       isDefault: true,
     });
+
+    const { phone: _phone, ...withoutPhone } = address;
+    const missingPhone = await request(app)
+      .post("/identity/me/addresses")
+      .set(ACTOR_HEADER, JSON.stringify(mario))
+      .send(withoutPhone);
+    expect(missingPhone.status).toBe(400);
 
     for (let index = 0; index < 4; index += 1) {
       await client(mario).identity.addAddress(address);
