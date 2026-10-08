@@ -27,4 +27,4 @@ jobs:
       - run: pnpm turbo run lint typecheck test build
       - run: pnpm turbo boundaries
       - run: pnpm --filter @arrosticini/contracts openapi
-      - run: git diff --exit-code -- packages/contracts/openai
+      - run: git diff --exit-code -- packages/contracts/openapi
