@@ -1,6 +1,7 @@
 import type { UserDto } from "@arrosticini/contracts";
 import { RouterContextProvider } from "react-router";
 import { afterEach, describe, expect, it, type MockInstance, vi } from "vitest";
+import { middleware as localeMiddleware } from "../routes/locale.js";
 import { api } from "./api.server.js";
 import { authenticate } from "./auth.server.js";
 import {
@@ -53,6 +54,22 @@ const user: UserDto = {
 };
 
 describe("authentication actions", () => {
+  it("rejects unsupported language paths before executing an action", async () => {
+    const next = vi.fn(async () => new Response(null));
+    await expect(
+      localeMiddleware[0]?.(
+        {
+          request: post("antonio", "long-password"),
+          params: { lang: "xx" },
+          context: await context(),
+          url: new URL("http://web.test/xx/login"),
+          pattern: "/:lang",
+        },
+        next,
+      ),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(next).not.toHaveBeenCalled();
+  });
   it("validates registration before calling the API and never returns a password", async () => {
     const fetchMock: MockInstance<typeof fetch> = vi.spyOn(globalThis, "fetch");
     const result = await authenticate(post("a", "short"), await context(), "it", true);
