@@ -1,5 +1,6 @@
 {
   "home": "Home",
+  "products": "Prodotti",
   "story": "La nostra storia",
   "delivery": "Spedizioni nel mondo",
   "language": "Cambia lingua",
@@ -8,7 +9,7 @@
   "headlineFirst": "La pecora vola.",
   "headlineSecond": "La tradizione resta.",
   "intro": "Arrosticini d’Abruzzo, direzione mondo.",
-  "discover": "Scopri la nostra storia",
+  "discover": "Scopri i nostri prodotti",
   "originTitle": "Dall’Abruzzo",
   "originText": "Terra di arrosticini",
   "coldTitle": "Spedizione refrigerata",

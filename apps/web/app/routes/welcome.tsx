@@ -38,7 +38,7 @@ export default function Welcome() {
           </h1>
           <p className="hero-intro">{t("intro")}</p>
           <Button asChild size="lg" className="hero-cta">
-            <Link to={`/${i18n.language}/story`}>
+            <Link to={`/${i18n.language}/products`}>
               {t("discover")}
               <ArrowRight aria-hidden="true" />
             </Link>

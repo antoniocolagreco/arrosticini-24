@@ -27,6 +27,7 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
           </span>
         </Link>
         <nav className="main-nav" aria-label={t("home")}>
+          <NavLink to={`/${locale}/products`}>{t("products")}</NavLink>
           <NavLink to={`/${locale}/story`}>{t("story")}</NavLink>
           <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
         </nav>

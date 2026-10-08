@@ -1,0 +1,19 @@
+{
+  "eyebrow": "From Abruzzo to your table",
+  "title": "Our products",
+  "intro": "Arrosticini and everything you need to fire up the grill.",
+  "searchLabel": "Search the catalog",
+  "searchPlaceholder": "Arrosticini, wine, grill…",
+  "search": "Search",
+  "invalidSearch": "Searches can contain up to 100 characters.",
+  "results_one": "{{count}} product",
+  "results_other": "{{count}} products",
+  "pieces_one": "{{count}} piece",
+  "pieces_other": "{{count}} pieces",
+  "emptyTitle": "No products found",
+  "emptySearch": "Try searching with another word.",
+  "emptyCatalog": "The catalog is empty. Please check back later.",
+  "clearSearch": "Show all products",
+  "backToProducts": "Back to products",
+  "noImage": "Image unavailable"
+}

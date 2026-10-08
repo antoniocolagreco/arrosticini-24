@@ -1,5 +1,6 @@
 {
   "home": "Home",
+  "products": "Products",
   "story": "Our story",
   "delivery": "Worldwide delivery",
   "language": "Change language",
@@ -8,7 +9,7 @@
   "headlineFirst": "The sheep flies.",
   "headlineSecond": "Tradition stays.",
   "intro": "Arrosticini from Abruzzo, heading worldwide.",
-  "discover": "Discover our story",
+  "discover": "Discover our products",
   "originTitle": "From Abruzzo",
   "originText": "The home of arrosticini",
   "coldTitle": "Refrigerated delivery",

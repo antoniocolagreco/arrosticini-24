@@ -1,0 +1,58 @@
+import { ProductSlug } from "@arrosticini/contracts";
+import type { Locale } from "@arrosticini/kernel";
+import { ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { ProductImage } from "../components/product-image.js";
+import { api, getApiError } from "../lib/api.server.js";
+import { productImages } from "../lib/product.server.js";
+import type { Route } from "./+types/product.js";
+
+export async function loader({ request, params }: Route.LoaderArgs) {
+  if (!ProductSlug.safeParse(params.slug).success) throw new Response(null, { status: 404 });
+  try {
+    const product = await api(request).catalog.getProduct({ slug: params.slug });
+    return { product, images: productImages(product) };
+  } catch (error: unknown) {
+    if (getApiError(error) === "PRODUCT_NOT_FOUND") throw new Response(null, { status: 404 });
+    throw error;
+  }
+}
+
+export default function Product({ loaderData }: Route.ComponentProps) {
+  const { t, i18n } = useTranslation("shop");
+  const locale: Locale = i18n.language === "en" ? "en" : "it";
+  const { product, images } = loaderData;
+  return (
+    <section className="catalog-page">
+      <Link className="catalog-back" to={`/${locale}/products`}>
+        <ArrowLeft aria-hidden="true" size={20} />
+        {t("backToProducts")}
+      </Link>
+      <div className="product-detail">
+        <div className="product-gallery">
+          <ProductImage src={images[0]} name={product.name[locale]} />
+          {images.length > 1 && (
+            <div className="product-thumbnails">
+              {images.slice(1).map((image) => (
+                <ProductImage key={image} src={image} name={product.name[locale]} />
+              ))}
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{product.name[locale]}</h1>
+          {product.pieces !== undefined && <p>{t("pieces", { count: product.pieces })}</p>}
+          <p className="product-price">
+            {new Intl.NumberFormat(locale, {
+              style: "currency",
+              currency: product.currency,
+            }).format(product.priceCents / 100)}
+          </p>
+          <p className="product-description">{product.description[locale]}</p>
+        </div>
+      </div>
+    </section>
+  );
+}

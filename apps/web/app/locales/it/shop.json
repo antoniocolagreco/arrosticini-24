@@ -1,0 +1,19 @@
+{
+  "eyebrow": "Dall’Abruzzo alla tua tavola",
+  "title": "I nostri prodotti",
+  "intro": "Arrosticini e tutto quello che serve per accendere la brace.",
+  "searchLabel": "Cerca nel catalogo",
+  "searchPlaceholder": "Arrosticini, vino, fornacella…",
+  "search": "Cerca",
+  "invalidSearch": "La ricerca può contenere al massimo 100 caratteri.",
+  "results_one": "{{count}} prodotto",
+  "results_other": "{{count}} prodotti",
+  "pieces_one": "{{count}} pezzo",
+  "pieces_other": "{{count}} pezzi",
+  "emptyTitle": "Nessun prodotto trovato",
+  "emptySearch": "Prova a cercare con un’altra parola.",
+  "emptyCatalog": "Il catalogo è vuoto. Torna a trovarci più tardi.",
+  "clearSearch": "Mostra tutti i prodotti",
+  "backToProducts": "Torna ai prodotti",
+  "noImage": "Immagine non disponibile"
+}
