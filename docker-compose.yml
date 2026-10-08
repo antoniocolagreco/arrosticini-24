@@ -1,0 +1,28 @@
+name: arrosticini
+
+services:
+  valkey:
+    image: valkey/valkey:9.0-alpine
+    ports:
+      - "6379:6379"
+
+  dynamodb:
+    image: amazon/dynamodb-local:3.3.1
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    ports:
+      - "8000:8000"
+
+  s3:
+    image: rustfs/rustfs:1.0.1
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    volumes:
+      - s3-data:/data
+
+volumes:
+  s3-data:
