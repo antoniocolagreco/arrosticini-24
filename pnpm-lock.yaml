@@ -275,6 +275,9 @@ importers:
 
   packages/contracts:
     dependencies:
+      '@arrosticini/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       '@orpc/contract':
         specifier: 'catalog:'
         version: 1.15.5
@@ -300,6 +303,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
       yaml:
         specifier: 'catalog:'
         version: 2.9.1
