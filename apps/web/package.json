@@ -31,6 +31,7 @@
     "react-dom": "catalog:",
     "react-i18next": "catalog:",
     "react-router": "catalog:",
+    "iovalkey": "catalog:",
     "remix-i18next": "catalog:",
     "tailwind-merge": "catalog:",
     "zod": "catalog:"

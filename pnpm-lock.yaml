@@ -440,6 +440,9 @@ importers:
       i18next:
         specifier: 'catalog:'
         version: 26.4.2(typescript@7.0.2)
+      iovalkey:
+        specifier: 'catalog:'
+        version: 0.4.0
       lucide-react:
         specifier: 'catalog:'
         version: 1.53.0(@types/react@19.3.0)(react@19.3.0)
