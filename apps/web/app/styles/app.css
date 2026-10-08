@@ -139,13 +139,12 @@ h2,
   position: absolute;
   bottom: 2px;
   right: 0;
-  width: 82%;
+  width: min(82%, calc((clamp(440px, 34vw, 540px) - 4px) * 2));
   height: auto;
-  max-height: calc(100% - 4px);
   object-fit: contain;
   object-position: right bottom;
   mask-image:
-    linear-gradient(to right, transparent, black 40%, black 97%, transparent),
+    linear-gradient(to right, transparent, black 40%, black 92%, transparent),
     linear-gradient(to bottom, transparent, black 12%, black 94%, transparent);
   mask-composite: intersect;
 }
@@ -202,13 +201,17 @@ h2,
   font-size: clamp(20px, 2vw, 29px);
   font-weight: 600;
   margin-bottom: 20px;
-  max-width: 55%;
+  max-width: 40%;
+  text-shadow:
+    0 0 4px var(--background),
+    0 0 8px var(--background),
+    0 0 16px var(--background);
 }
 .hero-flight {
   position: absolute;
   right: 12px;
   top: 12px;
-  width: 65%;
+  width: 55%;
 }
 .hero-airplane {
   width: 100%;
@@ -251,7 +254,7 @@ h2,
 .value-props {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-block: 3px double #70744c;
+  border-block: 5px double #70744c;
   padding-block: 12px;
 }
 .value-props > div {
@@ -262,12 +265,16 @@ h2,
   padding-inline: 18px;
 }
 .value-props > div + div {
-  border-left: 1px solid var(--border);
+  border-left: 2px solid #969173;
 }
 .value-props img {
-  width: 90px;
-  height: 75px;
+  width: 140px;
+  height: 90px;
+  flex-shrink: 0;
   object-fit: contain;
+}
+.value-props > :where(div:first-child) img {
+  width: 180px;
 }
 .value-props h2 {
   color: var(--forest);
@@ -354,7 +361,11 @@ h2,
     padding-inline: 10px;
   }
   .value-props img {
-    width: 65px;
+    width: 95px;
+    height: 80px;
+  }
+  .value-props > :where(div:first-child) img {
+    width: 120px;
   }
   .value-props h2 {
     font-size: 19px;
@@ -377,10 +388,10 @@ h2,
     width: 76%;
   }
   .hero-landscape {
-    width: 94%;
+    width: min(94%, 912px);
   }
   .hero-intro {
-    max-width: 58%;
+    max-width: 48%;
   }
 }
 
@@ -440,7 +451,7 @@ h2,
     bottom: 5px;
     height: auto;
     mask-image:
-      linear-gradient(to right, transparent, black 5%, black 95%, transparent),
+      linear-gradient(to right, transparent, black 5%, black 92%, transparent),
       linear-gradient(to bottom, transparent, black 8%, black 93%, transparent);
   }
   .hero-airplane {
@@ -466,11 +477,14 @@ h2,
   }
   .value-props > div + div {
     border-left: 0;
-    border-top: 1px solid var(--border);
+    border-top: 2px solid #969173;
   }
   .value-props img {
-    width: 80px;
-    height: 60px;
+    width: 90px;
+    height: 75px;
+  }
+  .value-props > :where(div:first-child) img {
+    width: 110px;
   }
   .value-props h2 {
     font-size: 22px;
