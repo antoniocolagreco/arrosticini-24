@@ -1,0 +1,1037 @@
+info:
+  title: Arrosticini 24ore identity API
+  version: 1.0.0
+openapi: 3.1.1
+paths:
+  /identity/users:
+    post:
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  pattern: ^[a-z0-9._-]{3,32}$
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+                preferredLocale:
+                  enum:
+                    - it
+                    - en
+                  type: string
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                email:
+                  type: string
+                  format: email
+              required:
+                - username
+                - password
+                - preferredLocale
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  username:
+                    type: string
+                    pattern: ^[a-z0-9._-]{3,32}$
+                  role:
+                    enum:
+                      - customer
+                      - admin
+                    type: string
+                  displayName:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  preferredLocale:
+                    enum:
+                      - it
+                      - en
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - username
+                  - role
+                  - preferredLocale
+                  - createdAt
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: USERNAME_TAKEN
+                      status:
+                        const: 409
+                      message:
+                        type: string
+                        default: USERNAME_TAKEN
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /identity/credentials/verify:
+    post:
+      operationId: verifyCredentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  pattern: ^[a-z0-9._-]{3,32}$
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+                - username
+                - password
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  username:
+                    type: string
+                    pattern: ^[a-z0-9._-]{3,32}$
+                  role:
+                    enum:
+                      - customer
+                      - admin
+                    type: string
+                  displayName:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  preferredLocale:
+                    enum:
+                      - it
+                      - en
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - username
+                  - role
+                  - preferredLocale
+                  - createdAt
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: INVALID_CREDENTIALS
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: INVALID_CREDENTIALS
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /identity/me:
+    get:
+      operationId: getMe
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  username:
+                    type: string
+                    pattern: ^[a-z0-9._-]{3,32}$
+                  role:
+                    enum:
+                      - customer
+                      - admin
+                    type: string
+                  displayName:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  preferredLocale:
+                    enum:
+                      - it
+                      - en
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - username
+                  - role
+                  - preferredLocale
+                  - createdAt
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+    patch:
+      operationId: updateMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                email:
+                  type: string
+                  format: email
+                preferredLocale:
+                  enum:
+                    - it
+                    - en
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  username:
+                    type: string
+                    pattern: ^[a-z0-9._-]{3,32}$
+                  role:
+                    enum:
+                      - customer
+                      - admin
+                    type: string
+                  displayName:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  preferredLocale:
+                    enum:
+                      - it
+                      - en
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - username
+                  - role
+                  - preferredLocale
+                  - createdAt
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /identity/me/password:
+    post:
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                newPassword:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+              required:
+                - currentPassword
+                - newPassword
+      responses:
+        "204":
+          description: OK
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - not: {}
+                  - not: {}
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "422":
+          description: "422"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: INVALID_CURRENT_PASSWORD
+                      status:
+                        const: 422
+                      message:
+                        type: string
+                        default: INVALID_CURRENT_PASSWORD
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /identity/me/addresses:
+    get:
+      operationId: listAddresses
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                        fullName:
+                          type: string
+                          minLength: 1
+                          maxLength: 100
+                        line1:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        line2:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        city:
+                          type: string
+                          minLength: 1
+                          maxLength: 100
+                        postalCode:
+                          type: string
+                          minLength: 1
+                          maxLength: 20
+                        country:
+                          type: string
+                          pattern: ^[A-Z]{2}$
+                        phone:
+                          type: string
+                          minLength: 1
+                          maxLength: 30
+                        isDefault:
+                          type: boolean
+                      required:
+                        - id
+                        - fullName
+                        - line1
+                        - city
+                        - postalCode
+                        - country
+                        - isDefault
+                required:
+                  - items
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+    post:
+      operationId: addAddress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                line1:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                line2:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                city:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                postalCode:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                country:
+                  type: string
+                  pattern: ^[A-Z]{2}$
+                phone:
+                  type: string
+                  minLength: 1
+                  maxLength: 30
+                isDefault:
+                  type: boolean
+              required:
+                - fullName
+                - line1
+                - city
+                - postalCode
+                - country
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  fullName:
+                    type: string
+                    minLength: 1
+                    maxLength: 100
+                  line1:
+                    type: string
+                    minLength: 1
+                    maxLength: 200
+                  line2:
+                    type: string
+                    minLength: 1
+                    maxLength: 200
+                  city:
+                    type: string
+                    minLength: 1
+                    maxLength: 100
+                  postalCode:
+                    type: string
+                    minLength: 1
+                    maxLength: 20
+                  country:
+                    type: string
+                    pattern: ^[A-Z]{2}$
+                  phone:
+                    type: string
+                    minLength: 1
+                    maxLength: 30
+                  isDefault:
+                    type: boolean
+                required:
+                  - id
+                  - fullName
+                  - line1
+                  - city
+                  - postalCode
+                  - country
+                  - isDefault
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ADDRESS_LIMIT_REACHED
+                      status:
+                        const: 409
+                      message:
+                        type: string
+                        default: ADDRESS_LIMIT_REACHED
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /identity/me/addresses/{id}:
+    patch:
+      operationId: updateAddress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                line1:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                line2:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 200
+                    - type: "null"
+                city:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                postalCode:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                country:
+                  type: string
+                  pattern: ^[A-Z]{2}$
+                phone:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 30
+                    - type: "null"
+                isDefault:
+                  const: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  fullName:
+                    type: string
+                    minLength: 1
+                    maxLength: 100
+                  line1:
+                    type: string
+                    minLength: 1
+                    maxLength: 200
+                  line2:
+                    type: string
+                    minLength: 1
+                    maxLength: 200
+                  city:
+                    type: string
+                    minLength: 1
+                    maxLength: 100
+                  postalCode:
+                    type: string
+                    minLength: 1
+                    maxLength: 20
+                  country:
+                    type: string
+                    pattern: ^[A-Z]{2}$
+                  phone:
+                    type: string
+                    minLength: 1
+                    maxLength: 30
+                  isDefault:
+                    type: boolean
+                required:
+                  - id
+                  - fullName
+                  - line1
+                  - city
+                  - postalCode
+                  - country
+                  - isDefault
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ADDRESS_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: ADDRESS_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+    delete:
+      operationId: deleteAddress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+      responses:
+        "204":
+          description: OK
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - not: {}
+                  - not: {}
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ADDRESS_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: ADDRESS_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message

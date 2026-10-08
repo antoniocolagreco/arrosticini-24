@@ -14,9 +14,11 @@
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
+    "test": "vitest run",
     "openapi": "tsx scripts/generate-openapi.ts"
   },
   "dependencies": {
+    "@arrosticini/kernel": "workspace:*",
     "@orpc/contract": "catalog:",
     "zod": "catalog:"
   },
@@ -27,6 +29,7 @@
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "yaml": "catalog:"
   }
 }
