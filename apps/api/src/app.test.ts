@@ -15,7 +15,7 @@ import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
 import { OpenAPILink } from "@orpc/openapi-client/fetch";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { createApp } from "./app.js";
 import { createDynamoDbClient } from "./aws.js";
 import { createRouter } from "./wiring.js";
@@ -25,10 +25,7 @@ const logger = createLogger(
   { write: () => {} },
 );
 const tables = { catalog: `catalog-test-${randomUUID()}` };
-const dynamo = createDynamoDbClient(
-  "local",
-  process.env.DYNAMODB_ENDPOINT ?? "http://localhost:8000",
-);
+const dynamo = createDynamoDbClient("local", inject("dynamodbEndpoint"));
 const app = createApp(logger, new Lifecycle(), createRouter(dynamo, tables));
 let server: Server;
 

@@ -25,6 +25,7 @@
     "@orpc/server": "catalog:"
   },
   "devDependencies": {
+    "@arrosticini/testing": "workspace:*",
     "@arrosticini/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",

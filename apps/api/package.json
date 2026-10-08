@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@arrosticini/kernel": "workspace:*",
+    "@arrosticini/testing": "workspace:*",
     "@arrosticini/tsconfig": "workspace:*",
     "@aws-sdk/client-s3": "catalog:",
     "@orpc/client": "catalog:",

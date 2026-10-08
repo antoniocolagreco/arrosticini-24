@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { DomainError, localizedText, Money } from "@arrosticini/kernel";
 import { CreateTableCommand, DeleteTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { Product, type ProductStatus } from "../domain/product.js";
 import { catalogTableDefinition } from "./catalog-table.js";
 import { DynamoDbProductRepository } from "./dynamodb-product-repository.js";
 
 const tableName = `catalog-test-${randomUUID()}`;
 const client = new DynamoDBClient({
-  endpoint: process.env.DYNAMODB_ENDPOINT ?? "http://localhost:8000",
+  endpoint: inject("dynamodbEndpoint"),
   region: "local",
   credentials: { accessKeyId: "local", secretAccessKey: "local" },
 });
