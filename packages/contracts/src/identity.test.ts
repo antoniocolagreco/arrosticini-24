@@ -15,7 +15,7 @@ describe("AddressDto", () => {
   const address = {
     id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
     fullName: "Mario Rossi",
-    line1: "Via Garibaldi 10",
+    line1: "Via Collegrande 10",
     city: "Chieti",
     postalCode: "66100",
     country: "IT",
