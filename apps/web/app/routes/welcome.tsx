@@ -10,7 +10,6 @@ export default function Welcome() {
   return (
     <>
       <section className="hero">
-        <div className="hero-landscape" />
         <div className="shell hero-content">
           <p className="eyebrow">{t("tagline")}</p>
           <h1>
@@ -25,15 +24,24 @@ export default function Welcome() {
             </Link>
           </Button>
         </div>
-        <motion.img
-          className="hero-airplane"
-          src="/images/airplane.webp"
-          alt=""
-          width="900"
-          height="540"
-          animate={reducedMotion ? {} : { y: [0, -10, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        />
+        <div className="hero-art" aria-hidden="true">
+          <img
+            className="hero-landscape"
+            src="/images/background.webp"
+            alt=""
+            width="1774"
+            height="887"
+          />
+          <motion.img
+            className="hero-airplane"
+            src="/images/airplane.webp"
+            alt=""
+            width="1774"
+            height="887"
+            animate={reducedMotion ? {} : { y: [0, -10, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
       </section>
       <section className="value-props shell">
         <div>

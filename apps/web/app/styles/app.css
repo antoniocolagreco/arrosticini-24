@@ -18,7 +18,7 @@
   --secondary: #eae6d5;
   --border: #c9b793;
   --forest: #253d26;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "DM Sans", Arial, sans-serif;
   color: var(--foreground);
   background: var(--background);
 }
@@ -37,6 +37,20 @@ a:focus-visible {
 .shell {
   width: min(1440px, calc(100% - 64px));
   margin-inline: auto;
+}
+#content {
+  width: min(1440px, calc(100% - 64px));
+  margin-inline: auto;
+}
+#content .shell {
+  width: 100%;
+}
+.brand,
+h1,
+h2,
+[data-slot="button"] {
+  font-family: "Bree Serif", Georgia, serif;
+  font-weight: 400;
 }
 .skip-link {
   position: absolute;
@@ -61,7 +75,7 @@ a:focus-visible {
   align-items: center;
   gap: 12px;
   color: var(--primary);
-  font-weight: 900;
+  font-weight: 400;
   font-size: clamp(26px, 3vw, 44px);
   line-height: 0.95;
   letter-spacing: -1.5px;
@@ -75,11 +89,11 @@ a:focus-visible {
   display: block;
   color: var(--forest);
   font-size: 1.12em;
+  font-weight: 400;
 }
 .main-nav {
   display: flex;
   gap: 32px;
-  font-family: Arial, sans-serif;
   font-weight: 600;
 }
 .main-nav a[aria-current] {
@@ -92,31 +106,39 @@ a:focus-visible {
   align-items: center;
   gap: 8px;
   font:
-    600 14px Arial,
+    600 14px "DM Sans",
     sans-serif;
   white-space: nowrap;
 }
 .hero {
   position: relative;
-  min-height: 480px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 24px;
+  min-height: 500px;
   overflow: hidden;
   isolation: isolate;
 }
+.hero-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.2;
+}
 .hero-landscape {
   position: absolute;
-  inset: 0;
-  z-index: -2;
-  background: url("/images/background.webp") right bottom / auto 100% no-repeat;
-  mask-image: linear-gradient(to right, transparent 30%, black 65%);
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  mask-image:
+    linear-gradient(to right, transparent, black 12%, black 88%, transparent),
+    linear-gradient(to bottom, transparent, black 18%, black 80%, transparent);
+  mask-composite: intersect;
 }
 .hero-content {
   position: relative;
   z-index: 2;
-  padding-block: 26px 100px;
-  pointer-events: none;
-}
-.hero-content a {
-  pointer-events: auto;
+  padding-block: 32px 48px;
 }
 .eyebrow {
   font-weight: 700;
@@ -126,13 +148,11 @@ a:focus-visible {
   color: var(--forest);
 }
 .hero h1 {
-  font-weight: 900;
-  font-size: clamp(44px, 5.8vw, 84px);
-  line-height: 1.02;
-  letter-spacing: -3px;
+  font-weight: 400;
+  font-size: clamp(44px, 4.4vw, 68px);
+  line-height: 1.08;
+  letter-spacing: -1.5px;
   margin: 16px 0 24px;
-  max-width: 850px;
-  text-shadow: 0 1px 8px var(--background);
 }
 .hero h1 span {
   display: block;
@@ -148,10 +168,9 @@ a:focus-visible {
 }
 .hero-airplane {
   position: absolute;
-  z-index: -1;
-  right: 0;
-  top: 0;
-  width: 53%;
+  right: 5%;
+  top: 8%;
+  width: 90%;
   height: auto;
 }
 .value-props {
@@ -177,7 +196,7 @@ a:focus-visible {
 }
 .value-props h2 {
   color: var(--forest);
-  font-weight: bold;
+  font-weight: 400;
   font-size: 23px;
   line-height: 1.15;
 }
@@ -193,7 +212,6 @@ a:focus-visible {
   font-size: 14px;
 }
 .footer-meta {
-  font-family: Arial, sans-serif;
   color: #6f6251;
   font-size: 12px;
 }
@@ -210,7 +228,7 @@ a:focus-visible {
   color: var(--forest);
   font-size: clamp(36px, 5vw, 60px);
   line-height: 1.08;
-  font-weight: bold;
+  font-weight: 400;
   margin: 20px 0;
 }
 .static-page .lead {
@@ -256,11 +274,6 @@ a:focus-visible {
     gap: 20px;
     font-size: 14px;
   }
-  .hero-airplane {
-    width: 62%;
-    right: -10%;
-    top: 40px;
-  }
   .value-props > div {
     gap: 10px;
     padding-inline: 10px;
@@ -276,8 +289,26 @@ a:focus-visible {
   }
 }
 
+@media (max-width: 1000px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .hero-art {
+    width: min(100%, 720px);
+    aspect-ratio: 1.6;
+    justify-self: center;
+  }
+  .hero-content {
+    padding-bottom: 12px;
+  }
+}
+
 @media (max-width: 700px) {
   .shell {
+    width: calc(100% - 36px);
+  }
+  #content {
     width: calc(100% - 36px);
   }
   .site-header {
@@ -303,10 +334,10 @@ a:focus-visible {
     border-block: 1px solid var(--border);
   }
   .hero {
-    min-height: 650px;
+    min-height: 0;
   }
   .hero-content {
-    padding-block: 22px 330px;
+    padding-block: 22px 12px;
   }
   .hero h1 {
     font-size: clamp(39px, 9vw, 60px);
@@ -316,15 +347,8 @@ a:focus-visible {
     font-size: 20px;
     max-width: 290px;
   }
-  .hero-airplane {
-    width: 100%;
-    right: 0;
-    top: auto;
-    bottom: 100px;
-  }
-  .hero-landscape {
-    background-size: auto 48%;
-    mask-image: none;
+  .hero-art {
+    aspect-ratio: 1.1;
   }
   .eyebrow {
     font-size: 10px;
