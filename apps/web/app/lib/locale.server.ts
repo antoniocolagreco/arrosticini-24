@@ -9,6 +9,10 @@ export const localeCookie = createCookie("locale", {
   maxAge: 60 * 60 * 24 * 365,
 });
 
+export function pathLocale(url: string): string | null {
+  return new URL(url).pathname.split("/")[1]?.replace(/\.data$/, "") || null;
+}
+
 export async function preferredLocale(request: Request): Promise<Locale> {
   const cookie: unknown = await localeCookie.parse(request.headers.get("cookie"));
   if (isLocale(cookie)) return cookie;
