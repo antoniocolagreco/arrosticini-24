@@ -1,0 +1,41 @@
+info:
+  title: Arrosticini 24ore ops API
+  version: 1.0.0
+openapi: 3.1.1
+paths:
+  /internal/whoami:
+    get:
+      operationId: whoami
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    enum:
+                      - web
+                      - api
+                    type: string
+                  version:
+                    type: string
+                  taskId:
+                    type: string
+                  availabilityZone:
+                    type: string
+                  cpuPercent:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+                  startedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - service
+                  - version
+                  - taskId
+                  - availabilityZone
+                  - cpuPercent
+                  - startedAt
