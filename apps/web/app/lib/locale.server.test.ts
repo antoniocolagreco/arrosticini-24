@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { localeCookie, preferredLocale } from "./locale.server.js";
+import { localeCookie, pathLocale, preferredLocale } from "./locale.server.js";
+
+describe("path locale", () => {
+  it.each([
+    ["http://localhost/en", "en"],
+    ["http://localhost/en.data", "en"],
+    ["http://localhost/en/products.data", "en"],
+    ["http://localhost/it/products/arrosticini-75?q=x", "it"],
+    ["http://localhost/", null],
+  ])("reads %s as %s", (url, expected) => {
+    expect(pathLocale(url)).toBe(expected);
+  });
+});
 
 describe("preferred locale", () => {
   it("defaults to Italian", async () => {

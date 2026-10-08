@@ -1,0 +1,23 @@
+{
+  "eyebrow": "La bottega",
+  "title": "I nostri prodotti",
+  "titleFirst": "La grigliata",
+  "titleSecond": "comincia qui.",
+  "intro": "Arrosticini, brace e compagnia bella. Al resto pensiamo noi.",
+  "loading": "Caricamento prodotti",
+  "clearSearchLabel": "Cancella ricerca",
+  "emptySearchTitle": "Nessun prodotto per “{{query}}”.",
+  "searchLabel": "Cerca nel catalogo",
+  "searchPlaceholder": "Cerca arrosticini, carbone, vino…",
+  "search": "Cerca",
+  "invalidSearch": "La ricerca può contenere al massimo 100 caratteri.",
+  "results_one": "{{count}} prodotto",
+  "results_other": "{{count}} prodotti",
+  "pieces_one": "{{count}} arrosticino",
+  "pieces_other": "{{count}} arrosticini",
+  "emptyTitle": "Nessun prodotto trovato",
+  "emptySearch": "Prova a cercare con un’altra parola.",
+  "emptyCatalog": "Il catalogo è vuoto. Torna a trovarci più tardi.",
+  "clearSearch": "Mostra tutti i prodotti",
+  "noImage": "Immagine non disponibile"
+}

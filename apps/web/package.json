@@ -12,8 +12,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@arrosticini/contracts": "workspace:*",
     "@arrosticini/kernel": "workspace:*",
     "@arrosticini/ops": "workspace:*",
+    "@orpc/client": "catalog:",
+    "@orpc/contract": "catalog:",
+    "@orpc/openapi-client": "catalog:",
     "@react-router/express": "catalog:",
     "@react-router/node": "catalog:",
     "class-variance-authority": "catalog:",

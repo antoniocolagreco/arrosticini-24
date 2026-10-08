@@ -1,0 +1,23 @@
+{
+  "eyebrow": "The shop",
+  "title": "Our products",
+  "titleFirst": "The barbecue",
+  "titleSecond": "starts here.",
+  "intro": "Arrosticini, charcoal and good company. We take care of the rest.",
+  "loading": "Loading products",
+  "clearSearchLabel": "Clear search",
+  "emptySearchTitle": "No products for “{{query}}”.",
+  "searchLabel": "Search the catalog",
+  "searchPlaceholder": "Search arrosticini, charcoal, wine…",
+  "search": "Search",
+  "invalidSearch": "Searches can contain up to 100 characters.",
+  "results_one": "{{count}} product",
+  "results_other": "{{count}} products",
+  "pieces_one": "{{count}} arrosticino",
+  "pieces_other": "{{count}} arrosticini",
+  "emptyTitle": "No products found",
+  "emptySearch": "Try searching with another word.",
+  "emptyCatalog": "The catalog is empty. Please check back later.",
+  "clearSearch": "Show all products",
+  "noImage": "Image unavailable"
+}
