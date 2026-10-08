@@ -13,6 +13,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "boundaries": "turbo boundaries",
+    "setup:local": "turbo run setup:local",
     "format": "biome format --write ."
   },
   "devDependencies": {

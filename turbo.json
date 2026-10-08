@@ -18,6 +18,10 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
+    },
+    "setup:local": {
+      "dependsOn": ["^build"],
+      "cache": false
     }
   },
   "boundaries": {
