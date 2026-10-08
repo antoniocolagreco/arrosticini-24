@@ -43,7 +43,7 @@ export function links(): Route.LinkDescriptors {
     { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
     {
       rel: "stylesheet",
-      href: "https://fonts.googleapis.com/css2?family=Bree+Serif&family=DM+Sans:wght@400;500;600;700&display=swap",
+      href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto+Serif:opsz,wdth,wght@8..144,75,600;8..144,75,900&display=swap",
     },
   ];
 }
