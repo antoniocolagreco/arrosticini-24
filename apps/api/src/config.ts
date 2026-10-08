@@ -8,6 +8,7 @@ export const Env = z.object({
   AWS_REGION: z.string().min(1),
   DYNAMODB_ENDPOINT: z.url().optional(),
   CATALOG_TABLE: z.string().min(1),
+  IDENTITY_TABLE: z.string().min(1),
 });
 
 export type Config = z.infer<typeof Env>;
