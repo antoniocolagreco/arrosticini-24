@@ -2,6 +2,7 @@ import { catalogContract } from "./catalog.js";
 import { identityContract } from "./identity.js";
 import { opsContract } from "./ops.js";
 
+export { ACTOR_HEADER, ActorDto } from "./actor.js";
 export {
   catalogContract,
   PRODUCT_IMAGE_MAX_BYTES,
