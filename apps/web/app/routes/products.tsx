@@ -3,6 +3,7 @@ import { CircleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { data, Link, useNavigation } from "react-router";
+import { Breadcrumb } from "../components/breadcrumb.js";
 import { ProductCard } from "../components/product-card.js";
 import { ProductSearch } from "../components/product-search.js";
 import { Button } from "../components/ui/button.js";
@@ -41,11 +42,7 @@ export default function Products({ loaderData }: Route.ComponentProps) {
   return (
     <section className="catalog-page">
       <div className="catalog-heading">
-        <nav className="catalog-breadcrumb" aria-label={t("breadcrumb")}>
-          <Link to={`/${i18n.language}`}>{t("home")}</Link>
-          <span aria-hidden="true">/</span>
-          <span>{t("title")}</span>
-        </nav>
+        <Breadcrumb items={[{ label: t("title") }]} />
         <p className="eyebrow">{t("eyebrow")}</p>
         <h1>
           <span>{t("titleFirst")}</span> <span>{t("titleSecond")}</span>

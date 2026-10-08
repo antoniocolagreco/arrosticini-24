@@ -1,8 +1,7 @@
 import { ProductSlug } from "@arrosticini/contracts";
 import type { Locale } from "@arrosticini/kernel";
-import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Breadcrumb } from "../components/breadcrumb.js";
 import { Price } from "../components/price.js";
 import { ProductImage } from "../components/product-image.js";
 import { api, getApiError } from "../lib/api.server.js";
@@ -26,10 +25,9 @@ export default function Product({ loaderData }: Route.ComponentProps) {
   const { product, images } = loaderData;
   return (
     <section className="catalog-page">
-      <Link className="catalog-back" to={`/${locale}/products`}>
-        <ArrowLeft aria-hidden="true" size={20} />
-        {t("backToProducts")}
-      </Link>
+      <Breadcrumb
+        items={[{ label: t("title"), to: `/${locale}/products` }, { label: product.name[locale] }]}
+      />
       <div className="product-detail">
         <div className="product-gallery">
           <ProductImage src={images[0]} name="" />

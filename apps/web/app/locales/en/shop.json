@@ -4,8 +4,6 @@
   "titleFirst": "The barbecue",
   "titleSecond": "starts here.",
   "intro": "Arrosticini, charcoal and good company. We take care of the rest.",
-  "breadcrumb": "Breadcrumb",
-  "home": "Home",
   "loading": "Loading products",
   "clearSearchLabel": "Clear search",
   "emptySearchTitle": "No products for “{{query}}”.",
@@ -21,6 +19,5 @@
   "emptySearch": "Try searching with another word.",
   "emptyCatalog": "The catalog is empty. Please check back later.",
   "clearSearch": "Show all products",
-  "backToProducts": "Back to products",
   "noImage": "Image unavailable"
 }

@@ -15,13 +15,6 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
     segments[1] === "it" || segments[1] === "en"
       ? `/${other}${segments.slice(2).length ? `/${segments.slice(2).join("/")}` : ""}`
       : `/${other}`;
-  const links: ReactNode = (
-    <>
-      <NavLink to={`/${locale}/products`}>{t("products")}</NavLink>
-      <NavLink to={`/${locale}/story`}>{t("story")}</NavLink>
-      <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
-    </>
-  );
 
   return (
     <>
@@ -31,7 +24,9 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
       <header className="site-header shell">
         <Logo locale={locale} />
         <nav className="main-nav" aria-label={t("home")}>
-          {links}
+          <NavLink to={`/${locale}/products`}>{t("products")}</NavLink>
+          <NavLink to={`/${locale}/story`}>{t("story")}</NavLink>
+          <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
         </nav>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
@@ -62,16 +57,42 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
       </header>
       <main id="content">{children}</main>
       <footer className="site-footer shell">
-        <div className="footer-row">
-          <Logo locale={locale} size="sm" />
-          <nav className="main-nav" aria-label={t("footerNav")}>
-            {links}
+        <div className="footer-main">
+          <div className="footer-brand">
+            <Logo locale={locale} size="sm" />
+            <p className="footer-tag">{t("footer")}</p>
+            <p className="footer-about">{t("footerAbout")}</p>
+          </div>
+          <nav className="footer-column" aria-labelledby="footer-shop">
+            <h2 id="footer-shop">{t("footerShop")}</h2>
+            <Link to={`/${locale}/products`}>{t("footerAllProducts")}</Link>
+            <Link to={`/${locale}/products?q=arrosticini`}>Arrosticini</Link>
           </nav>
-          <p className="footer-tag">{t("footer")}</p>
+          <nav className="footer-column" aria-labelledby="footer-company">
+            <h2 id="footer-company">Arrosticini 24ore</h2>
+            <Link to={`/${locale}/story`}>{t("story")}</Link>
+            <Link to={`/${locale}/delivery`}>{t("delivery")}</Link>
+          </nav>
+          <nav className="footer-column" aria-labelledby="footer-language">
+            <h2 id="footer-language">{t("footerLanguage")}</h2>
+            <Link
+              to={`${locale === "it" ? location.pathname : languagePath}${location.search}`}
+              aria-current={locale === "it" ? "true" : undefined}
+            >
+              Italiano
+            </Link>
+            <Link
+              to={`${locale === "en" ? location.pathname : languagePath}${location.search}`}
+              aria-current={locale === "en" ? "true" : undefined}
+            >
+              English
+            </Link>
+          </nav>
         </div>
-        <p className="footer-meta">
-          © 2026 Arrosticini 24ore · {t("demo")} · {version}
-        </p>
+        <div className="footer-bottom">
+          <p>© 2026 Arrosticini 24ore · {t("footerDemo")}</p>
+          <p>{t("footerVersion", { version })}</p>
+        </div>
       </footer>
     </>
   );

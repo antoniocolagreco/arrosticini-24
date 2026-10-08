@@ -4,8 +4,6 @@
   "titleFirst": "La grigliata",
   "titleSecond": "comincia qui.",
   "intro": "Arrosticini, brace e compagnia bella. Al resto pensiamo noi.",
-  "breadcrumb": "Percorso di navigazione",
-  "home": "Home",
   "loading": "Caricamento prodotti",
   "clearSearchLabel": "Cancella ricerca",
   "emptySearchTitle": "Nessun prodotto per “{{query}}”.",
@@ -21,6 +19,5 @@
   "emptySearch": "Prova a cercare con un’altra parola.",
   "emptyCatalog": "Il catalogo è vuoto. Torna a trovarci più tardi.",
   "clearSearch": "Mostra tutti i prodotti",
-  "backToProducts": "Torna ai prodotti",
   "noImage": "Immagine non disponibile"
 }
