@@ -24,10 +24,11 @@ Se ChatGPT ha bisogno di qualcosa fuori da `apps/web` (un campo nel contratto, u
 ## Git
 
 - Feature branch da `dev` e PR verso `dev`, con le regole di `AGENTS.md`. Antonio fa la review e lo squash merge.
-- Le release passano da una PR `dev` → `main` e dalla pubblicazione della GitHub Release: le gestisce Antonio.
-- Ogni agente lavora in un proprio worktree, così i due non si cambiano il branch sotto i piedi:
-  - Claude: `/home/ac/Projects/arrosticini-24-worktrees/claude`
-  - ChatGPT: `/home/ac/Projects/arrosticini-24-worktrees/gpt`
+- Le release passano da una PR `dev` → `master` e dalla pubblicazione della GitHub Release: le gestisce Antonio.
+- Il workspace `/home/ac/Projects/arrosticini-24-workspace/` ha una cartella (worktree) per ciascuno. Ognuno lavora solo dalla propria cartella e lì crea e cambia i branch che gli servono:
+  - Antonio: `master`
+  - Claude: `backend`
+  - ChatGPT: `frontend`
 
 ## Sequenza
 
@@ -49,19 +50,19 @@ Il deploy lo fa Antonio: CDK, script `up` e `down`, GitHub Actions. La prova gen
 ## Comunicazione
 
 - **Canale principale: la sezione Unblocks di ogni PR mergiata.** Dice cosa diventa disponibile: endpoint, codici di errore, variabili d'ambiente, script.
-- **Per tutto il resto:** due file nel checkout principale, `/home/ac/Projects/arrosticini-24/docs/agents/`, esclusi da git. Ognuno ha un solo autore, così i due agenti non si sovrascrivono:
+- **Per tutto il resto:** due file in `/home/ac/Projects/arrosticini-24-workspace/agents/`, fuori dal repository. Ognuno ha un solo autore, così i due agenti non si sovrascrivono:
   - **`claude.md`, scritto da Claude:** risposte alle richieste di ChatGPT e note che non stanno in una PR;
   - **`gpt.md`, scritto da ChatGPT:** richieste e domande per Claude, più lo stato del proprio lavoro.
 - Ogni agente legge il file dell'altro all'inizio di ogni task.
 
 ## Ambiente locale
 
-- Valkey, DynamoDB Local e RustFS: un solo stack compose, avviato una volta dal checkout principale.
+- Valkey, DynamoDB Local e RustFS: un solo stack compose, avviato una volta dalla cartella `master`.
 - Porte di Claude: `api` 4000, `web` 3000. Porte di ChatGPT: `api` 4100, `web` 3100. Ogni worktree ha il proprio `.env.local`.
 - I test di integrazione usano nomi di tabelle e chiavi con suffisso casuale, così i due agenti possono lanciarli nello stesso momento.
 
 ## Prompt di avvio
 
-**Claude Code:** `Sei Claude nel progetto arrosticini-24. Leggi docs/battle-plan.md e /home/ac/Projects/arrosticini-24/docs/agents/gpt.md, poi esegui il prossimo passo della tua colonna e apri la PR verso dev.`
+**Claude Code:** `Sei Claude nel progetto arrosticini-24. Leggi docs/battle-plan.md e /home/ac/Projects/arrosticini-24-workspace/agents/gpt.md, poi esegui il prossimo passo della tua colonna e apri la PR verso dev.`
 
-**Codex CLI:** `Sei ChatGPT nel progetto arrosticini-24. Leggi docs/battle-plan.md, le PR mergiate su dev e /home/ac/Projects/arrosticini-24/docs/agents/claude.md, poi esegui il prossimo passo della tua colonna che ha la PR di sblocco su dev e apri la PR verso dev.`
+**Codex CLI:** `Sei ChatGPT nel progetto arrosticini-24. Leggi docs/battle-plan.md, le PR mergiate su dev e /home/ac/Projects/arrosticini-24-workspace/agents/claude.md, poi esegui il prossimo passo della tua colonna che ha la PR di sblocco su dev e apri la PR verso dev.`

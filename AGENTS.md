@@ -7,7 +7,7 @@ Valgono per Claude Code e per ChatGPT (Codex CLI).
 
 ## Branch
 
-Ogni branch nasce da `origin/dev`. Mai push su `dev` o `main`.
+Ogni branch nasce da `github/dev`. Mai push su `dev` o `master`.
 
 **Formato:** `<tipo>/<scope>_<descrizione>`
 
@@ -31,11 +31,11 @@ Se la modifica tocca più scope, si usa quello principale.
 ## Pull request
 
 - **Direzione:** dal feature branch verso `dev`, aperta come Draft. Passa a ready quando tutti i controlli sono verdi.
-- **Prima di aprirla:** `git fetch origin && git rebase origin/dev`, poi `pnpm turbo run lint typecheck test build` e `turbo boundaries` verdi.
+- **Prima di aprirla:** `git fetch github && git rebase github/dev`, poi `pnpm turbo run lint typecheck test build` e `turbo boundaries` verdi.
 - **Titolo:** identico al messaggio di commit, nel formato `<tipo>(<scope>): <descrizione>`.
 - **Label:** l'agente autore, `claude` o `gpt`.
 - **Merge:** squash su `dev`, fatto da Antonio. Gli agenti non fanno merge.
-- **Release:** a fare la PR da `dev` a `main` (con merge commit) e a pubblicare la GitHub Release `vX.Y.Z` è Antonio.
+- **Release:** a fare la PR da `dev` a `master` (con merge commit) e a pubblicare la GitHub Release `vX.Y.Z` è Antonio.
 - **Lingua:** tutto ciò che sta su GitHub è in inglese.
 
 **Template della descrizione**, da usare così com'è:
@@ -70,7 +70,7 @@ Come compilarlo:
 
 ## Conflitti
 
-Un conflitto su `pnpm-lock.yaml` non si risolve a mano: si prende la versione di `origin/dev` (`git checkout origin/dev -- pnpm-lock.yaml`), si esegue `pnpm install` e si aggiunge il file risultante.
+Un conflitto su `pnpm-lock.yaml` non si risolve a mano: si prende la versione di `github/dev` (`git checkout github/dev -- pnpm-lock.yaml`), si esegue `pnpm install` e si aggiunge il file risultante.
 
 ## Divieti
 
