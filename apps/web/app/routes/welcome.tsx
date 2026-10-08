@@ -1,10 +1,25 @@
+import type { ProductDto } from "@arrosticini/contracts";
 import { ArrowRight } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { ProductCard } from "../components/product-card.js";
 import { Button } from "../components/ui/button.js";
+import { api } from "../lib/api.server.js";
+import { productImages } from "../lib/product.server.js";
+import type { Route } from "./+types/welcome.js";
 
-export default function Welcome() {
+export async function loader({ request }: Route.LoaderArgs) {
+  const { items } = await api(request).catalog.listProducts({});
+  return {
+    featured: items
+      .filter((product: ProductDto) => product.pieces !== undefined)
+      .slice(0, 3)
+      .map((product: ProductDto) => ({ product, image: productImages(product)[0] })),
+  };
+}
+
+export default function Welcome({ loaderData }: Route.ComponentProps) {
   const { t, i18n } = useTranslation("common");
   const reducedMotion = useReducedMotion();
 
@@ -12,7 +27,13 @@ export default function Welcome() {
     <>
       <section className="hero">
         <div className="shell hero-content">
-          <p className="eyebrow">{t("tagline")}</p>
+          <p className="eyebrow">
+            {t("taglineFirst")}
+            <span className="eyebrow-dot" aria-hidden="true">
+              ·
+            </span>
+            {t("taglineSecond")}
+          </p>
           <h1>
             <span>{t("headlineFirst")}</span>
             <span>{t("headlineSecond")}</span>
@@ -70,6 +91,18 @@ export default function Welcome() {
           </span>
         </div>
       </section>
+      {loaderData.featured.length > 0 && (
+        <section className="featured" aria-labelledby="featured-title">
+          <h2 className="section-title" id="featured-title">
+            {t("featuredTitle")}
+          </h2>
+          <div className="featured-grid">
+            {loaderData.featured.map(({ product, image }) => (
+              <ProductCard key={product.slug} product={product} image={image} layout="row" />
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }

@@ -3,6 +3,7 @@ import { DropdownMenu } from "radix-ui";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, useLocation } from "react-router";
+import { Logo } from "./logo.js";
 
 export function SiteLayout({ children, version }: { children: ReactNode; version: string }) {
   const { t, i18n } = useTranslation("common");
@@ -14,6 +15,13 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
     segments[1] === "it" || segments[1] === "en"
       ? `/${other}${segments.slice(2).length ? `/${segments.slice(2).join("/")}` : ""}`
       : `/${other}`;
+  const links: ReactNode = (
+    <>
+      <NavLink to={`/${locale}/products`}>{t("products")}</NavLink>
+      <NavLink to={`/${locale}/story`}>{t("story")}</NavLink>
+      <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
+    </>
+  );
 
   return (
     <>
@@ -21,16 +29,9 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
         {t("skip")}
       </a>
       <header className="site-header shell">
-        <Link className="brand" to={`/${locale}`} aria-label="Arrosticini 24ore">
-          <img src="/images/sheep.webp" alt="" width="100" height="100" />
-          <span>
-            Arrosticini<strong>24ore</strong>
-          </span>
-        </Link>
+        <Logo locale={locale} />
         <nav className="main-nav" aria-label={t("home")}>
-          <NavLink to={`/${locale}/products`}>{t("products")}</NavLink>
-          <NavLink to={`/${locale}/story`}>{t("story")}</NavLink>
-          <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
+          {links}
         </nav>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
@@ -61,10 +62,16 @@ export function SiteLayout({ children, version }: { children: ReactNode; version
       </header>
       <main id="content">{children}</main>
       <footer className="site-footer shell">
-        <span className="footer-tag">{t("footer")}</span>
-        <span className="footer-meta">
-          {t("demo")} · {version}
-        </span>
+        <div className="footer-row">
+          <Logo locale={locale} size="sm" />
+          <nav className="main-nav" aria-label={t("footerNav")}>
+            {links}
+          </nav>
+          <p className="footer-tag">{t("footer")}</p>
+        </div>
+        <p className="footer-meta">
+          © 2026 Arrosticini 24ore · {t("demo")} · {version}
+        </p>
       </footer>
     </>
   );

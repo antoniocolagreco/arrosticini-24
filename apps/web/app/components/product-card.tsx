@@ -8,14 +8,16 @@ import { ProductImage } from "./product-image.js";
 export function ProductCard({
   product,
   image,
+  layout,
 }: {
   product: ProductDto;
   image: string | undefined;
+  layout?: "row";
 }) {
   const { t, i18n } = useTranslation("shop");
   const locale: Locale = i18n.language === "en" ? "en" : "it";
   return (
-    <article className="product-card">
+    <article className={layout === "row" ? "product-card product-card-row" : "product-card"}>
       <Link
         className="product-media"
         to={`/${locale}/products/${product.slug}`}
