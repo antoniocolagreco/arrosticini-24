@@ -37,7 +37,15 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 }
 
 export function links(): Route.LinkDescriptors {
-  return [{ rel: "icon", href: "/images/favicon.svg", type: "image/svg+xml" }];
+  return [
+    { rel: "icon", href: "/images/favicon.svg", type: "image/svg+xml" },
+    { rel: "preconnect", href: "https://fonts.googleapis.com" },
+    { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+    {
+      rel: "stylesheet",
+      href: "https://fonts.googleapis.com/css2?family=Bree+Serif&family=DM+Sans:wght@400;500;600;700&display=swap",
+    },
+  ];
 }
 
 export function meta(): Route.MetaDescriptors {
