@@ -9,12 +9,13 @@ import {
   type Logger,
   mapProcedureErrors,
 } from "@arrosticini/ops";
+import type { ShoppingContext } from "@arrosticini/shopping";
 import { OpenAPIHandler } from "@orpc/openapi/node";
 import express, { type Express } from "express";
 import { readActor } from "./actor.js";
 import type { ApiRouter } from "./wiring.js";
 
-type ApiContext = CatalogContext & IdentityContext & ErrorContext;
+type ApiContext = CatalogContext & IdentityContext & ShoppingContext & ErrorContext;
 
 export function createApp(logger: Logger, lifecycle: Lifecycle, router: ApiRouter): Express {
   const handler = new OpenAPIHandler<ApiContext>(router, {

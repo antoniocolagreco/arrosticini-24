@@ -15,6 +15,7 @@ import { CreateTableCommand, DeleteTableCommand } from "@aws-sdk/client-dynamodb
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
 import { OpenAPILink } from "@orpc/openapi-client/fetch";
+import { Valkey } from "iovalkey";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { createApp } from "./app.js";
@@ -30,7 +31,8 @@ const tables = {
   identity: `identity-test-${randomUUID()}`,
 };
 const dynamo = createDynamoDbClient("local", inject("dynamodbEndpoint"));
-const app = createApp(logger, new Lifecycle(), createRouter(dynamo, tables));
+const valkey = new Valkey(inject("valkeyUrl"));
+const app = createApp(logger, new Lifecycle(), createRouter(dynamo, valkey, tables));
 let server: Server;
 
 function client(actor?: { userId: string; role: "customer" | "admin" }) {
@@ -73,6 +75,7 @@ afterAll(async () => {
   server.close();
   await dynamo.send(new DeleteTableCommand({ TableName: tables.catalog }));
   await dynamo.send(new DeleteTableCommand({ TableName: tables.identity }));
+  await valkey.quit();
 });
 
 describe("GET /healthz", () => {
@@ -308,6 +311,91 @@ describe("identity", () => {
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "ADDRESS_NOT_FOUND", status: 404, defined: true });
+  });
+});
+
+describe("shopping", () => {
+  const lucia = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", role: "customer" } as const;
+
+  it("creates an empty cart and sets its lines", async () => {
+    const created = await client().shopping.createCart();
+    expect(created.lines).toEqual([]);
+
+    await client().shopping.setCartLine({ id: created.id, slug: "vino", quantity: 2 });
+    await client().shopping.setCartLine({ id: created.id, slug: "fornacella", quantity: 1 });
+    await client().shopping.setCartLine({ id: created.id, slug: "vino", quantity: 0 });
+
+    const cart = await client().shopping.getCart({ id: created.id });
+    expect(cart).toEqual({
+      id: created.id,
+      lines: [{ slug: "fornacella", quantity: 1 }],
+      updatedAt: expect.any(String),
+    });
+  });
+
+  it("answers 201 on cart creation", async () => {
+    const response = await request(app).post("/shopping/carts");
+
+    expect(response.status).toBe(201);
+  });
+
+  it("rejects products that are not on sale", async () => {
+    const { id } = await client().shopping.createCart();
+
+    for (const slug of ["carbone", "pecora-diy"]) {
+      const error = await client()
+        .shopping.setCartLine({ id, slug, quantity: 1 })
+        .catch((caught: unknown) => caught);
+      expect(error).toMatchObject({ code: "PRODUCT_NOT_FOUND", status: 404, defined: true });
+    }
+  });
+
+  it("rejects quantities over 99", async () => {
+    const { id } = await client().shopping.createCart();
+    const response = await request(app)
+      .put(`/shopping/carts/${id}/lines/vino`)
+      .send({ quantity: 100 });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("answers CART_NOT_FOUND on an unknown cart", async () => {
+    const error = await client()
+      .shopping.getCart({ id: "01JB2Q7Z8X4M3N5P6R7S8T9V98" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "CART_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("requires a signed-in user to merge", async () => {
+    const { id } = await client().shopping.createCart();
+    const error = await client()
+      .shopping.mergeCart({ id })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "UNAUTHORIZED", status: 401, defined: true });
+  });
+
+  it("merges the anonymous cart into the user's cart at login", async () => {
+    const first = await client().shopping.createCart();
+    await client().shopping.setCartLine({ id: first.id, slug: "vino", quantity: 2 });
+    const owned = await client(lucia).shopping.mergeCart({ id: first.id });
+    expect(owned.id).toBe(first.id);
+
+    const second = await client().shopping.createCart();
+    await client().shopping.setCartLine({ id: second.id, slug: "vino", quantity: 1 });
+    await client().shopping.setCartLine({ id: second.id, slug: "fornacella", quantity: 1 });
+    const merged = await client(lucia).shopping.mergeCart({ id: second.id });
+
+    expect(merged.id).toBe(first.id);
+    expect(merged.lines).toEqual([
+      { slug: "vino", quantity: 3 },
+      { slug: "fornacella", quantity: 1 },
+    ]);
+    const gone = await client()
+      .shopping.getCart({ id: second.id })
+      .catch((caught: unknown) => caught);
+    expect(gone).toMatchObject({ code: "CART_NOT_FOUND" });
   });
 });
 
