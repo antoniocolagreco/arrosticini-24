@@ -638,9 +638,6 @@ h2,
 .product-search input:focus-visible {
   border-color: var(--forest);
 }
-.product-search[aria-busy="true"] input {
-  background: var(--secondary);
-}
 .product-search input[aria-invalid="true"] {
   border: 2px solid var(--destructive);
   background: var(--destructive-soft);
