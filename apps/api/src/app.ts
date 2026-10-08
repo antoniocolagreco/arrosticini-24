@@ -1,5 +1,6 @@
 import type { CatalogContext } from "@arrosticini/catalog";
 import { ACTOR_HEADER } from "@arrosticini/contracts";
+import type { IdentityContext } from "@arrosticini/identity";
 import {
   createHttpLogger,
   type ErrorContext,
@@ -13,7 +14,7 @@ import express, { type Express } from "express";
 import { readActor } from "./actor.js";
 import type { ApiRouter } from "./wiring.js";
 
-type ApiContext = CatalogContext & ErrorContext;
+type ApiContext = CatalogContext & IdentityContext & ErrorContext;
 
 export function createApp(logger: Logger, lifecycle: Lifecycle, router: ApiRouter): Express {
   const handler = new OpenAPIHandler<ApiContext>(router, {

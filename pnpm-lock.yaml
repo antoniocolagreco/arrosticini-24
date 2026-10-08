@@ -265,6 +265,9 @@ importers:
       '@arrosticini/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@arrosticini/identity':
+        specifier: workspace:*
+        version: link:../../contexts/identity
       '@arrosticini/ops':
         specifier: workspace:*
         version: link:../../packages/ops
@@ -342,6 +345,40 @@ importers:
         specifier: 'catalog:'
         version: 3.1147.0
       '@aws-sdk/client-s3':
+        specifier: 'catalog:'
+        version: 3.1147.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: 'catalog:'
+        version: 3.1147.0(@aws-sdk/client-dynamodb@3.1147.0)
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.15.5
+    devDependencies:
+      '@arrosticini/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@arrosticini/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  contexts/identity:
+    dependencies:
+      '@arrosticini/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@arrosticini/kernel':
+        specifier: workspace:*
+        version: link:../../packages/kernel
+      '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
         version: 3.1147.0
       '@aws-sdk/lib-dynamodb':

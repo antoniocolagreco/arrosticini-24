@@ -14,7 +14,10 @@ const logger = createLogger({
 exitOnProcessErrors(logger);
 
 const dynamo = createDynamoDbClient(config.AWS_REGION, config.DYNAMODB_ENDPOINT);
-const router = createRouter(dynamo, { catalog: config.CATALOG_TABLE });
+const router = createRouter(dynamo, {
+  catalog: config.CATALOG_TABLE,
+  identity: config.IDENTITY_TABLE,
+});
 const lifecycle = new Lifecycle();
 lifecycle.onShutdown(async () => dynamo.destroy());
 
