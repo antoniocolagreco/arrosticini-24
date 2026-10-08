@@ -1,6 +1,8 @@
 import { catalogContract } from "./catalog.js";
 import { identityContract } from "./identity.js";
 import { opsContract } from "./ops.js";
+import { orderingContract } from "./ordering.js";
+import { shoppingContract } from "./shopping.js";
 
 export { ACTOR_HEADER, ActorDto } from "./actor.js";
 export {
@@ -23,9 +25,19 @@ export {
   Username,
 } from "./identity.js";
 export { opsContract, WhoAmIDto } from "./ops.js";
+export {
+  OrderDto,
+  OrderLineDto,
+  OrderStatus,
+  orderingContract,
+  ShippingAddressDto,
+} from "./ordering.js";
+export { CartDto, CartLineDto, MAX_LINE_QUANTITY, shoppingContract } from "./shopping.js";
 
 export const contract = {
   catalog: catalogContract,
   identity: identityContract,
+  shopping: shoppingContract,
+  ordering: orderingContract,
   ops: opsContract,
 };

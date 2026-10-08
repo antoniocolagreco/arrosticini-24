@@ -1,0 +1,367 @@
+info:
+  title: Arrosticini 24ore shopping API
+  version: 1.0.0
+openapi: 3.1.1
+paths:
+  /shopping/carts:
+    post:
+      operationId: createCart
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        quantity:
+                          type: integer
+                          minimum: 1
+                          maximum: 99
+                      required:
+                        - slug
+                        - quantity
+                  updatedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - lines
+                  - updatedAt
+  /shopping/carts/{id}:
+    get:
+      operationId: getCart
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        quantity:
+                          type: integer
+                          minimum: 1
+                          maximum: 99
+                      required:
+                        - slug
+                        - quantity
+                  updatedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - lines
+                  - updatedAt
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: CART_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: CART_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /shopping/carts/{id}/lines/{slug}:
+    put:
+      operationId: setCartLine
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+            pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 0
+                  maximum: 99
+              required:
+                - quantity
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        quantity:
+                          type: integer
+                          minimum: 1
+                          maximum: 99
+                      required:
+                        - slug
+                        - quantity
+                  updatedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - lines
+                  - updatedAt
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: CART_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: CART_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: PRODUCT_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: PRODUCT_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /shopping/carts/{id}/merge:
+    post:
+      operationId: mergeCart
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        quantity:
+                          type: integer
+                          minimum: 1
+                          maximum: 99
+                      required:
+                        - slug
+                        - quantity
+                  updatedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - lines
+                  - updatedAt
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: CART_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: CART_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
