@@ -1,0 +1,8 @@
+{
+  "notFoundTitle": "Questa pecora si è persa.",
+  "notFoundBody": "La pagina che cerchi non esiste.",
+  "unexpectedTitle": "La pecora è in overdrive.",
+  "unexpectedBody": "Non siamo riusciti a completare la richiesta. Riprova tra poco.",
+  "backHome": "Torna alla home",
+  "requestId": "ID richiesta"
+}
