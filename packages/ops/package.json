@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@arrosticini/kernel": "workspace:*",
+    "@orpc/server": "catalog:",
     "pino": "catalog:",
     "pino-http": "catalog:",
     "pino-pretty": "catalog:"

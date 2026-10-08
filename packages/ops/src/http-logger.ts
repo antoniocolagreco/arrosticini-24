@@ -1,12 +1,18 @@
+import type { IncomingMessage } from "node:http";
 import { newId } from "@arrosticini/kernel";
 import type { Logger } from "pino";
 import { pinoHttp } from "pino-http";
 
 export const REQUEST_ID_HEADER = "x-request-id";
 
-export function createHttpLogger(logger: Logger) {
+export interface HttpLoggerOptions {
+  userId?: (req: IncomingMessage) => string | undefined;
+}
+
+export function createHttpLogger(logger: Logger, { userId }: HttpLoggerOptions = {}) {
   return pinoHttp({
     logger,
+    customProps: (req) => ({ userId: userId?.(req) }),
     genReqId: (req, res) => {
       const incoming = req.headers[REQUEST_ID_HEADER];
       const requestId = typeof incoming === "string" && incoming !== "" ? incoming : newId();
