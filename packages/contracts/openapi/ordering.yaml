@@ -141,6 +141,7 @@ paths:
                     format: uri
                 required:
                   - order
+                  - paymentUrl
         "401":
           description: "401"
           content:

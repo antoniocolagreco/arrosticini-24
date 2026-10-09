@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Cart } from "../domain/cart.js";
 import type { CartRepository } from "../domain/cart-repository.js";
 import type { Actor } from "./actor.js";
-import { CreateCart, GetCart, MergeCart, SetCartLine } from "./carts.js";
+import { CreateCart, EmptyOwnedCart, GetCart, MergeCart, SetCartLine } from "./carts.js";
 import type { ProductAvailability } from "./product-availability.js";
 
 class InMemoryCartRepository implements CartRepository {
@@ -173,5 +173,24 @@ describe("MergeCart", () => {
     await expect(new MergeCart(carts).execute(mario, "01JB2Q7Z8X4M3N5P6R7S8T9V0A")).rejects.toEqual(
       new DomainError("CART_NOT_FOUND", "Cart not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
     );
+  });
+});
+
+describe("EmptyOwnedCart", () => {
+  it("empties only the cart of the given owner", async () => {
+    const carts = new InMemoryCartRepository();
+    const own = stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 2]], mario.userId);
+    const other = stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0B", [["vino", 1]], lucia.userId);
+
+    await new EmptyOwnedCart(carts).execute(mario.userId);
+
+    expect(own.lines).toEqual([]);
+    expect(other.lines).toEqual([{ slug: "vino", quantity: 1 }]);
+  });
+
+  it("does nothing when the owner has no cart", async () => {
+    await expect(
+      new EmptyOwnedCart(new InMemoryCartRepository()).execute(mario.userId),
+    ).resolves.toBeUndefined();
   });
 });

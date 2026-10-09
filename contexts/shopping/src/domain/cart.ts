@@ -68,6 +68,11 @@ export class Cart {
     this.#props.updatedAt = now;
   }
 
+  clear(now: Date): void {
+    this.#props.lines = [];
+    this.#props.updatedAt = now;
+  }
+
   assignTo(ownerId: Id): void {
     if (this.#props.ownerId !== undefined && this.#props.ownerId !== ownerId) {
       throw new DomainError("CART_OWNED", `Cart ${this.id} belongs to another user`);

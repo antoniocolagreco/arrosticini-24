@@ -61,6 +61,20 @@ describe("Cart.absorb", () => {
   });
 });
 
+describe("Cart.clear", () => {
+  it("removes every line and keeps the owner", () => {
+    const target = cart();
+    target.setLine("vino", 2, created);
+    target.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+
+    target.clear(changed);
+
+    expect(target.lines).toEqual([]);
+    expect(target.ownerId).toBe("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    expect(target.updatedAt).toEqual(changed);
+  });
+});
+
 describe("Cart.assignTo", () => {
   it("binds the cart to its owner", () => {
     const target = cart();

@@ -41,7 +41,7 @@ export type OrderDto = z.infer<typeof OrderDto>;
 export const placeOrder = authed
   .route({ method: "POST", path: "/ordering/orders", successStatus: 201 })
   .input(z.object({ cartId: IdDto, addressId: IdDto, locale: LocaleDto, ordersUrl: z.url() }))
-  .output(z.object({ order: OrderDto, paymentUrl: z.url().optional() }))
+  .output(z.object({ order: OrderDto, paymentUrl: z.url() }))
   .errors({
     CART_NOT_FOUND: { status: 404 },
     CART_EMPTY: { status: 422 },

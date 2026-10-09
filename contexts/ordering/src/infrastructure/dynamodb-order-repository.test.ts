@@ -91,6 +91,32 @@ describe("DynamoDbOrderRepository", () => {
     expect(plain(await repository.findById(paid.id))).toEqual(plain(paid));
   });
 
+  it("saves the new status of an existing order", async () => {
+    const created = order(
+      "01JB2Q7Z8X4M3N5P6R7S8T9V0E",
+      "01JB2Q7Z8X4M3N5P6R7S8T9V0Z",
+      "2026-10-09T09:00:00.000Z",
+    );
+    await repository.create(created);
+
+    created.cancel();
+    await repository.save(created);
+
+    expect((await repository.findById(created.id))?.status).toBe("CANCELLED");
+  });
+
+  it("refuses to save an order that was never created", async () => {
+    await expect(
+      repository.save(
+        order(
+          "01JB2Q7Z8X4M3N5P6R7S8T9V0F",
+          "01JB2Q7Z8X4M3N5P6R7S8T9V0Z",
+          "2026-10-09T09:00:00.000Z",
+        ),
+      ),
+    ).rejects.toThrow();
+  });
+
   it("returns undefined for an unknown order", async () => {
     expect(await repository.findById("01JB2Q7Z8X4M3N5P6R7S8T9V0Z")).toBeUndefined();
   });
@@ -128,6 +154,7 @@ describe("DynamoDbOrderRepository", () => {
       "01JB2Q7Z8X4M3N5P6R7S8T9V0C",
       "01JB2Q7Z8X4M3N5P6R7S8T9V0B",
       "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "01JB2Q7Z8X4M3N5P6R7S8T9V0E",
     ]);
   });
 });

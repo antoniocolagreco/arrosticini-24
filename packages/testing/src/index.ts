@@ -5,6 +5,7 @@ declare module "vitest" {
   export interface ProvidedContext {
     dynamodbEndpoint: string;
     valkeyUrl: string;
+    stripeMock: { host: string; port: number };
   }
 }
 
@@ -29,6 +30,20 @@ export async function startValkey(project: TestProject): Promise<() => Promise<v
     .withWaitStrategy(Wait.forListeningPorts())
     .start();
   project.provide("valkeyUrl", `redis://${container.getHost()}:${container.getMappedPort(6379)}`);
+  return async () => {
+    await container.stop();
+  };
+}
+
+export async function startStripeMock(project: TestProject): Promise<() => Promise<void>> {
+  const container = await new GenericContainer("stripe/stripe-mock:v0.203.0")
+    .withExposedPorts(12111)
+    .withWaitStrategy(Wait.forListeningPorts())
+    .start();
+  project.provide("stripeMock", {
+    host: container.getHost(),
+    port: container.getMappedPort(12111),
+  });
   return async () => {
     await container.stop();
   };

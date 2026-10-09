@@ -90,3 +90,20 @@ export class MergeCart {
     return owned;
   }
 }
+
+export class EmptyOwnedCart {
+  readonly #carts: CartRepository;
+
+  constructor(carts: CartRepository) {
+    this.#carts = carts;
+  }
+
+  async execute(ownerId: Id): Promise<void> {
+    const cart = await this.#carts.findByOwner(ownerId);
+    if (cart === undefined || cart.lines.length === 0) {
+      return;
+    }
+    cart.clear(new Date());
+    await this.#carts.save(cart);
+  }
+}

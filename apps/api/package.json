@@ -19,6 +19,7 @@
     "@arrosticini/kernel": "workspace:*",
     "@arrosticini/ops": "workspace:*",
     "@arrosticini/ordering": "workspace:*",
+    "@arrosticini/payments": "workspace:*",
     "@arrosticini/shopping": "workspace:*",
     "@aws-sdk/client-dynamodb": "catalog:",
     "@aws-sdk/lib-dynamodb": "catalog:",
@@ -26,6 +27,7 @@
     "@orpc/server": "catalog:",
     "express": "catalog:",
     "iovalkey": "catalog:",
+    "stripe": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
