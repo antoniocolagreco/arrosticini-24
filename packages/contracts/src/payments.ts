@@ -18,7 +18,8 @@ export const listPaymentMethods = authed
 export const createSetupSession = authed
   .route({ method: "POST", path: "/payments/methods/setup-session", successStatus: 201 })
   .input(z.object({ returnUrl: z.url(), locale: LocaleDto }))
-  .output(z.object({ url: z.url() }));
+  .output(z.object({ url: z.url() }))
+  .errors({ FORBIDDEN: { status: 403 } });
 
 export const deletePaymentMethod = authed
   .route({ method: "DELETE", path: "/payments/methods/{id}", successStatus: 204 })

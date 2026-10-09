@@ -1,6 +1,8 @@
 export type { Actor } from "./application/actor.js";
 export {
   CancelOrder,
+  ChangeShippingAddress,
+  CloseOrder,
   GetOrder,
   ListAllOrders,
   ListOrders,
@@ -8,6 +10,7 @@ export {
   type PlacedOrder,
   PlaceOrder,
   type PlaceOrderCommand,
+  ShipOrder,
 } from "./application/orders.js";
 export type {
   CartReader,
@@ -23,6 +26,7 @@ export {
   type OrderLine,
   type OrderProps,
   type OrderStatus,
+  type Shipment,
   type ShippingAddress,
 } from "./domain/order.js";
 export type { OrderRepository } from "./domain/order-repository.js";

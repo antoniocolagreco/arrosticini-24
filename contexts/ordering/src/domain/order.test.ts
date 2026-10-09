@@ -130,4 +130,92 @@ describe("Order", () => {
       ),
     );
   });
+
+  it("is shipped after payment, with tracking that can be corrected", () => {
+    const order = place();
+    order.markPaid(paid);
+
+    order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
+    order.ship({
+      carrier: "GLS",
+      trackingNumber: "GLS0001",
+      trackingUrl: "https://gls-group.com/IT/it/servizi-online/ricerca-spedizioni?match=GLS0001",
+    });
+
+    expect(order.status).toBe("SHIPPED");
+    expect(order.shipment).toEqual({
+      carrier: "GLS",
+      trackingNumber: "GLS0001",
+      trackingUrl: "https://gls-group.com/IT/it/servizi-online/ricerca-spedizioni?match=GLS0001",
+    });
+  });
+
+  it("is closed as delivered or lost only after shipping", () => {
+    const delivered = place();
+    delivered.markPaid(paid);
+    delivered.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
+    const lost = place();
+    lost.markPaid(paid);
+    lost.ship({ carrier: "BRT", trackingNumber: "BRT0002" });
+
+    delivered.deliver();
+    lost.markLost();
+
+    expect([delivered.status, lost.status]).toEqual(["DELIVERED", "LOST"]);
+    expect(() => delivered.markLost()).toThrow(
+      new DomainError(
+        "ORDER_INVALID_TRANSITION",
+        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from DELIVERED to LOST",
+      ),
+    );
+    expect(() => lost.ship({ carrier: "BRT", trackingNumber: "BRT0003" })).toThrow(
+      new DomainError(
+        "ORDER_INVALID_TRANSITION",
+        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from LOST to SHIPPED",
+      ),
+    );
+  });
+
+  it("cannot be shipped or closed before payment", () => {
+    const order = place();
+
+    expect(() => order.ship({ carrier: "BRT", trackingNumber: "BRT0001" })).toThrow(
+      new DomainError(
+        "ORDER_INVALID_TRANSITION",
+        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from PENDING_PAYMENT to SHIPPED",
+      ),
+    );
+    expect(() => order.deliver()).toThrow(
+      new DomainError(
+        "ORDER_INVALID_TRANSITION",
+        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from PENDING_PAYMENT to DELIVERED",
+      ),
+    );
+  });
+
+  it("changes the shipping address only until it is shipped", () => {
+    const order = place();
+    const newAddress = {
+      fullName: "Lucia Rossi",
+      line1: "Via Arniense 21",
+      line2: "Scala A",
+      city: "Chieti",
+      postalCode: "66100",
+      country: "IT",
+      phone: "+39 333 0000006",
+    };
+
+    order.changeShippingAddress(newAddress);
+    order.markPaid(paid);
+    order.changeShippingAddress(shippingAddress);
+    order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
+
+    expect(order.shippingAddress).toEqual(shippingAddress);
+    expect(() => order.changeShippingAddress(newAddress)).toThrow(
+      new DomainError(
+        "ORDER_NOT_EDITABLE",
+        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot change address when SHIPPED",
+      ),
+    );
+  });
 });

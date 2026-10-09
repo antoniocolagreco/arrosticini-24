@@ -5,7 +5,7 @@ import {
   PutCommand,
   paginateQuery,
 } from "@aws-sdk/lib-dynamodb";
-import { Order, type OrderStatus, type ShippingAddress } from "../domain/order.js";
+import { Order, type OrderStatus, type Shipment, type ShippingAddress } from "../domain/order.js";
 import type { OrderRepository } from "../domain/order-repository.js";
 
 interface OrderLineItem {
@@ -29,6 +29,7 @@ interface OrderItem {
   totalCents: number;
   currency: string;
   status: OrderStatus;
+  shipment?: Shipment;
   createdAt: string;
   paidAt?: string;
 }
@@ -57,6 +58,7 @@ function toItem(order: Order): OrderItem {
     totalCents: order.total.amountCents,
     currency: order.total.currency,
     status: order.status,
+    ...(order.shipment === undefined ? {} : { shipment: order.shipment }),
     createdAt,
     ...(order.paidAt === undefined ? {} : { paidAt: order.paidAt.toISOString() }),
   };
@@ -74,6 +76,7 @@ function toOrder(item: OrderItem): Order {
     })),
     shippingAddress: item.shippingAddress,
     status: item.status,
+    ...(item.shipment === undefined ? {} : { shipment: item.shipment }),
     createdAt: new Date(item.createdAt),
     ...(item.paidAt === undefined ? {} : { paidAt: new Date(item.paidAt) }),
   });

@@ -11,3 +11,9 @@ export function requireActor(actor: Actor | undefined): Actor {
   }
   return actor;
 }
+
+export function requireAdmin(actor: Actor | undefined, action: string): void {
+  if (requireActor(actor).role !== "admin") {
+    throw new DomainError("FORBIDDEN", `Only admins can ${action}`);
+  }
+}

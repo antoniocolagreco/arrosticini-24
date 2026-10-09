@@ -120,7 +120,28 @@ paths:
                           - PENDING_PAYMENT
                           - PAID
                           - CANCELLED
+                          - SHIPPED
+                          - DELIVERED
+                          - LOST
                         type: string
+                      shipment:
+                        type: object
+                        properties:
+                          carrier:
+                            type: string
+                            minLength: 1
+                            maxLength: 60
+                          trackingNumber:
+                            type: string
+                            minLength: 1
+                            maxLength: 60
+                          trackingUrl:
+                            type: string
+                            maxLength: 500
+                            format: uri
+                        required:
+                          - carrier
+                          - trackingNumber
                       createdAt:
                         type: string
                         format: date-time
@@ -159,6 +180,45 @@ paths:
                       message:
                         type: string
                         default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: FORBIDDEN
+                      status:
+                        const: 403
+                      message:
+                        type: string
+                        default: Forbidden
                       data: {}
                     required:
                       - defined
@@ -385,7 +445,28 @@ paths:
                             - PENDING_PAYMENT
                             - PAID
                             - CANCELLED
+                            - SHIPPED
+                            - DELIVERED
+                            - LOST
                           type: string
+                        shipment:
+                          type: object
+                          properties:
+                            carrier:
+                              type: string
+                              minLength: 1
+                              maxLength: 60
+                            trackingNumber:
+                              type: string
+                              minLength: 1
+                              maxLength: 60
+                            trackingUrl:
+                              type: string
+                              maxLength: 500
+                              format: uri
+                          required:
+                            - carrier
+                            - trackingNumber
                         createdAt:
                           type: string
                           format: date-time
@@ -537,7 +618,28 @@ paths:
                       - PENDING_PAYMENT
                       - PAID
                       - CANCELLED
+                      - SHIPPED
+                      - DELIVERED
+                      - LOST
                     type: string
+                  shipment:
+                    type: object
+                    properties:
+                      carrier:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingNumber:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingUrl:
+                        type: string
+                        maxLength: 500
+                        format: uri
+                    required:
+                      - carrier
+                      - trackingNumber
                   createdAt:
                     type: string
                     format: date-time
@@ -634,6 +736,14 @@ paths:
   /ordering/admin/orders:
     get:
       operationId: listAllOrders
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+          allowEmptyValue: true
+          allowReserved: true
       responses:
         "200":
           description: OK
@@ -724,7 +834,28 @@ paths:
                             - PENDING_PAYMENT
                             - PAID
                             - CANCELLED
+                            - SHIPPED
+                            - DELIVERED
+                            - LOST
                           type: string
+                        shipment:
+                          type: object
+                          properties:
+                            carrier:
+                              type: string
+                              minLength: 1
+                              maxLength: 60
+                            trackingNumber:
+                              type: string
+                              minLength: 1
+                              maxLength: 60
+                            trackingUrl:
+                              type: string
+                              maxLength: 500
+                              format: uri
+                          required:
+                            - carrier
+                            - trackingNumber
                         createdAt:
                           type: string
                           format: date-time
@@ -798,6 +929,947 @@ paths:
                       message:
                         type: string
                         default: Forbidden
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /ordering/admin/orders/{id}/shipping-address:
+    put:
+      operationId: changeShippingAddress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                line1:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                line2:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                city:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                postalCode:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                country:
+                  type: string
+                  pattern: ^[A-Z]{2}$
+                phone:
+                  type: string
+                  minLength: 1
+                  maxLength: 30
+              required:
+                - fullName
+                - line1
+                - city
+                - postalCode
+                - country
+                - phone
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  userId:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        name:
+                          type: object
+                          properties:
+                            it:
+                              type: string
+                              minLength: 1
+                              maxLength: 120
+                            en:
+                              type: string
+                              minLength: 1
+                              maxLength: 120
+                          required:
+                            - it
+                            - en
+                        unitPriceCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        quantity:
+                          type: integer
+                          minimum: 1
+                          maximum: 9007199254740991
+                      required:
+                        - slug
+                        - name
+                        - unitPriceCents
+                        - quantity
+                  shippingAddress:
+                    type: object
+                    properties:
+                      fullName:
+                        type: string
+                      line1:
+                        type: string
+                      line2:
+                        type: string
+                      city:
+                        type: string
+                      postalCode:
+                        type: string
+                      country:
+                        type: string
+                      phone:
+                        type: string
+                    required:
+                      - fullName
+                      - line1
+                      - city
+                      - postalCode
+                      - country
+                      - phone
+                  totalCents:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  currency:
+                    const: EUR
+                  status:
+                    enum:
+                      - PENDING_PAYMENT
+                      - PAID
+                      - CANCELLED
+                      - SHIPPED
+                      - DELIVERED
+                      - LOST
+                    type: string
+                  shipment:
+                    type: object
+                    properties:
+                      carrier:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingNumber:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingUrl:
+                        type: string
+                        maxLength: 500
+                        format: uri
+                    required:
+                      - carrier
+                      - trackingNumber
+                  createdAt:
+                    type: string
+                    format: date-time
+                  paidAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - userId
+                  - lines
+                  - shippingAddress
+                  - totalCents
+                  - currency
+                  - status
+                  - createdAt
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: FORBIDDEN
+                      status:
+                        const: 403
+                      message:
+                        type: string
+                        default: Forbidden
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ORDER_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: ORDER_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ORDER_NOT_EDITABLE
+                      status:
+                        const: 409
+                      message:
+                        type: string
+                        default: ORDER_NOT_EDITABLE
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /ordering/admin/orders/{id}/shipment:
+    put:
+      operationId: shipOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                carrier:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                trackingNumber:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                trackingUrl:
+                  type: string
+                  maxLength: 500
+                  format: uri
+              required:
+                - carrier
+                - trackingNumber
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  userId:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        name:
+                          type: object
+                          properties:
+                            it:
+                              type: string
+                              minLength: 1
+                              maxLength: 120
+                            en:
+                              type: string
+                              minLength: 1
+                              maxLength: 120
+                          required:
+                            - it
+                            - en
+                        unitPriceCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        quantity:
+                          type: integer
+                          minimum: 1
+                          maximum: 9007199254740991
+                      required:
+                        - slug
+                        - name
+                        - unitPriceCents
+                        - quantity
+                  shippingAddress:
+                    type: object
+                    properties:
+                      fullName:
+                        type: string
+                      line1:
+                        type: string
+                      line2:
+                        type: string
+                      city:
+                        type: string
+                      postalCode:
+                        type: string
+                      country:
+                        type: string
+                      phone:
+                        type: string
+                    required:
+                      - fullName
+                      - line1
+                      - city
+                      - postalCode
+                      - country
+                      - phone
+                  totalCents:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  currency:
+                    const: EUR
+                  status:
+                    enum:
+                      - PENDING_PAYMENT
+                      - PAID
+                      - CANCELLED
+                      - SHIPPED
+                      - DELIVERED
+                      - LOST
+                    type: string
+                  shipment:
+                    type: object
+                    properties:
+                      carrier:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingNumber:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingUrl:
+                        type: string
+                        maxLength: 500
+                        format: uri
+                    required:
+                      - carrier
+                      - trackingNumber
+                  createdAt:
+                    type: string
+                    format: date-time
+                  paidAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - userId
+                  - lines
+                  - shippingAddress
+                  - totalCents
+                  - currency
+                  - status
+                  - createdAt
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: FORBIDDEN
+                      status:
+                        const: 403
+                      message:
+                        type: string
+                        default: Forbidden
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ORDER_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: ORDER_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ORDER_INVALID_TRANSITION
+                      status:
+                        const: 409
+                      message:
+                        type: string
+                        default: ORDER_INVALID_TRANSITION
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+  /ordering/admin/orders/{id}/close:
+    post:
+      operationId: closeOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  enum:
+                    - DELIVERED
+                    - LOST
+                  type: string
+              required:
+                - status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  userId:
+                    type: string
+                    pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        name:
+                          type: object
+                          properties:
+                            it:
+                              type: string
+                              minLength: 1
+                              maxLength: 120
+                            en:
+                              type: string
+                              minLength: 1
+                              maxLength: 120
+                          required:
+                            - it
+                            - en
+                        unitPriceCents:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        quantity:
+                          type: integer
+                          minimum: 1
+                          maximum: 9007199254740991
+                      required:
+                        - slug
+                        - name
+                        - unitPriceCents
+                        - quantity
+                  shippingAddress:
+                    type: object
+                    properties:
+                      fullName:
+                        type: string
+                      line1:
+                        type: string
+                      line2:
+                        type: string
+                      city:
+                        type: string
+                      postalCode:
+                        type: string
+                      country:
+                        type: string
+                      phone:
+                        type: string
+                    required:
+                      - fullName
+                      - line1
+                      - city
+                      - postalCode
+                      - country
+                      - phone
+                  totalCents:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  currency:
+                    const: EUR
+                  status:
+                    enum:
+                      - PENDING_PAYMENT
+                      - PAID
+                      - CANCELLED
+                      - SHIPPED
+                      - DELIVERED
+                      - LOST
+                    type: string
+                  shipment:
+                    type: object
+                    properties:
+                      carrier:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingNumber:
+                        type: string
+                        minLength: 1
+                        maxLength: 60
+                      trackingUrl:
+                        type: string
+                        maxLength: 500
+                        format: uri
+                    required:
+                      - carrier
+                      - trackingNumber
+                  createdAt:
+                    type: string
+                    format: date-time
+                  paidAt:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - userId
+                  - lines
+                  - shippingAddress
+                  - totalCents
+                  - currency
+                  - status
+                  - createdAt
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: UNAUTHORIZED
+                      status:
+                        const: 401
+                      message:
+                        type: string
+                        default: Unauthorized
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: FORBIDDEN
+                      status:
+                        const: 403
+                      message:
+                        type: string
+                        default: Forbidden
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ORDER_NOT_FOUND
+                      status:
+                        const: 404
+                      message:
+                        type: string
+                        default: ORDER_NOT_FOUND
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: ORDER_INVALID_TRANSITION
+                      status:
+                        const: 409
+                      message:
+                        type: string
+                        default: ORDER_INVALID_TRANSITION
                       data: {}
                     required:
                       - defined

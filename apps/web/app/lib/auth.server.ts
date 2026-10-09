@@ -68,14 +68,19 @@ export async function authenticate(
       parsed.kind === "register"
         ? await api(request).identity.registerUser(parsed.input)
         : await api(request).identity.verifyCredentials(parsed.input);
-    const cart = await mergeOwnedCart(
-      request,
-      { userId: user.id, role: user.role },
-      context.get(sessionContext).get("cartId"),
-    );
+    const cartId: string | undefined =
+      user.role === "admin"
+        ? undefined
+        : (
+            await mergeOwnedCart(
+              request,
+              { userId: user.id, role: user.role },
+              context.get(sessionContext).get("cartId"),
+            )
+          ).id;
     return redirect(`/${locale}/account`, {
       status: 303,
-      headers: { "Set-Cookie": await loginSession(context, user, cart.id) },
+      headers: { "Set-Cookie": await loginSession(context, user, cartId) },
     });
   } catch (error: unknown) {
     const code: ReturnType<typeof getApiError> = getApiError(error);

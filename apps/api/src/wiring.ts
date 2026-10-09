@@ -26,6 +26,8 @@ import {
 import type { WhoAmI } from "@arrosticini/ops";
 import {
   CancelOrder,
+  ChangeShippingAddress,
+  CloseOrder,
   DynamoDbOrderRepository,
   GetOrder,
   ListAllOrders,
@@ -33,6 +35,7 @@ import {
   MarkOrderPaid,
   orderingRouter,
   PlaceOrder,
+  ShipOrder,
 } from "@arrosticini/ordering";
 import {
   CreateSetupSession,
@@ -160,6 +163,9 @@ export function createApi(
       listOrders: new ListOrders(orders),
       getOrder: new GetOrder(orders),
       listAllOrders: new ListAllOrders(orders),
+      changeShippingAddress: new ChangeShippingAddress(orders),
+      shipOrder: new ShipOrder(orders),
+      closeOrder: new CloseOrder(orders),
     }),
     ops: opsRouter(whoami),
     payments: paymentsRouter({

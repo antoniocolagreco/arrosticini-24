@@ -50,6 +50,7 @@ function plain(target: Order | undefined) {
       lines: target.lines,
       shippingAddress: target.shippingAddress,
       status: target.status,
+      shipment: target.shipment,
       createdAt: target.createdAt,
       paidAt: target.paidAt,
       total: target.total,
@@ -105,6 +106,33 @@ describe("DynamoDbOrderRepository", () => {
     expect((await repository.findById(created.id))?.status).toBe("CANCELLED");
   });
 
+  it("saves the shipment and the new address of a shipped order", async () => {
+    const shipped = order(
+      "01JB2Q7Z8X4M3N5P6R7S8T9V0G",
+      "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+      "2026-10-09T09:30:00.000Z",
+    );
+    await repository.create(shipped);
+
+    shipped.markPaid(new Date("2026-10-09T09:32:00.000Z"));
+    shipped.changeShippingAddress({
+      fullName: "Mario Rossi",
+      line1: "Via Arniense 21",
+      city: "Chieti",
+      postalCode: "66100",
+      country: "IT",
+      phone: "+39 0871 000000",
+    });
+    shipped.ship({
+      carrier: "BRT",
+      trackingNumber: "BRT0001",
+      trackingUrl: "https://vas.brt.it/vas/sped_det_show.hsm?brtCode=BRT0001",
+    });
+    await repository.save(shipped);
+
+    expect(plain(await repository.findById(shipped.id))).toEqual(plain(shipped));
+  });
+
   it("refuses to save an order that was never created", async () => {
     await expect(
       repository.save(
@@ -154,6 +182,7 @@ describe("DynamoDbOrderRepository", () => {
       "01JB2Q7Z8X4M3N5P6R7S8T9V0C",
       "01JB2Q7Z8X4M3N5P6R7S8T9V0B",
       "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "01JB2Q7Z8X4M3N5P6R7S8T9V0G",
       "01JB2Q7Z8X4M3N5P6R7S8T9V0E",
     ]);
   });

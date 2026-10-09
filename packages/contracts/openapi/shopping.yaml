@@ -326,6 +326,45 @@ paths:
                       - code
                       - status
                       - message
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      defined:
+                        const: true
+                      code:
+                        const: FORBIDDEN
+                      status:
+                        const: 403
+                      message:
+                        type: string
+                        default: Forbidden
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
+                  - type: object
+                    properties:
+                      defined:
+                        const: false
+                      code:
+                        type: string
+                      status:
+                        type: number
+                      message:
+                        type: string
+                      data: {}
+                    required:
+                      - defined
+                      - code
+                      - status
+                      - message
         "404":
           description: "404"
           content:

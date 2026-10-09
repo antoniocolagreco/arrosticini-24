@@ -47,7 +47,7 @@ export const mergeCart = authed
   .route({ method: "POST", path: "/shopping/carts/{id}/merge" })
   .input(z.object({ id: IdDto }))
   .output(CartDto)
-  .errors(cartNotFound);
+  .errors({ ...cartNotFound, FORBIDDEN: { status: 403 } });
 
 export const shoppingContract = {
   createCart,

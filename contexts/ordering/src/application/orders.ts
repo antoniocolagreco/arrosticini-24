@@ -1,7 +1,7 @@
 import { DomainError, type Id, type Locale, newId } from "@arrosticini/kernel";
-import { Order, type OrderLine } from "../domain/order.js";
+import { Order, type OrderLine, type Shipment, type ShippingAddress } from "../domain/order.js";
 import type { OrderRepository } from "../domain/order-repository.js";
-import { type Actor, requireActor } from "./actor.js";
+import { type Actor, requireActor, requireAdmin } from "./actor.js";
 import type { CartReader, CatalogPricing, CustomerDirectory, PaymentInitiator } from "./ports.js";
 
 export interface PlaceOrderCommand {
@@ -42,6 +42,9 @@ export class PlaceOrder {
     { cartId, addressId, locale, ordersUrl }: PlaceOrderCommand,
   ): Promise<PlacedOrder> {
     const buyer = requireActor(actor);
+    if (buyer.role === "admin") {
+      throw new DomainError("FORBIDDEN", "Admins cannot place orders");
+    }
     const cart = await this.#carts.find(cartId);
     if (cart === undefined || cart.ownerId !== buyer.userId) {
       throw new DomainError("CART_NOT_FOUND", `Cart not found: ${cartId}`);
@@ -82,7 +85,7 @@ export class MarkOrderPaid {
 
   async execute(orderId: Id): Promise<void> {
     const order = await this.#orders.findById(orderId);
-    if (order === undefined || order.status === "PAID") {
+    if (order === undefined || order.paidAt !== undefined) {
       return;
     }
     order.markPaid(new Date());
@@ -143,10 +146,68 @@ export class ListAllOrders {
     this.#orders = orders;
   }
 
-  async execute(actor: Actor | undefined): Promise<Order[]> {
-    if (requireActor(actor).role !== "admin") {
-      throw new DomainError("FORBIDDEN", "Only admins can list all orders");
+  async execute(actor: Actor | undefined, userId?: Id): Promise<Order[]> {
+    requireAdmin(actor, "list all orders");
+    return userId === undefined ? this.#orders.listAll() : this.#orders.listByUser(userId);
+  }
+}
+
+async function findOrder(orders: OrderRepository, id: Id): Promise<Order> {
+  const order = await orders.findById(id);
+  if (order === undefined) {
+    throw new DomainError("ORDER_NOT_FOUND", `Order not found: ${id}`);
+  }
+  return order;
+}
+
+export class ChangeShippingAddress {
+  readonly #orders: OrderRepository;
+
+  constructor(orders: OrderRepository) {
+    this.#orders = orders;
+  }
+
+  async execute(actor: Actor | undefined, id: Id, address: ShippingAddress): Promise<Order> {
+    requireAdmin(actor, "manage orders");
+    const order = await findOrder(this.#orders, id);
+    order.changeShippingAddress(address);
+    await this.#orders.save(order);
+    return order;
+  }
+}
+
+export class ShipOrder {
+  readonly #orders: OrderRepository;
+
+  constructor(orders: OrderRepository) {
+    this.#orders = orders;
+  }
+
+  async execute(actor: Actor | undefined, id: Id, shipment: Shipment): Promise<Order> {
+    requireAdmin(actor, "manage orders");
+    const order = await findOrder(this.#orders, id);
+    order.ship(shipment);
+    await this.#orders.save(order);
+    return order;
+  }
+}
+
+export class CloseOrder {
+  readonly #orders: OrderRepository;
+
+  constructor(orders: OrderRepository) {
+    this.#orders = orders;
+  }
+
+  async execute(actor: Actor | undefined, id: Id, outcome: "DELIVERED" | "LOST"): Promise<Order> {
+    requireAdmin(actor, "manage orders");
+    const order = await findOrder(this.#orders, id);
+    if (outcome === "DELIVERED") {
+      order.deliver();
+    } else {
+      order.markLost();
     }
-    return this.#orders.listAll();
+    await this.#orders.save(order);
+    return order;
   }
 }

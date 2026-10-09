@@ -5,11 +5,14 @@ import type { OrderRepository } from "../domain/order-repository.js";
 import type { Actor } from "./actor.js";
 import {
   CancelOrder,
+  ChangeShippingAddress,
+  CloseOrder,
   GetOrder,
   ListAllOrders,
   ListOrders,
   MarkOrderPaid,
   PlaceOrder,
+  ShipOrder,
 } from "./orders.js";
 import type {
   CartReader,
@@ -200,6 +203,21 @@ describe("PlaceOrder", () => {
     ).rejects.toEqual(new DomainError("UNAUTHORIZED", "Authentication required"));
   });
 
+  it("forbids admins", async () => {
+    const orders = new InMemoryOrderRepository();
+    const payments = new RecordingPaymentInitiator();
+
+    await expect(
+      placeOrder(orders, payments).execute(admin, {
+        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        ...checkout,
+      }),
+    ).rejects.toEqual(new DomainError("FORBIDDEN", "Admins cannot place orders"));
+    expect(orders.orders.size).toBe(0);
+    expect(payments.requests).toEqual([]);
+  });
+
   it.each([
     ["an unknown cart", "01JB2Q7Z8X4M3N5P6R7S8T9V0E"],
     ["an anonymous cart", "01JB2Q7Z8X4M3N5P6R7S8T9V0B"],
@@ -282,6 +300,18 @@ describe("MarkOrderPaid", () => {
       new MarkOrderPaid(new InMemoryOrderRepository()).execute("01JB2Q7Z8X4M3N5P6R7S8T9V0H"),
     ).resolves.toBeUndefined();
   });
+
+  it("ignores a repeated event after the order has shipped", async () => {
+    const orders = new InMemoryOrderRepository();
+    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
+    order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
+
+    await new MarkOrderPaid(orders).execute(order.id);
+
+    expect(order.status).toBe("SHIPPED");
+    expect(order.paidAt).toEqual(new Date("2026-10-09T10:05:00.000Z"));
+  });
 });
 
 describe("CancelOrder", () => {
@@ -363,6 +393,81 @@ describe("ListAllOrders", () => {
   it("forbids customers", async () => {
     await expect(new ListAllOrders(new InMemoryOrderRepository()).execute(mario)).rejects.toEqual(
       new DomainError("FORBIDDEN", "Only admins can list all orders"),
+    );
+  });
+
+  it("lists the orders of one user", async () => {
+    const orders = new InMemoryOrderRepository();
+    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0G", lucia.userId);
+
+    const listed = await new ListAllOrders(orders).execute(admin, lucia.userId);
+
+    expect(listed.map(({ id }) => id)).toEqual(["01JB2Q7Z8X4M3N5P6R7S8T9V0G"]);
+  });
+});
+
+describe("order administration", () => {
+  const newAddress = {
+    fullName: "Lucia Rossi",
+    line1: "Via Arniense 21",
+    city: "Chieti",
+    postalCode: "66100",
+    country: "IT",
+    phone: "+39 333 0000006",
+  };
+
+  it("changes the address, ships and closes an order", async () => {
+    const orders = new InMemoryOrderRepository();
+    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
+
+    await new ChangeShippingAddress(orders).execute(admin, order.id, newAddress);
+    await new ShipOrder(orders).execute(admin, order.id, {
+      carrier: "BRT",
+      trackingNumber: "BRT0001",
+    });
+    const closed = await new CloseOrder(orders).execute(admin, order.id, "DELIVERED");
+
+    expect(closed.shippingAddress).toEqual(newAddress);
+    expect(closed.shipment).toEqual({ carrier: "BRT", trackingNumber: "BRT0001" });
+    expect(closed.status).toBe("DELIVERED");
+    expect(orders.orders.get(order.id)).toBe(closed);
+  });
+
+  it("marks a shipped order as lost", async () => {
+    const orders = new InMemoryOrderRepository();
+    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
+    order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
+
+    expect((await new CloseOrder(orders).execute(admin, order.id, "LOST")).status).toBe("LOST");
+  });
+
+  it("is reserved to admins", async () => {
+    const orders = new InMemoryOrderRepository();
+    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+
+    await expect(
+      new ChangeShippingAddress(orders).execute(mario, order.id, newAddress),
+    ).rejects.toEqual(new DomainError("FORBIDDEN", "Only admins can manage orders"));
+    await expect(
+      new ShipOrder(orders).execute(mario, order.id, { carrier: "BRT", trackingNumber: "BRT0001" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(new CloseOrder(orders).execute(undefined, order.id, "LOST")).rejects.toMatchObject(
+      { code: "UNAUTHORIZED" },
+    );
+    expect(order.shippingAddress).toEqual(marioAddress);
+  });
+
+  it("answers ORDER_NOT_FOUND for an unknown order", async () => {
+    await expect(
+      new ShipOrder(new InMemoryOrderRepository()).execute(admin, "01JB2Q7Z8X4M3N5P6R7S8T9V0H", {
+        carrier: "BRT",
+        trackingNumber: "BRT0001",
+      }),
+    ).rejects.toEqual(
+      new DomainError("ORDER_NOT_FOUND", "Order not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0H"),
     );
   });
 });
