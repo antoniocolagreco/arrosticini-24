@@ -1,5 +1,5 @@
 import { DomainError, type Locale, newId } from "@arrosticini/kernel";
-import type { PasswordHasher } from "../domain/password-hasher.js";
+import type { PasswordHash, PasswordHasher } from "../domain/password-hasher.js";
 import { User } from "../domain/user.js";
 import type { UserRepository } from "../domain/user-repository.js";
 
@@ -38,15 +38,18 @@ export interface Credentials {
 export class VerifyCredentials {
   readonly #users: UserRepository;
   readonly #hasher: PasswordHasher;
+  readonly #decoy: Promise<PasswordHash>;
 
   constructor(users: UserRepository, hasher: PasswordHasher) {
     this.#users = users;
     this.#hasher = hasher;
+    this.#decoy = hasher.hash(newId());
   }
 
   async execute({ email, password }: Credentials): Promise<User> {
     const user = await this.#users.findByEmail(email);
-    if (user === undefined || !(await this.#hasher.verify(password, user.password))) {
+    const valid = await this.#hasher.verify(password, user?.password ?? (await this.#decoy));
+    if (user === undefined || !valid) {
       throw new DomainError("INVALID_CREDENTIALS", "Invalid email or password");
     }
     return user;
