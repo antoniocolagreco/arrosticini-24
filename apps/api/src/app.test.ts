@@ -444,6 +444,7 @@ describe("ordering", () => {
     phone: "+39 333 1111111",
   };
   const lucia = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", role: "customer" } as const;
+  const checkout = { locale: "it", ordersUrl: "http://localhost:3100/it/orders" } as const;
   let anna: { userId: string; role: "customer" };
   let addressId: string;
   let cartId: string;
@@ -469,7 +470,7 @@ describe("ordering", () => {
     const response = await request(app)
       .post("/ordering/orders")
       .set(ACTOR_HEADER, JSON.stringify(anna))
-      .send({ cartId, addressId });
+      .send({ cartId, addressId, ...checkout });
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
@@ -525,7 +526,7 @@ describe("ordering", () => {
 
   it("answers UNAUTHORIZED without an actor", async () => {
     const error = await client()
-      .ordering.placeOrder({ cartId, addressId })
+      .ordering.placeOrder({ cartId, addressId, ...checkout })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "UNAUTHORIZED", status: 401, defined: true });
@@ -536,7 +537,7 @@ describe("ordering", () => {
     await client().shopping.setCartLine({ id, slug: "vino", quantity: 1 });
 
     const error = await client(anna)
-      .ordering.placeOrder({ cartId: id, addressId })
+      .ordering.placeOrder({ cartId: id, addressId, ...checkout })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "CART_NOT_FOUND", status: 404, defined: true });
@@ -544,7 +545,7 @@ describe("ordering", () => {
 
   it("answers ADDRESS_NOT_FOUND on an address the user does not have", async () => {
     const error = await client(anna)
-      .ordering.placeOrder({ cartId, addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V97" })
+      .ordering.placeOrder({ cartId, addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V97", ...checkout })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "ADDRESS_NOT_FOUND", status: 404, defined: true });
@@ -555,7 +556,7 @@ describe("ordering", () => {
     await client().shopping.setCartLine({ id: cartId, slug: "fornacella", quantity: 0 });
 
     const error = await client(anna)
-      .ordering.placeOrder({ cartId, addressId })
+      .ordering.placeOrder({ cartId, addressId, ...checkout })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "CART_EMPTY", status: 422, defined: true });
@@ -577,7 +578,7 @@ describe("ordering", () => {
     );
 
     const error = await client(anna)
-      .ordering.placeOrder({ cartId, addressId })
+      .ordering.placeOrder({ cartId, addressId, ...checkout })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "PRODUCT_UNAVAILABLE", status: 422, defined: true });

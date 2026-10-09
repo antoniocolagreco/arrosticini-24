@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ProductSlug } from "./catalog.js";
-import { admin, authed, CurrencyDto, IdDto, localizedTextDto } from "./common.js";
+import { admin, authed, CurrencyDto, IdDto, LocaleDto, localizedTextDto } from "./common.js";
 
 export const OrderStatus = z.enum(["PENDING_PAYMENT", "PAID", "CANCELLED"]);
 
@@ -40,7 +40,7 @@ export type OrderDto = z.infer<typeof OrderDto>;
 
 export const placeOrder = authed
   .route({ method: "POST", path: "/ordering/orders", successStatus: 201 })
-  .input(z.object({ cartId: IdDto, addressId: IdDto }))
+  .input(z.object({ cartId: IdDto, addressId: IdDto, locale: LocaleDto, ordersUrl: z.url() }))
   .output(z.object({ order: OrderDto, paymentUrl: z.url().optional() }))
   .errors({
     CART_NOT_FOUND: { status: 404 },
