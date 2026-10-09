@@ -106,6 +106,32 @@ describe("authentication actions", () => {
       password: "long-password",
     });
   });
+  it("signs in an admin without taking the visitor cart", async () => {
+    const fetchMock: MockInstance<typeof fetch> = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        Response.json({
+          id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+          email: "admin@example.com",
+          firstName: "Admin",
+          lastName: "Arrosticini 24ore",
+          role: "admin",
+          preferredLocale: "it",
+          createdAt: "2026-10-09T00:00:00.000Z",
+        }),
+      );
+    const state = await context();
+    state.get(sessionContext).set("cartId", "01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    const result = await authenticate(
+      post({ email: "admin@example.com", password: "long-password" }),
+      state,
+      "it",
+      false,
+    );
+    if (!(result instanceof Response)) expect.fail("Expected redirect");
+    expect(result.status).toBe(303);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("rejects unsupported language paths before executing an action", async () => {
     const next = vi.fn(async () => new Response(null));
     await expect(

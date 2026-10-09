@@ -129,6 +129,19 @@ describe("MergeCart", () => {
     ).rejects.toEqual(new DomainError("UNAUTHORIZED", "Authentication required"));
   });
 
+  it("forbids admins", async () => {
+    const carts = new InMemoryCartRepository();
+    const cart = stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 1]]);
+
+    await expect(
+      new MergeCart(carts).execute(
+        { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Z", role: "admin" },
+        "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      ),
+    ).rejects.toEqual(new DomainError("FORBIDDEN", "Admins cannot own a cart"));
+    expect(cart.ownerId).toBeUndefined();
+  });
+
   it("gives the cart to a user who has none", async () => {
     const carts = new InMemoryCartRepository();
     stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 1]]);

@@ -75,6 +75,9 @@ export class MergeCart {
     if (actor === undefined) {
       throw new DomainError("UNAUTHORIZED", "Authentication required");
     }
+    if (actor.role === "admin") {
+      throw new DomainError("FORBIDDEN", "Admins cannot own a cart");
+    }
     const cart = await loadCart(this.#carts, cartId);
     if (cart.ownerId !== undefined && cart.ownerId !== actor.userId) {
       throw new DomainError("CART_NOT_FOUND", `Cart not found: ${cartId}`);

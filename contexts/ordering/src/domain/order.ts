@@ -1,6 +1,12 @@
 import { DomainError, type Id, type LocalizedText, Money } from "@arrosticini/kernel";
 
-export type OrderStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED";
+export type OrderStatus =
+  | "PENDING_PAYMENT"
+  | "PAID"
+  | "CANCELLED"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "LOST";
 
 export interface OrderLine {
   readonly slug: string;
@@ -19,12 +25,19 @@ export interface ShippingAddress {
   readonly phone: string;
 }
 
+export interface Shipment {
+  readonly carrier: string;
+  readonly trackingNumber: string;
+  readonly trackingUrl?: string;
+}
+
 export interface OrderProps {
   id: Id;
   userId: Id;
   lines: readonly OrderLine[];
   shippingAddress: ShippingAddress;
   status: OrderStatus;
+  shipment?: Shipment;
   createdAt: Date;
   paidAt?: Date;
 }
@@ -72,6 +85,10 @@ export class Order {
     return this.#props.status;
   }
 
+  get shipment(): Shipment | undefined {
+    return this.#props.shipment;
+  }
+
   get createdAt(): Date {
     return this.#props.createdAt;
   }
@@ -88,16 +105,39 @@ export class Order {
   }
 
   markPaid(now: Date): void {
-    this.#leavePending("PAID");
+    this.#transition(["PENDING_PAYMENT"], "PAID");
     this.#props.paidAt = now;
   }
 
   cancel(): void {
-    this.#leavePending("CANCELLED");
+    this.#transition(["PENDING_PAYMENT"], "CANCELLED");
   }
 
-  #leavePending(next: OrderStatus): void {
-    if (this.#props.status !== "PENDING_PAYMENT") {
+  ship(shipment: Shipment): void {
+    this.#transition(["PAID", "SHIPPED"], "SHIPPED");
+    this.#props.shipment = shipment;
+  }
+
+  deliver(): void {
+    this.#transition(["SHIPPED"], "DELIVERED");
+  }
+
+  markLost(): void {
+    this.#transition(["SHIPPED"], "LOST");
+  }
+
+  changeShippingAddress(address: ShippingAddress): void {
+    if (this.#props.status !== "PENDING_PAYMENT" && this.#props.status !== "PAID") {
+      throw new DomainError(
+        "ORDER_NOT_EDITABLE",
+        `Order ${this.id} cannot change address when ${this.#props.status}`,
+      );
+    }
+    this.#props.shippingAddress = address;
+  }
+
+  #transition(from: readonly OrderStatus[], next: OrderStatus): void {
+    if (!from.includes(this.#props.status)) {
       throw new DomainError(
         "ORDER_INVALID_TRANSITION",
         `Order ${this.id} cannot go from ${this.#props.status} to ${next}`,

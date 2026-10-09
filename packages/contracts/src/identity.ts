@@ -25,7 +25,7 @@ export const UserDto = z.object({
   createdAt: z.iso.datetime(),
 });
 
-const AddressFields = {
+export const AddressFields = {
   fullName: z.string().trim().min(1).max(100),
   line1: z.string().trim().min(1).max(200),
   line2: z.string().trim().min(1).max(200).optional(),

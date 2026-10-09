@@ -761,6 +761,16 @@ describe("shopping", () => {
       .catch((caught: unknown) => caught);
     expect(gone).toMatchObject({ code: "CART_NOT_FOUND" });
   });
+
+  it("forbids admins to take a cart", async () => {
+    const { id } = await client().shopping.createCart();
+
+    const error = await client(admin)
+      .shopping.mergeCart({ id })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
+  });
 });
 
 describe("ordering", () => {
@@ -844,13 +854,65 @@ describe("ordering", () => {
   });
 
   it("lets only admins see every order", async () => {
-    const { items } = await client(admin).ordering.listAllOrders();
+    const { items } = await client(admin).ordering.listAllOrders({});
     expect(items.map(({ id }) => id)).toContain(orderId);
     expect((await client(admin).ordering.getOrder({ id: orderId })).id).toBe(orderId);
+    const own = await client(admin).ordering.listAllOrders({ userId: anna.userId });
+    expect(own.items.map(({ id }) => id)).toEqual([orderId]);
 
     const error = await client(anna)
-      .ordering.listAllOrders()
+      .ordering.listAllOrders({})
       .catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
+  });
+
+  it("lets admins fix the address of an order not yet shipped", async () => {
+    const changed = await client(admin).ordering.changeShippingAddress({
+      id: orderId,
+      fullName: "Anna Bianchi",
+      line1: "Via Arniense 21",
+      city: "Chieti",
+      postalCode: "66100",
+      country: "IT",
+      phone: "+39 333 0000005",
+    });
+    const forbidden = await client(anna)
+      .ordering.changeShippingAddress({
+        id: orderId,
+        fullName: "Anna Bianchi",
+        line1: "Via Arniense 21",
+        city: "Chieti",
+        postalCode: "66100",
+        country: "IT",
+        phone: "+39 333 0000005",
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(changed.shippingAddress).toEqual({
+      fullName: "Anna Bianchi",
+      line1: "Via Arniense 21",
+      city: "Chieti",
+      postalCode: "66100",
+      country: "IT",
+      phone: "+39 333 0000005",
+    });
+    expect(await client(anna).ordering.getOrder({ id: orderId })).toEqual(changed);
+    expect(forbidden).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
+  });
+
+  it("refuses to ship an order that is not paid", async () => {
+    const error = await client(admin)
+      .ordering.shipOrder({ id: orderId, carrier: "BRT", trackingNumber: "BRT0001" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "ORDER_INVALID_TRANSITION", status: 409, defined: true });
+  });
+
+  it("forbids admins to place orders", async () => {
+    const error = await client(admin)
+      .ordering.placeOrder({ cartId, addressId, ...checkout })
+      .catch((caught: unknown) => caught);
+
     expect(error).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
   });
 
@@ -994,6 +1056,71 @@ describe("payments", () => {
 
     expect(repeated.status).toBe(200);
     expect(await client(marco).ordering.getOrder({ id: order.id })).toEqual(paid);
+  });
+
+  it("lets admins ship and close a paid order, ignoring a late payment event", async () => {
+    const { order } = await placeOrder();
+    await webhook("evt_paid_2", "checkout.session.completed", order.id, "paid");
+
+    const shipped = await client(admin).ordering.shipOrder({
+      id: order.id,
+      carrier: "BRT",
+      trackingNumber: "BRT0001",
+    });
+    const corrected = await client(admin).ordering.shipOrder({
+      id: order.id,
+      carrier: "BRT",
+      trackingNumber: "BRT0002",
+      trackingUrl: "https://vas.brt.it/vas/sped_det_show.hsm?brtCode=BRT0002",
+    });
+    const late = await webhook("evt_paid_3", "checkout.session.completed", order.id, "paid");
+    const locked = await client(admin)
+      .ordering.changeShippingAddress({ id: order.id, ...address })
+      .catch((caught: unknown) => caught);
+    const insecure = await client(admin)
+      .ordering.shipOrder({
+        id: order.id,
+        carrier: "BRT",
+        trackingNumber: "BRT0002",
+        trackingUrl: "http://vas.brt.it/vas/sped_det_show.hsm?brtCode=BRT0002",
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(shipped).toMatchObject({
+      status: "SHIPPED",
+      shipment: { carrier: "BRT", trackingNumber: "BRT0001" },
+    });
+    expect(corrected.shipment).toEqual({
+      carrier: "BRT",
+      trackingNumber: "BRT0002",
+      trackingUrl: "https://vas.brt.it/vas/sped_det_show.hsm?brtCode=BRT0002",
+    });
+    expect(late.status).toBe(200);
+    expect(await client(marco).ordering.getOrder({ id: order.id })).toEqual(corrected);
+    expect(locked).toMatchObject({ code: "ORDER_NOT_EDITABLE", status: 409, defined: true });
+    expect(insecure).toMatchObject({ code: "BAD_REQUEST", status: 400 });
+
+    const delivered = await client(admin).ordering.closeOrder({
+      id: order.id,
+      status: "DELIVERED",
+    });
+    const lost = await client(admin)
+      .ordering.closeOrder({ id: order.id, status: "LOST" })
+      .catch((caught: unknown) => caught);
+
+    expect(delivered.status).toBe("DELIVERED");
+    expect(lost).toMatchObject({ code: "ORDER_INVALID_TRANSITION", status: 409, defined: true });
+  });
+
+  it("forbids admins to save cards", async () => {
+    const error = await client(admin)
+      .payments.createSetupSession({
+        returnUrl: "http://localhost:3100/en/account/payment-methods",
+        locale: "en",
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
   });
 
   it("cancels the order when the checkout expires", async () => {

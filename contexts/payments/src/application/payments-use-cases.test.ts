@@ -324,6 +324,18 @@ describe("CreateSetupSession", () => {
       },
     ]);
   });
+
+  it("forbids admins", async () => {
+    const { gateway, deps } = setup();
+
+    await expect(
+      new CreateSetupSession(deps).execute(
+        { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Z", role: "admin" },
+        { returnUrl: "https://shop.test/it/account/payment-methods", locale: "it" },
+      ),
+    ).rejects.toEqual(new DomainError("FORBIDDEN", "Admins cannot save payment methods"));
+    expect(gateway.setupSessions).toEqual([]);
+  });
 });
 
 describe("DeletePaymentMethod", () => {

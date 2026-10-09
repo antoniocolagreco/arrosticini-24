@@ -32,7 +32,11 @@ export class CreateSetupSession {
     actor: Actor | undefined,
     { returnUrl, locale }: CreateSetupSessionCommand,
   ): Promise<string> {
-    const customerId = await ensureStripeCustomer(this.#deps, requireActor(actor));
+    const customer = requireActor(actor);
+    if (customer.role === "admin") {
+      throw new DomainError("FORBIDDEN", "Admins cannot save payment methods");
+    }
+    const customerId = await ensureStripeCustomer(this.#deps, customer);
     return this.#deps.gateway.createSetupSession({ customerId, locale, returnUrl });
   }
 }

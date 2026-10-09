@@ -32,6 +32,7 @@ export {
   OrderLineDto,
   OrderStatus,
   orderingContract,
+  ShipmentDto,
   ShippingAddressDto,
 } from "./ordering.js";
 export { PaymentMethodDto, paymentsContract } from "./payments.js";
