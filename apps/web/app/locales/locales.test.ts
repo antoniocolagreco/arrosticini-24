@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 import enAccount from "./en/account.json";
+import enAdmin from "./en/admin.json";
 import enCommon from "./en/common.json";
 import enErrors from "./en/errors.json";
 import enShop from "./en/shop.json";
 import itAccount from "./it/account.json";
+import itAdmin from "./it/admin.json";
 import itCommon from "./it/common.json";
 import itErrors from "./it/errors.json";
 import itShop from "./it/shop.json";
 
 describe("translation keys", () => {
+  it("matches Italian and English in the admin namespace", () => {
+    expect(Object.keys(enAdmin).sort()).toEqual(Object.keys(itAdmin).sort());
+  });
   it("matches Italian and English in the account namespace", () => {
     expect(Object.keys(enAccount).sort()).toEqual(Object.keys(itAccount).sort());
   });

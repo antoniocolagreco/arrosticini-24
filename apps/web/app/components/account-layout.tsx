@@ -1,7 +1,16 @@
-import { CreditCard, LogOut, type LucideIcon, MapPin, Package, UserRound } from "lucide-react";
+import {
+  CreditCard,
+  LogOut,
+  type LucideIcon,
+  MapPin,
+  Package,
+  Settings,
+  UserRound,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, NavLink, useNavigation } from "react-router";
+import { Form, NavLink, useNavigation, useRouteLoaderData } from "react-router";
+import type { loader } from "../root.js";
 import { Breadcrumb } from "./breadcrumb.js";
 
 export function AccountLayout({
@@ -19,6 +28,7 @@ export function AccountLayout({
 }) {
   const { t, i18n } = useTranslation("account");
   const navigation = useNavigation();
+  const root = useRouteLoaderData<typeof loader>("root");
   const base: string = `/${i18n.language === "en" ? "en" : "it"}`;
   const links: { to: string; label: string; Icon: LucideIcon; end?: boolean }[] = [
     { to: `${base}/account`, label: t("navProfile"), Icon: UserRound, end: true },
@@ -26,6 +36,12 @@ export function AccountLayout({
     { to: `${base}/account/addresses`, label: t("navAddresses"), Icon: MapPin },
     { to: `${base}/account/payment-methods`, label: t("paymentMethods"), Icon: CreditCard },
   ];
+  if (root?.isAdmin)
+    links.push({
+      to: `${base}/admin/products`,
+      label: t("catalog", { ns: "admin" }),
+      Icon: Settings,
+    });
   return (
     <section className="catalog-page account-area">
       <Breadcrumb

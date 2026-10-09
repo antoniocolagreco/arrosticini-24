@@ -29,6 +29,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
       version: process.env.APP_VERSION ?? "dev",
       requestId: request.headers.get("x-request-id"),
       signedIn: context.get(sessionContext).has("userId"),
+      isAdmin: context.get(sessionContext).get("role") === "admin",
       cartCount:
         (await readCart(request, context))?.lines.reduce((sum, line) => sum + line.quantity, 0) ??
         0,

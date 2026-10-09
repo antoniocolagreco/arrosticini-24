@@ -186,7 +186,9 @@ h2,
 .form-field label {
   font-weight: 600;
 }
-.form-field input {
+.form-field input,
+.form-field select,
+.form-field textarea {
   width: 100%;
   min-height: var(--control-h);
   padding: var(--space-3);
@@ -196,13 +198,19 @@ h2,
   font: 16px var(--font-sans);
   color: var(--foreground);
 }
-.form-field input:hover {
+.form-field input:hover,
+.form-field select:hover,
+.form-field textarea:hover {
   border-color: var(--foreground);
 }
-.form-field input:focus {
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
   border-color: var(--forest);
 }
-.form-field input[aria-invalid="true"] {
+.form-field input[aria-invalid="true"],
+.form-field select[aria-invalid="true"],
+.form-field textarea[aria-invalid="true"] {
   border: 2px solid var(--destructive);
   background: var(--destructive-soft);
 }
@@ -1567,6 +1575,341 @@ h2,
 }
 .status-cancelled {
   color: var(--muted-foreground);
+}
+.admin-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+.admin-heading .catalog-heading {
+  margin-bottom: 0;
+}
+.admin-heading > a {
+  flex-shrink: 0;
+}
+.admin-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.admin-filters .product-search {
+  flex: 1;
+  max-width: none;
+}
+.admin-filters select {
+  min-width: 180px;
+}
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.admin-table thead th {
+  padding: var(--space-3) var(--space-4);
+  background: var(--secondary);
+  border-bottom: 1px solid var(--input);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  text-align: left;
+}
+.admin-table td,
+.admin-table tbody th {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  height: 76px;
+  text-align: left;
+}
+.admin-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.admin-table tbody tr {
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.admin-table tbody tr:hover {
+  background: var(--background);
+}
+.admin-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.admin-table td .price {
+  font-size: 19px;
+}
+.admin-product-name {
+  min-width: 180px;
+  font-weight: 600;
+}
+.admin-table .admin-product-name a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.admin-product-name small {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 400;
+}
+.admin-thumb {
+  width: 60px;
+  aspect-ratio: 1;
+  background: var(--secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.admin-thumb img,
+.admin-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.admin-thumb .product-placeholder {
+  min-height: 0;
+  height: 100%;
+}
+.admin-thumb .product-placeholder span {
+  display: none;
+}
+.admin-thumb .product-placeholder svg {
+  width: 20px;
+  height: 20px;
+}
+.admin-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+.admin-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.admin-icon:hover {
+  background: var(--secondary);
+}
+.admin-icon:disabled {
+  pointer-events: none;
+}
+.product-status-active {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: var(--forest-foreground);
+}
+.product-status-draft {
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+  color: var(--warning);
+}
+.product-status-archived {
+  color: var(--muted-foreground);
+}
+.admin-feedback {
+  margin-top: var(--space-4);
+}
+.admin-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: var(--forest);
+  background: var(--success-soft);
+  border: 1px solid var(--forest);
+  border-radius: var(--radius-md);
+  line-height: 1.5;
+}
+.admin-page .admin-notice > svg {
+  flex-shrink: 0;
+}
+.admin-notice form {
+  margin-left: auto;
+}
+.admin-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-6);
+  align-items: start;
+}
+.admin-editor-main {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.admin-panel {
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  min-width: 0;
+}
+.admin-panel h2 {
+  color: var(--forest);
+  font-size: 24px;
+  line-height: 1.2;
+  margin: 0 0 var(--space-3);
+}
+.admin-panel-intro {
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin-bottom: var(--space-6);
+}
+.admin-language-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+.admin-language {
+  display: grid;
+  gap: var(--space-4);
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.admin-language legend {
+  margin-bottom: var(--space-4);
+  color: var(--muted-foreground);
+  font-weight: 700;
+}
+.admin-language textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.admin-selling {
+  display: grid;
+  gap: var(--space-5);
+}
+.admin-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.admin-images {
+  margin-top: var(--space-6);
+}
+.admin-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-6) 0;
+}
+.admin-image-grid li {
+  max-width: 280px;
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+.admin-image {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+}
+.admin-image-grid button {
+  width: 100%;
+  padding: var(--space-2);
+  font-size: 15px;
+}
+.admin-upload {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+.admin-upload .form-field {
+  flex: 1;
+  min-width: 0;
+}
+.admin-upload input[type="file"] {
+  padding: var(--space-2);
+}
+.admin-upload input::file-selector-button {
+  padding: var(--space-2);
+  margin-right: var(--space-3);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background: var(--secondary);
+  color: var(--foreground);
+  font: inherit;
+}
+.admin-no-images {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--muted-foreground);
+  padding: var(--space-4) 0;
+}
+@media (max-width: 999px) {
+  .admin-editor {
+    grid-template-columns: 1fr;
+  }
+  .admin-selling {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-selling h2 {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 699px) {
+  .admin-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .admin-filters {
+    flex-wrap: wrap;
+  }
+  .admin-filters .product-search {
+    flex-basis: 100%;
+  }
+  .admin-filters .form-field,
+  .admin-filters button {
+    flex: 1;
+  }
+  .admin-filters select {
+    min-width: 0;
+  }
+  .admin-panel {
+    padding: var(--space-4);
+  }
+  .admin-language-grid,
+  .admin-selling {
+    grid-template-columns: 1fr;
+  }
+  .admin-upload {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 .status-default {
   background: var(--secondary);
