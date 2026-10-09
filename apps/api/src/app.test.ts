@@ -1062,11 +1062,7 @@ describe("payments", () => {
     const { order } = await placeOrder();
     await webhook("evt_paid_2", "checkout.session.completed", order.id, "paid");
 
-    const shipped = await client(admin).ordering.shipOrder({
-      id: order.id,
-      carrier: "BRT",
-      trackingNumber: "BRT0001",
-    });
+    const shipped = await client(admin).ordering.shipOrder({ id: order.id, carrier: "BRT" });
     const corrected = await client(admin).ordering.shipOrder({
       id: order.id,
       carrier: "BRT",
@@ -1086,10 +1082,7 @@ describe("payments", () => {
       })
       .catch((caught: unknown) => caught);
 
-    expect(shipped).toMatchObject({
-      status: "SHIPPED",
-      shipment: { carrier: "BRT", trackingNumber: "BRT0001" },
-    });
+    expect(shipped).toMatchObject({ status: "SHIPPED", shipment: { carrier: "BRT" } });
     expect(corrected.shipment).toEqual({
       carrier: "BRT",
       trackingNumber: "BRT0002",
@@ -1110,6 +1103,17 @@ describe("payments", () => {
 
     expect(delivered.status).toBe("DELIVERED");
     expect(lost).toMatchObject({ code: "ORDER_INVALID_TRANSITION", status: 409, defined: true });
+
+    const afterDelivery = await client(admin).ordering.shipOrder({
+      id: order.id,
+      carrier: "BRT",
+      trackingNumber: "BRT0003",
+    });
+
+    expect(afterDelivery).toMatchObject({
+      status: "DELIVERED",
+      shipment: { carrier: "BRT", trackingNumber: "BRT0003" },
+    });
   });
 
   it("forbids admins to save cards", async () => {

@@ -131,11 +131,14 @@ describe("Order", () => {
     );
   });
 
-  it("is shipped after payment, with tracking that can be corrected", () => {
+  it("is shipped after payment, with tracking added later", () => {
     const order = place();
     order.markPaid(paid);
 
-    order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
+    order.ship({ carrier: "BRT" });
+    expect(order.status).toBe("SHIPPED");
+    expect(order.shipment).toEqual({ carrier: "BRT" });
+
     order.ship({
       carrier: "GLS",
       trackingNumber: "GLS0001",
@@ -168,10 +171,34 @@ describe("Order", () => {
         "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from DELIVERED to LOST",
       ),
     );
-    expect(() => lost.ship({ carrier: "BRT", trackingNumber: "BRT0003" })).toThrow(
+  });
+
+  it("keeps the shipment editable after the order is closed", () => {
+    const delivered = place();
+    delivered.markPaid(paid);
+    delivered.ship({ carrier: "BRT" });
+    delivered.deliver();
+    const lost = place();
+    lost.markPaid(paid);
+    lost.ship({ carrier: "BRT" });
+    lost.markLost();
+
+    delivered.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
+    lost.ship({ carrier: "SDA", trackingNumber: "SDA0001" });
+
+    expect([delivered.status, lost.status]).toEqual(["DELIVERED", "LOST"]);
+    expect(delivered.shipment).toEqual({ carrier: "BRT", trackingNumber: "BRT0001" });
+    expect(lost.shipment).toEqual({ carrier: "SDA", trackingNumber: "SDA0001" });
+  });
+
+  it("cannot be shipped once cancelled", () => {
+    const order = place();
+    order.cancel();
+
+    expect(() => order.ship({ carrier: "BRT" })).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from LOST to SHIPPED",
+        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from CANCELLED to SHIPPED",
       ),
     );
   });

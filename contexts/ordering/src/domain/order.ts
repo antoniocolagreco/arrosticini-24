@@ -27,9 +27,11 @@ export interface ShippingAddress {
 
 export interface Shipment {
   readonly carrier: string;
-  readonly trackingNumber: string;
+  readonly trackingNumber?: string;
   readonly trackingUrl?: string;
 }
+
+const SHIPPED_STATUSES: readonly OrderStatus[] = ["SHIPPED", "DELIVERED", "LOST"];
 
 export interface OrderProps {
   id: Id;
@@ -114,7 +116,9 @@ export class Order {
   }
 
   ship(shipment: Shipment): void {
-    this.#transition(["PAID", "SHIPPED"], "SHIPPED");
+    if (!SHIPPED_STATUSES.includes(this.#props.status)) {
+      this.#transition(["PAID"], "SHIPPED");
+    }
     this.#props.shipment = shipment;
   }
 
