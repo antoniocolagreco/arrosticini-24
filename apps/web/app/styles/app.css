@@ -116,9 +116,13 @@ h1,
 h2,
 [data-slot="button"] {
   font-family: "Roboto Serif", Georgia, serif;
-  font-weight: 900;
   font-stretch: 75%;
   font-variation-settings: "wdth" 75;
+}
+.wordmark,
+h1,
+h2 {
+  font-weight: 900;
 }
 .skip-link {
   position: absolute;
