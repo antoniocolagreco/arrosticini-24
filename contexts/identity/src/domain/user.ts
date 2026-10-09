@@ -5,6 +5,8 @@ export const MAX_ADDRESSES = 5;
 
 export type Role = "customer" | "admin";
 
+export type UserStatus = "ACTIVE" | "SUSPENDED";
+
 export interface Address {
   readonly id: Id;
   readonly fullName: string;
@@ -41,6 +43,7 @@ export interface UserProps {
   email: string;
   password: PasswordHash;
   role: Role;
+  status: UserStatus;
   firstName: string;
   lastName: string;
   preferredLocale: Locale;
@@ -57,11 +60,11 @@ export class User {
     this.#props = props;
   }
 
-  static register(props: Omit<UserProps, "createdAt" | "addresses">, now: Date): User {
+  static register(props: Omit<UserProps, "status" | "createdAt" | "addresses">, now: Date): User {
     if (!EMAIL_PATTERN.test(props.email)) {
       throw new DomainError("INVALID_EMAIL", `Invalid email: ${props.email}`);
     }
-    return new User({ ...props, createdAt: now, addresses: [] });
+    return new User({ ...props, status: "ACTIVE", createdAt: now, addresses: [] });
   }
 
   static restore(props: UserProps): User {
@@ -82,6 +85,10 @@ export class User {
 
   get role(): Role {
     return this.#props.role;
+  }
+
+  get status(): UserStatus {
+    return this.#props.status;
   }
 
   get firstName(): string {
@@ -110,6 +117,17 @@ export class User {
 
   changePassword(password: PasswordHash): void {
     this.#props.password = password;
+  }
+
+  suspend(): void {
+    if (this.#props.role === "admin") {
+      throw new DomainError("USER_NOT_SUSPENDABLE", `Admin ${this.id} cannot be suspended`);
+    }
+    this.#props.status = "SUSPENDED";
+  }
+
+  reactivate(): void {
+    this.#props.status = "ACTIVE";
   }
 
   addAddress(id: Id, fields: AddressFields, isDefault: boolean): Address {

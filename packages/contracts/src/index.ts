@@ -24,6 +24,7 @@ export {
   Password,
   Role,
   UserDto,
+  UserStatus,
 } from "./identity.js";
 export { opsContract, WhoAmIDto } from "./ops.js";
 export {

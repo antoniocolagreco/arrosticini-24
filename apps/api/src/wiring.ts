@@ -11,14 +11,18 @@ import {
 } from "@arrosticini/catalog";
 import {
   AddAddress,
+  AuthorizeActor,
   ChangePassword,
   DeleteAddress,
   DynamoDbUserRepository,
   GetMe,
+  GetUser,
   identityRouter,
   ListAddresses,
+  ListUsers,
   RegisterUser,
   ScryptPasswordHasher,
+  SetUserStatus,
   UpdateAddress,
   UpdateMe,
   VerifyCredentials,
@@ -142,6 +146,9 @@ export function createApi(
       addAddress: new AddAddress(users),
       updateAddress: new UpdateAddress(users),
       deleteAddress: new DeleteAddress(users),
+      listUsers: new ListUsers(users),
+      getUser: new GetUser(users),
+      setUserStatus: new SetUserStatus(users),
     }),
     shopping: shoppingRouter({
       createCart: new CreateCart(carts),
@@ -174,7 +181,7 @@ export function createApi(
     gateway,
     bus,
   );
-  return { router, handleStripeEvent };
+  return { router, handleStripeEvent, authorizeActor: new AuthorizeActor(users) };
 }
 
 export type Api = ReturnType<typeof createApi>;

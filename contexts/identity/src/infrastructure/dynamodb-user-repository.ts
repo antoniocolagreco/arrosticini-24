@@ -4,11 +4,12 @@ import { TransactionCanceledException } from "@aws-sdk/client-dynamodb";
 import {
   type DynamoDBDocumentClient,
   GetCommand,
+  paginateScan,
   QueryCommand,
   TransactWriteCommand,
   type TransactWriteCommandInput,
 } from "@aws-sdk/lib-dynamodb";
-import { type Address, type Role, User } from "../domain/user.js";
+import { type Address, type Role, User, type UserStatus } from "../domain/user.js";
 import type { UserRepository } from "../domain/user-repository.js";
 
 interface ProfileItem {
@@ -19,6 +20,7 @@ interface ProfileItem {
   passwordHash: string;
   salt: string;
   role: Role;
+  status?: UserStatus;
   firstName: string;
   lastName: string;
   preferredLocale: Locale;
@@ -26,6 +28,8 @@ interface ProfileItem {
 }
 
 type AddressItem = Address & { PK: string; SK: string };
+
+type UserItem = ProfileItem | AddressItem;
 
 type TransactItem = NonNullable<TransactWriteCommandInput["TransactItems"]>[number];
 
@@ -42,6 +46,7 @@ function profileItem(user: User): ProfileItem {
     passwordHash: user.password.hash,
     salt: user.password.salt,
     role: user.role,
+    status: user.status,
     firstName: user.firstName,
     lastName: user.lastName,
     preferredLocale: user.preferredLocale,
@@ -51,6 +56,28 @@ function profileItem(user: User): ProfileItem {
 
 function toAddress({ PK: _pk, SK: _sk, ...address }: AddressItem): Address {
   return address;
+}
+
+function toUser(items: UserItem[]): User | undefined {
+  const profile = items.find((item): item is ProfileItem => item.SK === "PROFILE");
+  if (profile === undefined) {
+    return undefined;
+  }
+  const addresses = items
+    .filter((item): item is AddressItem => item.SK.startsWith("ADDRESS#"))
+    .map(toAddress);
+  return User.restore({
+    id: profile.id,
+    email: profile.email,
+    password: { hash: profile.passwordHash, salt: profile.salt },
+    role: profile.role,
+    status: profile.status ?? "ACTIVE",
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    preferredLocale: profile.preferredLocale,
+    createdAt: new Date(profile.createdAt),
+    addresses,
+  });
 }
 
 export class DynamoDbUserRepository implements UserRepository {
@@ -70,24 +97,7 @@ export class DynamoDbUserRepository implements UserRepository {
         ExpressionAttributeValues: { ":pk": userPk(id) },
       }),
     );
-    const profile = Items.find((item) => item.SK === "PROFILE") as ProfileItem | undefined;
-    if (profile === undefined) {
-      return undefined;
-    }
-    const addresses = Items.filter((item) => String(item.SK).startsWith("ADDRESS#")).map((item) =>
-      toAddress(item as AddressItem),
-    );
-    return User.restore({
-      id: profile.id,
-      email: profile.email,
-      password: { hash: profile.passwordHash, salt: profile.salt },
-      role: profile.role,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      preferredLocale: profile.preferredLocale,
-      createdAt: new Date(profile.createdAt),
-      addresses,
-    });
+    return toUser(Items as UserItem[]);
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
@@ -98,6 +108,24 @@ export class DynamoDbUserRepository implements UserRepository {
       }),
     );
     return Item === undefined ? undefined : this.findById(Item.userId as Id);
+  }
+
+  async listAll(): Promise<User[]> {
+    const items: UserItem[] = [];
+    const pages = paginateScan(
+      { client: this.#client },
+      {
+        TableName: this.#tableName,
+        FilterExpression: "begins_with(PK, :user)",
+        ExpressionAttributeValues: { ":user": "USER#" },
+      },
+    );
+    for await (const { Items = [] } of pages) {
+      items.push(...(Items as UserItem[]));
+    }
+    return [...Map.groupBy(items, (item) => item.PK).values()]
+      .flatMap((group) => toUser(group) ?? [])
+      .sort((first, second) => second.createdAt.getTime() - first.createdAt.getTime());
   }
 
   async create(user: User): Promise<void> {

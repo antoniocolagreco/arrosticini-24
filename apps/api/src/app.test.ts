@@ -8,7 +8,7 @@ import {
   type ProductStatus,
 } from "@arrosticini/catalog";
 import { ACTOR_HEADER, contract } from "@arrosticini/contracts";
-import { identityTableDefinition } from "@arrosticini/identity";
+import { DynamoDbUserRepository, identityTableDefinition, User } from "@arrosticini/identity";
 import { localizedText, Money } from "@arrosticini/kernel";
 import { createLogger, Lifecycle } from "@arrosticini/ops";
 import { orderingTableDefinition } from "@arrosticini/ordering";
@@ -113,6 +113,65 @@ beforeAll(async () => {
   await products.create(product("fornacella", 10000, "ACTIVE"));
   await products.create(product("vino", 500, "ACTIVE"));
   await products.create(product("carbone", 2000, "DRAFT"));
+  const users = new DynamoDbUserRepository(dynamo, tables.identity);
+  const registeredAt = new Date("2026-10-08T10:00:00.000Z");
+  const password = { hash: "aGFzaA==", salt: "c2FsdA==" };
+  await users.create(
+    User.register(
+      {
+        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+        email: "admin@example.com",
+        password,
+        role: "admin",
+        firstName: "Admin",
+        lastName: "Arrosticini 24ore",
+        preferredLocale: "it",
+      },
+      registeredAt,
+    ),
+  );
+  await users.create(
+    User.register(
+      {
+        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        email: "carla.conti@example.com",
+        password,
+        role: "customer",
+        firstName: "Carla",
+        lastName: "Conti",
+        preferredLocale: "it",
+      },
+      registeredAt,
+    ),
+  );
+  await users.create(
+    User.register(
+      {
+        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+        email: "lucia.ferri@example.com",
+        password,
+        role: "customer",
+        firstName: "Lucia",
+        lastName: "Ferri",
+        preferredLocale: "en",
+      },
+      registeredAt,
+    ),
+  );
+  await users.create(
+    User.register(
+      {
+        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0V",
+        email: "stefano.greco@example.com",
+        password,
+        role: "customer",
+        firstName: "Stefano",
+        lastName: "Greco",
+        preferredLocale: "it",
+      },
+      registeredAt,
+    ),
+  );
   server = app.listen(0);
 });
 
@@ -367,6 +426,7 @@ describe("identity", () => {
       id: expect.stringMatching(/^[0-9A-HJKMNP-TV-Z]{26}$/),
       email: "luigi.verdi@example.com",
       role: "customer",
+      status: "ACTIVE",
       firstName: "Luigi",
       lastName: "Verdi",
       preferredLocale: "en",
@@ -514,6 +574,107 @@ describe("identity", () => {
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "ADDRESS_NOT_FOUND", status: 404, defined: true });
+  });
+});
+
+describe("identity administration", () => {
+  let paola: { userId: string; role: "customer" };
+
+  beforeAll(async () => {
+    const registered = await client().identity.registerUser({
+      email: "paola.marini@example.com",
+      password: "arrosticini-24",
+      firstName: "Paola",
+      lastName: "Marini",
+      preferredLocale: "it",
+    });
+    paola = { userId: registered.id, role: "customer" };
+    await client(paola).identity.addAddress({
+      fullName: "Paola Marini",
+      line1: "Via Asinio Herio 12",
+      city: "Chieti",
+      postalCode: "66100",
+      country: "IT",
+      phone: "+39 333 0000004",
+    });
+  });
+
+  it("is reserved to admins", async () => {
+    const anonymous = await client()
+      .identity.listUsers()
+      .catch((caught: unknown) => caught);
+    const forbidden = await client(customer)
+      .identity.setUserStatus({ id: paola.userId, status: "SUSPENDED" })
+      .catch((caught: unknown) => caught);
+
+    expect(anonymous).toMatchObject({ code: "UNAUTHORIZED", status: 401 });
+    expect(forbidden).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
+  });
+
+  it("lists users and shows one with its addresses", async () => {
+    const { items } = await client(admin).identity.listUsers();
+    const card = await client(admin).identity.getUser({ id: paola.userId });
+
+    expect(items.map(({ email }) => email)).toEqual(
+      expect.arrayContaining(["paola.marini@example.com", "admin@example.com"]),
+    );
+    expect(card.user).toMatchObject({ id: paola.userId, status: "ACTIVE", firstName: "Paola" });
+    expect(card.addresses).toEqual([
+      expect.objectContaining({ line1: "Via Asinio Herio 12", isDefault: true }),
+    ]);
+  });
+
+  it("answers USER_NOT_FOUND on an unknown user", async () => {
+    const error = await client(admin)
+      .identity.getUser({ id: "01JB2Q7Z8X4M3N5P6R7S8T9V99" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "USER_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("locks out a suspended user until reactivated", async () => {
+    const suspended = await client(admin).identity.setUserStatus({
+      id: paola.userId,
+      status: "SUSPENDED",
+    });
+    const session = await client(paola)
+      .identity.getMe()
+      .catch((caught: unknown) => caught);
+    const browsing = await request(app)
+      .get("/catalog/products")
+      .set(ACTOR_HEADER, JSON.stringify(paola));
+    const login = await client()
+      .identity.verifyCredentials({ email: "paola.marini@example.com", password: "arrosticini-24" })
+      .catch((caught: unknown) => caught);
+
+    expect(suspended.status).toBe("SUSPENDED");
+    expect(session).toMatchObject({ code: "UNAUTHORIZED", status: 401 });
+    expect(browsing.status).toBe(401);
+    expect(login).toMatchObject({ code: "ACCOUNT_SUSPENDED", status: 403, defined: true });
+
+    await client(admin).identity.setUserStatus({ id: paola.userId, status: "ACTIVE" });
+
+    expect((await client(paola).identity.getMe()).status).toBe("ACTIVE");
+  });
+
+  it("answers USER_NOT_SUSPENDABLE for an admin", async () => {
+    const error = await client(admin)
+      .identity.setUserStatus({ id: admin.userId, status: "SUSPENDED" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "USER_NOT_SUSPENDABLE", status: 409, defined: true });
+  });
+
+  it("answers 401 to an actor that does not exist", async () => {
+    const response = await request(app)
+      .get("/identity/me")
+      .set(
+        ACTOR_HEADER,
+        JSON.stringify({ userId: "01JB2Q7Z8X4M3N5P6R7S8T9V98", role: "customer" }),
+      );
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ code: "UNAUTHORIZED" });
   });
 });
 

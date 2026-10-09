@@ -28,7 +28,7 @@ type ApiContext = CatalogContext &
 export function createApp(
   logger: Logger,
   lifecycle: Lifecycle,
-  { router, handleStripeEvent }: Api,
+  { router, handleStripeEvent, authorizeActor }: Api,
 ): Express {
   const handler = new OpenAPIHandler<ApiContext>(router, {
     clientInterceptors: [mapProcedureErrors],
@@ -57,6 +57,15 @@ export function createApp(
         code: "BAD_REQUEST",
         status: 400,
         message: `Invalid ${ACTOR_HEADER} header`,
+      });
+      return;
+    }
+    if (header.actor !== undefined && !(await authorizeActor.execute(header.actor))) {
+      res.status(401).json({
+        defined: false,
+        code: "UNAUTHORIZED",
+        status: 401,
+        message: "Unknown or suspended user",
       });
       return;
     }

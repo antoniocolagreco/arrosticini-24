@@ -17,3 +17,12 @@ export async function loadActingUser(
   }
   return user;
 }
+
+export function requireAdmin(actor: Actor | undefined): void {
+  if (actor === undefined) {
+    throw new DomainError("UNAUTHORIZED", "Authentication required");
+  }
+  if (actor.role !== "admin") {
+    throw new DomainError("FORBIDDEN", "Only admins can manage users");
+  }
+}

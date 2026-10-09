@@ -51,6 +51,7 @@ const user: UserDto = {
   firstName: "Antonio",
   lastName: "Colagreco",
   role: "customer",
+  status: "ACTIVE",
   preferredLocale: "it",
   createdAt: "2026-10-09T00:00:00.000Z",
 };

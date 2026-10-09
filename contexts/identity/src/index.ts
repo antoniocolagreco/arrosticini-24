@@ -12,6 +12,12 @@ export {
   UpdateAddress,
 } from "./application/addresses.js";
 export {
+  AuthorizeActor,
+  GetUser,
+  ListUsers,
+  SetUserStatus,
+} from "./application/administration.js";
+export {
   type Credentials,
   EnsureAdmin,
   RegisterUser,
@@ -28,6 +34,7 @@ export {
   type Role,
   User,
   type UserProps,
+  type UserStatus,
 } from "./domain/user.js";
 export type { UserRepository } from "./domain/user-repository.js";
 export { type IdentityContext, type IdentityUseCases, identityRouter } from "./http/router.js";
