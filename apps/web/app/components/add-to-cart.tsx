@@ -19,7 +19,7 @@ export function AddToCart({ slug }: { slug: string }) {
     pending || fetchers.some((pending) => pending.formAction?.endsWith("/cart"));
   useEffect(() => {
     if (!minimumPending) return;
-    const timer: ReturnType<typeof setTimeout> = setTimeout(() => setMinimumPending(false), 1000);
+    const timer: ReturnType<typeof setTimeout> = setTimeout(() => setMinimumPending(false), 300);
     return () => clearTimeout(timer);
   }, [minimumPending]);
   useEffect(() => {
