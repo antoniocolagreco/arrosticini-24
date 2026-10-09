@@ -1182,6 +1182,68 @@ h2,
     top: var(--space-6);
   }
 }
+.payment-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  margin-top: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+}
+.payment-notice p {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1 1 280px;
+}
+.payment-notice p svg {
+  flex-shrink: 0;
+}
+.payment-paid {
+  color: var(--forest);
+  background: var(--success-soft);
+  border-color: var(--forest);
+}
+.payment-cancelled {
+  background: var(--card);
+}
+.payment-method-add {
+  margin-block: var(--space-6);
+}
+.payment-method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+.payment-method-card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+.payment-method-brand {
+  font-size: 24px;
+  text-transform: capitalize;
+  overflow-wrap: anywhere;
+}
+.payment-method-number {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.payment-method-expiry {
+  color: var(--muted-foreground);
+}
+.payment-method-card form {
+  margin-top: var(--space-3);
+}
 .address-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

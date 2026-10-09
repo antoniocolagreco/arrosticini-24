@@ -38,6 +38,9 @@ export default function Account({ loaderData }: Route.ComponentProps) {
         <Link className="checkout-back" to={`/${i18n.language}/orders`}>
           {t("orders", { ns: "shop" })}
         </Link>
+        <Link className="checkout-back" to={`/${i18n.language}/account/payment-methods`}>
+          {t("paymentMethods")}
+        </Link>
         <dl className="account-details">
           <div>
             <dt>{t("firstName")}</dt>

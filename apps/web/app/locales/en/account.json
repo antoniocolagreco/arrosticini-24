@@ -24,5 +24,15 @@
   "accountIntro": "These are your account details.",
   "email": "Email",
   "preferredLocale": "Preferred language",
-  "logout": "Sign out"
+  "logout": "Sign out",
+  "paymentMethods": "Saved cards",
+  "paymentMethodsIntro": "Manage the cards to use for your next orders.",
+  "addCard": "Add card",
+  "removeCard": "Remove card",
+  "removeCardLabel": "Remove the {{brand}} card ending in {{last4}}",
+  "cardExpires": "Expires {{month}}/{{year}}",
+  "noCardsTitle": "No saved cards.",
+  "noCards": "Add a card on Stripe to find it at your next checkout.",
+  "invalidPaymentMethod": "The card could not be removed. Reload the page and try again.",
+  "paymentMethodMissing": "This card is no longer available. Reload the page."
 }
