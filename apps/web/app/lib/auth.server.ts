@@ -91,6 +91,8 @@ export async function authenticate(
       );
     if (code === "INVALID_CREDENTIALS")
       return data<AuthResult>({ values, errors: {}, error: "invalidCredentials" }, { status: 401 });
+    if (code === "ACCOUNT_SUSPENDED")
+      return data<AuthResult>({ values, errors: {}, error: "accountSuspended" }, { status: 403 });
     if (code === "BAD_REQUEST")
       return data<AuthResult>({ values, errors: {}, error: "invalidForm" }, { status: 400 });
     throw error;

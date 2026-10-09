@@ -22,6 +22,8 @@ export default [
     route("admin/products", "routes/admin-products.tsx"),
     route("admin/products/new", "routes/admin-product-new.tsx"),
     route("admin/products/:slug", "routes/admin-product.tsx"),
+    route("admin/users", "routes/admin-users.tsx"),
+    route("admin/users/:id", "routes/admin-user.tsx"),
   ]),
   route("*", "routes/not-found.tsx"),
 ] satisfies RouteConfig;

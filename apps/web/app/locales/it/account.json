@@ -18,6 +18,7 @@
   "noAccount": "Non hai ancora un account?",
   "alreadyRegistered": "Hai già un account?",
   "invalidCredentials": "Email o password non corrette. Controllale e riprova.",
+  "accountSuspended": "Il tuo account è sospeso. Contatta il negozio per riattivarlo.",
   "invalidForm": "Controlla i dati inseriti e riprova.",
   "account": "Il mio account",
   "welcome": "Ciao, {{name}}.",

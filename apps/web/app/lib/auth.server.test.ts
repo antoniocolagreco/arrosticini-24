@@ -216,6 +216,24 @@ describe("authentication actions", () => {
     expect(JSON.stringify(result.data)).not.toContain("wrong-password");
   });
 
+  it("returns a suspended account as a form alert", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json(
+        { defined: true, code: "ACCOUNT_SUSPENDED", status: 403, message: "Suspended" },
+        { status: 403 },
+      ),
+    );
+    const result = await authenticate(
+      post({ email: "antonio@example.com", password: "long-password" }),
+      await context(),
+      "it",
+      false,
+    );
+    if (result instanceof Response) expect.fail("Expected form error");
+    expect(result.init?.status).toBe(403);
+    expect(result.data.error).toBe("accountSuspended");
+  });
+
   it("returns a duplicate email on the field that needs changing", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       Response.json(

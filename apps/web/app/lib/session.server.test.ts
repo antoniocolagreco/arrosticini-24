@@ -1,6 +1,7 @@
 import type { UserDto } from "@arrosticini/contracts";
 import { RouterContextProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { api } from "./api.server.js";
 import {
   assertSameOrigin,
   createValkeySessionStorage,
@@ -9,10 +10,14 @@ import {
   SESSION_TTL,
   type SessionClient,
   sessionContext,
+  sessionMiddleware,
   sessionStorageContext,
 } from "./session.server.js";
 
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 function store() {
   const records: Map<string, string> = new Map();
@@ -107,6 +112,69 @@ describe("Valkey sessions", () => {
       expect(error).toBeInstanceOf(Response);
       expect((error as Response).headers.get("Location")).toBe("/en/login");
     }
+  });
+});
+
+describe("rejected sessions", () => {
+  async function signedIn() {
+    const { records, sessions } = store();
+    const context: RouterContextProvider = new RouterContextProvider();
+    context.set(sessionStorageContext, sessions);
+    context.set(sessionContext, await sessions.getSession());
+    const cookie: string = await loginSession(context, user);
+    const request: Request = new Request("http://web.test/en/orders", { headers: { cookie } });
+    return { records, context, request };
+  }
+
+  async function run(
+    request: Request,
+    context: RouterContextProvider,
+    next: () => Promise<Response>,
+  ): Promise<Response> {
+    const response = await sessionMiddleware(
+      { request, context, params: { lang: "en" }, url: new URL(request.url), pattern: "/:lang" },
+      next,
+    );
+    if (!(response instanceof Response)) throw new Error("Expected a response");
+    return response;
+  }
+
+  it("signs out a user that the API no longer accepts", async () => {
+    vi.stubEnv("API_URL", "http://api.test");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      Response.json(
+        { defined: false, code: "UNAUTHORIZED", status: 401, message: "Suspended" },
+        { status: 401 },
+      ),
+    );
+    const { records, context, request } = await signedIn();
+
+    const outcome: unknown = await run(request, context, async () => {
+      await api(request, { userId: user.id, role: "customer" })
+        .identity.getMe()
+        .catch(() => undefined);
+      return new Response("error page", { status: 500 });
+    }).catch((caught: unknown) => caught);
+
+    if (!(outcome instanceof Response)) expect.fail("Expected redirect");
+    expect(outcome.status).toBe(302);
+    expect(outcome.headers.get("Location")).toBe("/en/login");
+    expect(outcome.headers.get("Set-Cookie")).toContain("__session=;");
+    expect(records.size).toBe(0);
+  });
+
+  it("keeps the session when the API accepts the user", async () => {
+    vi.stubEnv("API_URL", "http://api.test");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(Response.json(user));
+    const { records, context, request } = await signedIn();
+
+    const response = await run(request, context, async () => {
+      await api(request, { userId: user.id, role: "customer" }).identity.getMe();
+      return new Response("account page");
+    });
+
+    expect(response.status).toBe(200);
+    expect(records.size).toBe(1);
   });
 });
 

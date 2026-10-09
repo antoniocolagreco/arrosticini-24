@@ -1,31 +1,18 @@
 import { CircleCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { redirect, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { AccountLayout } from "../components/account-layout.js";
 import { FormAlert } from "../components/form-alert.js";
 import { PasswordPanel, ProfilePanel } from "../components/profile-panels.js";
 import { type AccountResult, accountAction } from "../lib/account.server.js";
-import { api, getApiError } from "../lib/api.server.js";
-import {
-  type AuthSessionData,
-  requireUser,
-  sessionContext,
-  sessionStorageContext,
-} from "../lib/session.server.js";
+import { api } from "../lib/api.server.js";
+import { type AuthSessionData, requireUser } from "../lib/session.server.js";
 import type { Route } from "./+types/account.js";
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const user: AuthSessionData = requireUser(context, params.lang);
-  try {
-    return { user: await api(request, { userId: user.userId, role: user.role }).identity.getMe() };
-  } catch (error: unknown) {
-    if (getApiError(error) !== "UNAUTHORIZED") throw error;
-    const cookie: string = await context
-      .get(sessionStorageContext)
-      .destroySession(context.get(sessionContext));
-    throw redirect(`/${params.lang}/login`, { headers: { "Set-Cookie": cookie } });
-  }
+  return { user: await api(request, { userId: user.userId, role: user.role }).identity.getMe() };
 }
 
 export async function action({ request, context, params }: Route.ActionArgs) {

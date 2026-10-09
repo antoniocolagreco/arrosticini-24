@@ -6,6 +6,7 @@ import {
   Package,
   Settings,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -37,11 +38,10 @@ export function AccountLayout({
     { to: `${base}/account/payment-methods`, label: t("paymentMethods"), Icon: CreditCard },
   ];
   if (root?.isAdmin)
-    links.push({
-      to: `${base}/admin/products`,
-      label: t("catalog", { ns: "admin" }),
-      Icon: Settings,
-    });
+    links.push(
+      { to: `${base}/admin/products`, label: t("catalog", { ns: "admin" }), Icon: Settings },
+      { to: `${base}/admin/users`, label: t("users", { ns: "admin" }), Icon: UsersRound },
+    );
   return (
     <section className="catalog-page account-area">
       <Breadcrumb
