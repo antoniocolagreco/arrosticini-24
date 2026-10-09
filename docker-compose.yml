@@ -8,9 +8,17 @@ services:
 
   dynamodb:
     image: amazon/dynamodb-local:3.3.1
-    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    user: root
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
     ports:
       - "8000:8000"
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8000"]
+      interval: 1s
+      timeout: 2s
+      retries: 30
 
   s3:
     image: rustfs/rustfs:1.0.1
@@ -35,3 +43,4 @@ services:
 
 volumes:
   s3-data:
+  dynamodb-data:

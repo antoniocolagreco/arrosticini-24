@@ -18,6 +18,7 @@ import { paymentsTableDefinition, paymentsTimeToLive } from "@arrosticini/paymen
 import {
   CreateTableCommand,
   type CreateTableCommandInput,
+  DescribeTimeToLiveCommand,
   ResourceInUseException,
   UpdateTimeToLiveCommand,
 } from "@aws-sdk/client-dynamodb";
@@ -130,11 +131,18 @@ async function seedAdmin() {
   console.log(`admin ${env.ADMIN_EMAIL} ${result === "created" ? "created" : "already exists"}`);
 }
 
+async function enablePaymentsTimeToLive(tableName: string) {
+  const ttl = await dynamo.send(new DescribeTimeToLiveCommand({ TableName: tableName }));
+  if (ttl.TimeToLiveDescription?.TimeToLiveStatus === "DISABLED") {
+    await dynamo.send(new UpdateTimeToLiveCommand(paymentsTimeToLive(tableName)));
+  }
+}
+
 await createTable(catalogTableDefinition(env.CATALOG_TABLE));
 await createTable(identityTableDefinition(env.IDENTITY_TABLE));
 await createTable(orderingTableDefinition(env.ORDERING_TABLE));
 await createTable(paymentsTableDefinition(env.PAYMENTS_TABLE));
-await dynamo.send(new UpdateTimeToLiveCommand(paymentsTimeToLive(env.PAYMENTS_TABLE)));
+await enablePaymentsTimeToLive(env.PAYMENTS_TABLE);
 await createPublicBucket(env.MEDIA_BUCKET);
 await seedCatalog();
 await seedAdmin();

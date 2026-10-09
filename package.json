@@ -13,7 +13,10 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "boundaries": "turbo boundaries",
-    "setup:local": "turbo run setup:local",
+    "local:up": "docker compose up -d --wait valkey dynamodb s3 && turbo run setup:local",
+    "local:stop": "docker compose stop",
+    "local:destroy": "docker compose down -v",
+    "local:reset": "pnpm local:destroy && pnpm local:up",
     "format": "biome format --write ."
   },
   "devDependencies": {
