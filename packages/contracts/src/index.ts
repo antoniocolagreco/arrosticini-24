@@ -2,6 +2,7 @@ import { catalogContract } from "./catalog.js";
 import { identityContract } from "./identity.js";
 import { opsContract } from "./ops.js";
 import { orderingContract } from "./ordering.js";
+import { paymentsContract } from "./payments.js";
 import { shoppingContract } from "./shopping.js";
 
 export { ACTOR_HEADER, ActorDto } from "./actor.js";
@@ -32,6 +33,7 @@ export {
   orderingContract,
   ShippingAddressDto,
 } from "./ordering.js";
+export { PaymentMethodDto, paymentsContract } from "./payments.js";
 export { CartDto, CartLineDto, MAX_LINE_QUANTITY, shoppingContract } from "./shopping.js";
 
 export const contract = {
@@ -39,5 +41,6 @@ export const contract = {
   identity: identityContract,
   shopping: shoppingContract,
   ordering: orderingContract,
+  payments: paymentsContract,
   ops: opsContract,
 };
