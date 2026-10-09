@@ -103,6 +103,7 @@ export function SiteLayout({
             <h2 id="footer-company">Arrosticini 24ore</h2>
             <Link to={`/${locale}/story`}>{t("story")}</Link>
             <Link to={`/${locale}/delivery`}>{t("delivery")}</Link>
+            <Link to={`/${locale}/stress`}>{t("title", { ns: "stress" })}</Link>
           </nav>
           <nav className="footer-column" aria-labelledby="footer-language">
             <h2 id="footer-language">{t("footerLanguage")}</h2>
