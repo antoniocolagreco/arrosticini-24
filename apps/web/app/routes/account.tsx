@@ -1,6 +1,6 @@
 import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Form, redirect, useNavigation } from "react-router";
+import { Form, Link, redirect, useNavigation } from "react-router";
 import { Breadcrumb } from "../components/breadcrumb.js";
 import { Button } from "../components/ui/button.js";
 import { api, getApiError } from "../lib/api.server.js";
@@ -35,6 +35,9 @@ export default function Account({ loaderData }: Route.ComponentProps) {
         <p className="eyebrow">{t("eyebrow")}</p>
         <h1>{t("welcome", { name: loaderData.user.firstName })}</h1>
         <p className="account-intro">{t("accountIntro")}</p>
+        <Link className="checkout-back" to={`/${i18n.language}/orders`}>
+          {t("orders", { ns: "shop" })}
+        </Link>
         <dl className="account-details">
           <div>
             <dt>{t("firstName")}</dt>

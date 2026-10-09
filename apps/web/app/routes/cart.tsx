@@ -4,13 +4,14 @@ import { useTranslation } from "react-i18next";
 import { Link, useFetcher } from "react-router";
 import { Breadcrumb } from "../components/breadcrumb.js";
 import { CartRow } from "../components/cart-row.js";
+import { CartSummary } from "../components/cart-summary.js";
 import { FormAlert } from "../components/form-alert.js";
-import { Price } from "../components/price.js";
 import { Button } from "../components/ui/button.js";
 import {
   type CartProduct,
   type CartResult,
   cartProducts,
+  cartTotal,
   changeCart,
   readCart,
 } from "../lib/cart.server.js";
@@ -18,12 +19,7 @@ import type { Route } from "./+types/cart.js";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const lines: CartProduct[] = await cartProducts(request, await readCart(request, context));
-  const total: number | null = lines.some((line) => !line.product)
-    ? null
-    : lines.reduce(
-        (sum: number, line: CartProduct) => sum + (line.product?.priceCents ?? 0) * line.quantity,
-        0,
-      );
+  const total: number | null = cartTotal(lines);
   return { lines, total };
 }
 
@@ -100,37 +96,12 @@ export default function Cart({ loaderData }: Route.ComponentProps) {
               />
             ))}
           </ul>
-          <aside className="order-summary" aria-labelledby="summary-title">
-            <h2 id="summary-title">{t("summary")}</h2>
-            <dl>
-              {loaderData.lines.map((line: CartProduct) => (
-                <div key={line.slug}>
-                  <dt>
-                    {line.product?.name[locale] ?? line.slug} × {line.quantity}
-                  </dt>
-                  <dd>
-                    {line.product ? (
-                      <Price cents={line.product.priceCents * line.quantity} locale={locale} />
-                    ) : (
-                      "—"
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <div className="summary-total">
-              <span>{t("total")}</span>
-              {loaderData.total !== null ? (
-                <Price cents={loaderData.total} locale={locale} />
-              ) : (
-                <span>—</span>
-              )}
-            </div>
+          <CartSummary lines={loaderData.lines} total={loaderData.total}>
             {loaderData.total === null && <FormAlert message={t("unavailableCart")} />}
-            <Button asChild variant="outline">
-              <Link to={`/${locale}/products`}>{t("continueShopping")}</Link>
+            <Button asChild>
+              <Link to={`/${locale}/checkout`}>{t("goToCheckout")}</Link>
             </Button>
-          </aside>
+          </CartSummary>
         </div>
       )}
     </section>

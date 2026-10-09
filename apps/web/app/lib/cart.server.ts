@@ -28,6 +28,12 @@ export interface CartResult {
   error: string | null;
 }
 
+export function cartTotal(lines: CartProduct[]): number | null {
+  return lines.some((line) => !line.product)
+    ? null
+    : lines.reduce((sum, line) => sum + (line.product?.priceCents ?? 0) * line.quantity, 0);
+}
+
 export async function mergeOwnedCart(
   request: Request,
   actor: ActorDto,
