@@ -19,6 +19,7 @@ import { orderAdminAction } from "../lib/orders-admin.server.js";
 import type { Route } from "./+types/admin-order.js";
 
 const EDITABLE: readonly OrderStatus[] = ["PENDING_PAYMENT", "PAID"];
+const SHIPPED: readonly OrderStatus[] = ["SHIPPED", "DELIVERED", "LOST"];
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const admin = requireAdmin(context, params.lang);
@@ -173,7 +174,7 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
                 <h2 id="shipment-title" className="panel-title">
                   {t("shipment", { ns: "shop" })}
                 </h2>
-                {order.status === "SHIPPED" && !shipping && (
+                {SHIPPED.includes(order.status) && !shipping && (
                   <button
                     type="button"
                     className="icon-action"
@@ -198,9 +199,8 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
                   />
                   <FormField
                     {...shipField("trackingNumber")}
-                    label={t("trackingNumber", { ns: "shop" })}
+                    label={t("trackingNumber")}
                     maxLength={60}
-                    required
                   />
                   <FormField
                     {...shipField("trackingUrl")}

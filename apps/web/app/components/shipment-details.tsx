@@ -11,10 +11,12 @@ export function ShipmentDetails({ shipment }: { shipment: ShipmentDto }) {
           <dt>{t("carrier")}</dt>
           <dd>{shipment.carrier}</dd>
         </div>
-        <div>
-          <dt>{t("trackingNumber")}</dt>
-          <dd>{shipment.trackingNumber}</dd>
-        </div>
+        {shipment.trackingNumber && (
+          <div>
+            <dt>{t("trackingNumber")}</dt>
+            <dd>{shipment.trackingNumber}</dd>
+          </div>
+        )}
       </dl>
       {shipment.trackingUrl && (
         <a

@@ -86,14 +86,14 @@ describe("order administration", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("ships an order with an optional tracking link", async () => {
+  it("ships an order before the tracking number is known", async () => {
     vi.stubEnv("API_URL", "http://api.test");
     const fetchMock: MockInstance<typeof fetch> = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(Response.json(order));
 
     const result = await orderAdminAction(
-      post({ intent: "ship", carrier: " BRT ", trackingNumber: "BRT0001", trackingUrl: " " }),
+      post({ intent: "ship", carrier: " BRT ", trackingNumber: " ", trackingUrl: " " }),
       await context(),
       "it",
       "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
@@ -109,7 +109,7 @@ describe("order administration", () => {
     expect(new URL(outgoing.url).pathname).toBe(
       "/ordering/admin/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A/shipment",
     );
-    expect(await outgoing.json()).toEqual({ carrier: "BRT", trackingNumber: "BRT0001" });
+    expect(await outgoing.json()).toEqual({ carrier: "BRT" });
     expect(outgoing.headers.get("x-actor")).toBe(
       '{"userId":"01JB2Q7Z8X4M3N5P6R7S8T9V0W","role":"admin"}',
     );
