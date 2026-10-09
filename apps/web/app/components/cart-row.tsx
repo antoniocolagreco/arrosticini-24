@@ -53,6 +53,7 @@ export function CartRow({
         type="button"
         className="cart-remove"
         disabled={busy}
+        aria-busy={busy}
         aria-label={t("removeProduct", { name })}
         onClick={() => onRemove(line)}
       >

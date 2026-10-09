@@ -60,7 +60,7 @@ export default function Account({ loaderData }: Route.ComponentProps) {
           </div>
         </dl>
         <Form method="post" action={`/${i18n.language}/logout`}>
-          <Button type="submit" variant="outline" disabled={navigation.state !== "idle"}>
+          <Button type="submit" variant="outline" busy={navigation.state !== "idle"}>
             <LogOut aria-hidden="true" />
             {t("logout")}
           </Button>

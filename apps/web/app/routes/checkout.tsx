@@ -39,6 +39,7 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
   const locale: "it" | "en" = i18n.language === "en" ? "en" : "it";
   const navigation = useNavigation();
   const busy: boolean = navigation.state !== "idle";
+  const placingOrder: boolean = busy && navigation.formData?.get("intent") === "order";
   const [showAddress, setShowAddress] = useState<boolean>(false);
   useEffect(() => {
     setShowAddress(false);
@@ -63,7 +64,7 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
       {actionData?.error && <FormAlert message={t(actionData.error)} />}
       <div className="cart-layout">
         <div>
-          <Form method="post" id="place-order" aria-busy={busy}>
+          <Form method="post" id="place-order" aria-busy={placingOrder}>
             <input type="hidden" name="intent" value="order" />
             <fieldset className="address-picker">
               <legend className="section-title">{t("shippingAddress")}</legend>
@@ -85,7 +86,8 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
             <Button
               variant="outline"
               onClick={() => setShowAddress(true)}
-              disabled={busy || loaderData.addresses.length >= MAX_ADDRESSES_PER_USER}
+              busy={busy}
+              disabled={loaderData.addresses.length >= MAX_ADDRESSES_PER_USER}
             >
               {t("anotherAddress")}
             </Button>
@@ -99,10 +101,11 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
           <Button
             type="submit"
             form="place-order"
-            disabled={busy || !loaderData.addresses.length || loaderData.total === null}
+            busy={busy}
+            disabled={!loaderData.addresses.length || loaderData.total === null}
           >
             <CreditCard aria-hidden="true" />
-            {t(busy ? "placingOrder" : "placeOrder")}
+            {t(placingOrder ? "placingOrder" : "placeOrder")}
           </Button>
           <p className="field-hint">{t("securePayment")}</p>
           {!loaderData.addresses.length && <p className="field-hint">{t("chooseAddress")}</p>}

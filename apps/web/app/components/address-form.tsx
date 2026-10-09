@@ -8,8 +8,9 @@ export function AddressForm({ result }: { result: CheckoutResult | undefined }) 
   const { t } = useTranslation("shop");
   const navigation = useNavigation();
   const busy: boolean = navigation.state !== "idle";
+  const saving: boolean = busy && navigation.formData?.get("intent") === "address";
   return (
-    <Form method="post" className="address-form" aria-busy={busy}>
+    <Form method="post" className="address-form" aria-busy={saving}>
       <input type="hidden" name="intent" value="address" />
       <FormField
         id="fullName"
@@ -83,8 +84,8 @@ export function AddressForm({ result }: { result: CheckoutResult | undefined }) 
         hint={t("countryHint")}
         {...(result?.errors.country ? { error: t(result.errors.country) } : {})}
       />
-      <Button type="submit" disabled={busy}>
-        {t(busy ? "savingAddress" : "saveAddress")}
+      <Button type="submit" busy={busy}>
+        {t(saving ? "savingAddress" : "saveAddress")}
       </Button>
     </Form>
   );

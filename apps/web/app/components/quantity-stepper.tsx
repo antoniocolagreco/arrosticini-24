@@ -16,6 +16,8 @@ export function QuantityStepper({
       <button
         type="button"
         aria-label={t("decrease")}
+        aria-busy={busy}
+        className={value <= 1 ? "is-minimum" : undefined}
         disabled={busy || value <= 1}
         onClick={() => onChange(value - 1)}
       >
@@ -27,6 +29,7 @@ export function QuantityStepper({
       <button
         type="button"
         aria-label={t("increase")}
+        aria-busy={busy}
         disabled={busy}
         onClick={() => onChange(value + 1)}
       >
