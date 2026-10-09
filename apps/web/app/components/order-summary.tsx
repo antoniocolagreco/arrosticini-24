@@ -5,11 +5,13 @@ import { Price } from "./price.js";
 export function OrderSummary({
   lines,
   total,
+  title,
   badge,
   children,
 }: {
   lines: { slug: string; name: string; quantity: number; cents: number | null }[];
   total: number | null;
+  title?: string;
   badge?: ReactNode;
   children?: ReactNode;
 }) {
@@ -18,7 +20,7 @@ export function OrderSummary({
   return (
     <aside className="order-summary" aria-labelledby="summary-title">
       <div className="order-summary-head">
-        <h2 id="summary-title">{t("summary")}</h2>
+        <h2 id="summary-title">{title ?? t("summary")}</h2>
         {badge}
       </div>
       <dl>

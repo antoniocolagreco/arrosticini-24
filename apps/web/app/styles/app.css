@@ -1233,6 +1233,31 @@ h2 {
   background: var(--card);
   border-color: var(--input);
 }
+.payment-shipped,
+.payment-delivered {
+  color: var(--forest);
+  background: var(--success-soft);
+  border-color: var(--forest);
+}
+.payment-lost {
+  color: var(--destructive);
+  background: var(--destructive-soft);
+  border-color: var(--destructive);
+}
+.shipment-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  margin-top: var(--space-3);
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.shipment-link:hover {
+  color: var(--primary-hover);
+}
 .account-layout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -1607,6 +1632,21 @@ h2 {
 .status-cancelled {
   color: var(--muted-foreground);
 }
+.status-shipped {
+  background: var(--success-soft);
+  color: var(--forest);
+  border-color: var(--forest);
+}
+.status-delivered {
+  background: var(--forest);
+  color: var(--forest-foreground);
+  border-color: var(--forest);
+}
+.status-lost {
+  background: var(--destructive-soft);
+  color: var(--destructive);
+  border-color: var(--destructive);
+}
 .admin-heading {
   display: flex;
   align-items: center;
@@ -1771,6 +1811,23 @@ h2 {
   display: grid;
   gap: var(--space-6);
   margin-top: var(--space-6);
+}
+.admin-order {
+  margin-top: var(--space-6);
+}
+.admin-order-panels {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.admin-close-order {
+  margin-top: var(--space-5);
+}
+.admin-table-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .admin-feedback {
   margin-top: var(--space-4);
