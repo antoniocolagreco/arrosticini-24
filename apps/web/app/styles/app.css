@@ -1045,6 +1045,15 @@ h2,
 .add-to-cart .is-added {
   background: var(--forest);
 }
+.add-to-cart-label {
+  display: grid;
+}
+.add-to-cart-label > span {
+  grid-area: 1 / 1;
+}
+.add-to-cart-label > [aria-hidden="true"] {
+  visibility: hidden;
+}
 .cart-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;

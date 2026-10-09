@@ -15,6 +15,7 @@ export function AddToCart({ slug }: { slug: string }) {
   const [added, setAdded] = useState<boolean>(false);
   const busy: boolean =
     fetcher.state !== "idle" || fetchers.some((pending) => pending.formAction?.endsWith("/cart"));
+  const label = fetcher.state !== "idle" ? "adding" : added ? "added" : "add";
   useEffect(() => {
     if (!fetcher.data?.ok) return;
     setQuantity(1);
@@ -31,7 +32,13 @@ export function AddToCart({ slug }: { slug: string }) {
         <QuantityStepper value={quantity} onChange={setQuantity} busy={busy} />
         <Button type="submit" disabled={busy} className={added ? "is-added" : undefined}>
           {added ? <Check aria-hidden="true" /> : <ShoppingCart aria-hidden="true" />}
-          {t(fetcher.state !== "idle" ? "adding" : added ? "added" : "add")}
+          <span className="add-to-cart-label">
+            {(["add", "adding", "added"] as const).map((state) => (
+              <span key={state} aria-hidden={state !== label}>
+                {t(state)}
+              </span>
+            ))}
+          </span>
         </Button>
       </fetcher.Form>
       <span className="sr-only" role="status">
