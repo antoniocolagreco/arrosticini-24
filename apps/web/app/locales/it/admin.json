@@ -99,6 +99,7 @@
   "customerCard": "Scheda cliente: {{name}}",
   "editShippingAddress": "Modifica indirizzo di spedizione",
   "editShipment": "Correggi spedizione",
+  "trackingNumber": "Numero di tracking (facoltativo)",
   "trackingUrl": "Link di tracking (facoltativo)",
   "trackingUrlHint": "Inserisci un indirizzo che inizia con https://.",
   "carrierHint": "Inserisci il corriere, fino a 60 caratteri.",

@@ -68,7 +68,7 @@ export async function orderAdminAction(
       const input = schema.safeParse({
         id: orderId.data,
         carrier: values.carrier,
-        trackingNumber: values.trackingNumber,
+        trackingNumber: values.trackingNumber?.trim() || undefined,
         trackingUrl: values.trackingUrl?.trim() || undefined,
       });
       if (!input.success) {

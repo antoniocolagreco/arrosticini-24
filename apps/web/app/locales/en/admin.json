@@ -99,6 +99,7 @@
   "customerCard": "Customer card: {{name}}",
   "editShippingAddress": "Edit shipping address",
   "editShipment": "Correct shipment",
+  "trackingNumber": "Tracking number (optional)",
   "trackingUrl": "Tracking link (optional)",
   "trackingUrlHint": "Enter an address starting with https://.",
   "carrierHint": "Enter the carrier, up to 60 characters.",
