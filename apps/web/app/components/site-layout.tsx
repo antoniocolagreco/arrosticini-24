@@ -9,11 +9,13 @@ export function SiteLayout({
   children,
   version,
   signedIn = false,
+  isAdmin = false,
   cartCount = 0,
 }: {
   children: ReactNode;
   version: string;
   signedIn?: boolean;
+  isAdmin?: boolean;
   cartCount?: number;
 }) {
   const { t, i18n } = useTranslation("common");
@@ -39,18 +41,20 @@ export function SiteLayout({
           <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
         </nav>
         <div className="header-actions">
-          <Link
-            className="account-link cart-link"
-            to={`/${locale}/cart`}
-            aria-label={t("cartCount", { count: cartCount })}
-          >
-            <ShoppingCart aria-hidden="true" size={20} />
-            {cartCount > 0 && (
-              <span key={cartCount} className="cart-count" aria-hidden="true">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+          {!isAdmin && (
+            <Link
+              className="account-link cart-link"
+              to={`/${locale}/cart`}
+              aria-label={t("cartCount", { count: cartCount })}
+            >
+              <ShoppingCart aria-hidden="true" size={20} />
+              {cartCount > 0 && (
+                <span key={cartCount} className="cart-count" aria-hidden="true">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
           <Link
             className="account-link"
             to={`/${locale}/${signedIn ? "account" : "login"}`}

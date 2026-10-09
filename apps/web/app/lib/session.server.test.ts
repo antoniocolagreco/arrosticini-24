@@ -5,6 +5,7 @@ import { api } from "./api.server.js";
 import {
   assertSameOrigin,
   createValkeySessionStorage,
+  customerOnlyMiddleware,
   loginSession,
   requireUser,
   SESSION_TTL,
@@ -175,6 +176,51 @@ describe("rejected sessions", () => {
 
     expect(response.status).toBe(200);
     expect(records.size).toBe(1);
+  });
+});
+
+describe("customer area", () => {
+  async function visit(role: UserDto["role"]) {
+    const { sessions } = store();
+    const context: RouterContextProvider = new RouterContextProvider();
+    context.set(sessionStorageContext, sessions);
+    context.set(sessionContext, await sessions.getSession());
+    const cookie: string = await loginSession(context, { ...user, role });
+    context.set(sessionContext, await sessions.getSession(cookie));
+    const request: Request = new Request("http://web.test/en/cart", { headers: { cookie } });
+    const next = vi.fn(async () => new Response("cart page"));
+    try {
+      const outcome = await customerOnlyMiddleware(
+        {
+          request,
+          context,
+          params: { lang: "en" },
+          url: new URL(request.url),
+          pattern: "/:lang/cart",
+        },
+        next,
+      );
+      return { outcome, next };
+    } catch (caught: unknown) {
+      return { outcome: caught, next };
+    }
+  }
+
+  it("sends an admin to order management", async () => {
+    const { outcome, next } = await visit("admin");
+
+    if (!(outcome instanceof Response)) expect.fail("Expected redirect");
+    expect(outcome.status).toBe(302);
+    expect(outcome.headers.get("Location")).toBe("/en/admin/orders");
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("lets a customer in", async () => {
+    const { outcome, next } = await visit("customer");
+
+    if (!(outcome instanceof Response)) expect.fail("Expected response");
+    expect(await outcome.text()).toBe("cart page");
+    expect(next).toHaveBeenCalledOnce();
   });
 });
 

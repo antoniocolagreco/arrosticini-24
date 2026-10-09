@@ -34,16 +34,22 @@ export function AccountLayout({
   const base: string = `/${i18n.language === "en" ? "en" : "it"}`;
   const links: { to: string; label: string; Icon: LucideIcon; end?: boolean }[] = [
     { to: `${base}/account`, label: t("navProfile"), Icon: UserRound, end: true },
-    { to: `${base}/orders`, label: t("navOrders"), Icon: Package },
-    { to: `${base}/account/addresses`, label: t("navAddresses"), Icon: MapPin },
-    { to: `${base}/account/payment-methods`, label: t("paymentMethods"), Icon: CreditCard },
+    ...(root?.isAdmin
+      ? [
+          {
+            to: `${base}/admin/orders`,
+            label: t("allOrders", { ns: "admin" }),
+            Icon: ClipboardList,
+          },
+          { to: `${base}/admin/products`, label: t("catalog", { ns: "admin" }), Icon: Settings },
+          { to: `${base}/admin/users`, label: t("users", { ns: "admin" }), Icon: UsersRound },
+        ]
+      : [
+          { to: `${base}/orders`, label: t("navOrders"), Icon: Package },
+          { to: `${base}/account/addresses`, label: t("navAddresses"), Icon: MapPin },
+          { to: `${base}/account/payment-methods`, label: t("paymentMethods"), Icon: CreditCard },
+        ]),
   ];
-  if (root?.isAdmin)
-    links.push(
-      { to: `${base}/admin/orders`, label: t("allOrders", { ns: "admin" }), Icon: ClipboardList },
-      { to: `${base}/admin/products`, label: t("catalog", { ns: "admin" }), Icon: Settings },
-      { to: `${base}/admin/users`, label: t("users", { ns: "admin" }), Icon: UsersRound },
-    );
   return (
     <section className="catalog-page account-area">
       <Breadcrumb

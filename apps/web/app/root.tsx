@@ -87,6 +87,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
     <SiteLayout
       version={loaderData.version}
       signedIn={loaderData.signedIn}
+      isAdmin={loaderData.isAdmin}
       cartCount={loaderData.cartCount}
     >
       <Outlet />
@@ -101,6 +102,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     <SiteLayout
       version={loaderData?.version ?? "dev"}
       signedIn={loaderData?.signedIn ?? false}
+      isAdmin={loaderData?.isAdmin ?? false}
       cartCount={loaderData?.cartCount ?? 0}
     >
       <ErrorPage

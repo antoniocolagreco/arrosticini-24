@@ -19,8 +19,10 @@ import { ShipmentDetails } from "../components/shipment-details.js";
 import { StatusBadge } from "../components/status-badge.js";
 import { Button } from "../components/ui/button.js";
 import { api } from "../lib/api.server.js";
-import { requireUser } from "../lib/session.server.js";
+import { customerOnlyMiddleware, requireUser } from "../lib/session.server.js";
 import type { Route } from "./+types/order.js";
+
+export const middleware = [customerOnlyMiddleware];
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const user = requireUser(context, params.lang);
