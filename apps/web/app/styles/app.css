@@ -1757,6 +1757,21 @@ h2 {
 .product-status-archived {
   color: var(--muted-foreground);
 }
+.user-status-active {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: var(--forest-foreground);
+}
+.user-status-suspended {
+  background: var(--destructive-soft);
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+.admin-user {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
 .admin-feedback {
   margin-top: var(--space-4);
 }

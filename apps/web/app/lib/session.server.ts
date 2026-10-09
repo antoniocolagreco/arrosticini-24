@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { IdDto, LocaleDto, Role, type UserDto } from "@arrosticini/contracts";
+import { isLocale } from "@arrosticini/kernel";
 import {
   type Cookie,
   createContext,
@@ -13,6 +14,8 @@ import {
   type SessionStorage,
 } from "react-router";
 import { z } from "zod";
+import { detectRejectedActor } from "./api.server.js";
+import { pathLocale } from "./locale.server.js";
 
 const AuthSessionData = z.object({ userId: IdDto, role: Role, locale: LocaleDto });
 const SessionData = AuthSessionData.partial().extend({ cartId: IdDto.optional() });
@@ -77,7 +80,14 @@ export const sessionMiddleware: MiddlewareFunction<Response> = async (
   const storage: SessionStore = context.get(sessionStorageContext);
   const session: Session<SessionData> = await storage.getSession(request.headers.get("cookie"));
   context.set(sessionContext, session);
-  const response: Response = await next();
+  const { response, rejected } = await detectRejectedActor(next);
+  if (rejected && session.has("userId")) {
+    const path: string | null = pathLocale(request.url);
+    const locale: string = isLocale(path) ? path : (session.get("locale") ?? "it");
+    throw redirect(`/${locale}/login`, {
+      headers: { "Set-Cookie": await storage.destroySession(session) },
+    });
+  }
   if (
     session.id &&
     !response.headers.getSetCookie().some((cookie: string) => cookie.startsWith("__session="))
