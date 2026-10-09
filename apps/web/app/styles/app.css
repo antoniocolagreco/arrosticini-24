@@ -229,7 +229,8 @@ h2,
   color: var(--destructive);
 }
 .field-error svg,
-.form-alert svg {
+.form-alert svg,
+.form-success svg {
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -239,6 +240,18 @@ h2,
   border: 1px solid var(--destructive);
   border-radius: var(--radius-md);
   background: var(--destructive-soft);
+  line-height: 1.5;
+}
+.form-success {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--forest);
+  border-radius: var(--radius-md);
+  background: var(--success-soft);
+  color: var(--forest);
   line-height: 1.5;
 }
 .auth-alternative {
@@ -1289,6 +1302,20 @@ h2,
   font-size: 26px;
   line-height: 1.1;
   letter-spacing: -1px;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--control-h);
+  margin: calc(var(--space-2) * -1) 0 var(--space-5);
+}
+.panel-head .panel-title {
+  margin-bottom: 0;
+}
+.panel-note {
+  color: var(--muted-foreground);
 }
 .account-details {
   display: grid;
