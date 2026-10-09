@@ -75,5 +75,9 @@
   "emptySearch": "Prova a cercare con un’altra parola.",
   "emptyCatalog": "Il catalogo è vuoto. Torna a trovarci più tardi.",
   "clearSearch": "Mostra tutti i prodotti",
-  "noImage": "Immagine non disponibile"
+  "noImage": "Immagine non disponibile",
+  "paymentPending": "Il pagamento non è ancora confermato. Se lo hai completato, questa pagina si aggiorna automaticamente.",
+  "paymentPaid": "Pagamento ricevuto. Il tuo ordine è confermato.",
+  "paymentCancelled": "La sessione di pagamento è scaduta. Puoi ripartire dal carrello.",
+  "refreshPayment": "Aggiorna stato"
 }

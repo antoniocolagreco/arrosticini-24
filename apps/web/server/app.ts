@@ -6,6 +6,7 @@ import {
   REQUEST_ID_HEADER,
 } from "@arrosticini/ops";
 import express, { type Express } from "express";
+import { forwardStripeWebhook } from "./stripe-webhook.js";
 
 export function createApp(logger: Logger, lifecycle: Lifecycle): Express {
   const app: Express = express();
@@ -16,5 +17,6 @@ export function createApp(logger: Logger, lifecycle: Lifecycle): Express {
     next();
   });
   app.get("/healthz", healthz(lifecycle));
+  app.post("/webhooks/stripe", express.raw({ type: "application/json" }), forwardStripeWebhook);
   return app;
 }

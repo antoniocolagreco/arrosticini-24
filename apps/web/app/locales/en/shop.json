@@ -75,5 +75,9 @@
   "emptySearch": "Try searching with another word.",
   "emptyCatalog": "The catalog is empty. Please check back later.",
   "clearSearch": "Show all products",
-  "noImage": "Image unavailable"
+  "noImage": "Image unavailable",
+  "paymentPending": "Your payment is not confirmed yet. If you have completed it, this page updates automatically.",
+  "paymentPaid": "Payment received. Your order is confirmed.",
+  "paymentCancelled": "The payment session has expired. You can start again from your cart.",
+  "refreshPayment": "Refresh status"
 }
