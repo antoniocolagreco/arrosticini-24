@@ -35,6 +35,21 @@ function product(slug: string, status: ProductStatus, pieces?: number): Product 
   );
 }
 
+function plain(target: Product | undefined) {
+  return (
+    target && {
+      slug: target.slug,
+      name: target.name,
+      description: target.description,
+      pieces: target.pieces,
+      price: target.price,
+      images: target.images,
+      status: target.status,
+      updatedAt: target.updatedAt,
+    }
+  );
+}
+
 beforeAll(async () => {
   await client.send(new CreateTableCommand(catalogTableDefinition(tableName)));
   await repository.create(product("arrosticini-75", "ACTIVE", 75));
@@ -50,7 +65,7 @@ describe("DynamoDbProductRepository", () => {
   it("finds a product by slug with every field", async () => {
     const found = await repository.findBySlug("arrosticini-75");
 
-    expect(found).toEqual(product("arrosticini-75", "ACTIVE", 75));
+    expect(plain(found)).toEqual(plain(product("arrosticini-75", "ACTIVE", 75)));
   });
 
   it("returns undefined for an unknown slug", async () => {
@@ -79,5 +94,23 @@ describe("DynamoDbProductRepository", () => {
     const found = await repository.search({});
 
     expect(found).toHaveLength(3);
+  });
+
+  it("saves the changes of an existing product", async () => {
+    const changed = product("vino", "ACTIVE");
+    changed.update(
+      { pieces: 6, price: Money.ofCents(4200), status: "ARCHIVED" },
+      new Date("2026-10-09T10:00:00.000Z"),
+    );
+    changed.removeImage("01JB2Q7Z8X4M3N5P6R7S8T9V0W", new Date("2026-10-09T10:00:00.000Z"));
+
+    await repository.save(changed);
+
+    expect(plain(await repository.findBySlug("vino"))).toEqual(plain(changed));
+  });
+
+  it("refuses to save a product that was never created", async () => {
+    await expect(repository.save(product("birra", "DRAFT"))).rejects.toThrow();
+    expect(await repository.findBySlug("birra")).toBeUndefined();
   });
 });

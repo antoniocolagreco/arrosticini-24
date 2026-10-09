@@ -22,6 +22,7 @@
     "@arrosticini/payments": "workspace:*",
     "@arrosticini/shopping": "workspace:*",
     "@aws-sdk/client-dynamodb": "catalog:",
+    "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/lib-dynamodb": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
@@ -33,7 +34,6 @@
   "devDependencies": {
     "@arrosticini/testing": "workspace:*",
     "@arrosticini/tsconfig": "workspace:*",
-    "@aws-sdk/client-s3": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
     "@orpc/openapi-client": "catalog:",

@@ -7,6 +7,8 @@ export const Env = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   AWS_REGION: z.string().min(1),
   DYNAMODB_ENDPOINT: z.url().optional(),
+  S3_ENDPOINT: z.url().optional(),
+  MEDIA_BUCKET: z.string().min(1),
   CATALOG_TABLE: z.string().min(1),
   IDENTITY_TABLE: z.string().min(1),
   ORDERING_TABLE: z.string().min(1),

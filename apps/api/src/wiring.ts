@@ -1,8 +1,13 @@
 import {
+  AddProductImage,
+  CreateProduct,
   catalogRouter,
   DynamoDbProductRepository,
   GetProduct,
   ListProducts,
+  RemoveProductImage,
+  S3ImageStorage,
+  UpdateProduct,
 } from "@arrosticini/catalog";
 import {
   AddAddress,
@@ -51,6 +56,7 @@ import {
   shoppingRouter,
   ValkeyCartRepository,
 } from "@arrosticini/shopping";
+import type { S3Client } from "@aws-sdk/client-s3";
 import type { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import type { Valkey } from "iovalkey";
 import type Stripe from "stripe";
@@ -71,20 +77,23 @@ export interface Tables {
 
 export interface Clients {
   dynamo: DynamoDBDocumentClient;
+  s3: S3Client;
   valkey: Valkey;
   stripe: Stripe;
 }
 
 export interface Settings {
   tables: Tables;
+  mediaBucket: string;
   stripeWebhookSecret: string;
 }
 
 export function createApi(
-  { dynamo, valkey, stripe }: Clients,
-  { tables, stripeWebhookSecret }: Settings,
+  { dynamo, s3, valkey, stripe }: Clients,
+  { tables, mediaBucket, stripeWebhookSecret }: Settings,
 ) {
   const products = new DynamoDbProductRepository(dynamo, tables.catalog);
+  const images = new S3ImageStorage(s3, mediaBucket);
   const users = new DynamoDbUserRepository(dynamo, tables.identity);
   const carts = new ValkeyCartRepository(valkey);
   const orders = new DynamoDbOrderRepository(dynamo, tables.ordering);
@@ -115,6 +124,10 @@ export function createApi(
     catalog: catalogRouter({
       listProducts: new ListProducts(products),
       getProduct,
+      createProduct: new CreateProduct(products),
+      updateProduct: new UpdateProduct(products),
+      addProductImage: new AddProductImage(products, images),
+      removeProductImage: new RemoveProductImage(products, images),
     }),
     identity: identityRouter({
       registerUser: new RegisterUser(users, hasher),

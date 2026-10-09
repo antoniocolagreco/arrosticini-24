@@ -13,7 +13,15 @@ import { localizedText, Money } from "@arrosticini/kernel";
 import { createLogger, Lifecycle } from "@arrosticini/ops";
 import { orderingTableDefinition } from "@arrosticini/ordering";
 import { paymentsTableDefinition } from "@arrosticini/payments";
+import { S3_TEST_CREDENTIALS } from "@arrosticini/testing";
 import { CreateTableCommand, DeleteTableCommand } from "@aws-sdk/client-dynamodb";
+import {
+  CreateBucketCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  NotFound,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
@@ -36,14 +44,21 @@ const tables = {
   ordering: `ordering-test-${randomUUID()}`,
   payments: `payments-test-${randomUUID()}`,
 };
+const mediaBucket = `media-test-${randomUUID()}`;
 const stripeWebhookSecret = "whsec_arrosticini";
 const dynamo = createDynamoDbClient("local", inject("dynamodbEndpoint"));
+const s3 = new S3Client({
+  endpoint: inject("s3Endpoint"),
+  region: "local",
+  forcePathStyle: true,
+  credentials: S3_TEST_CREDENTIALS,
+});
 const valkey = new Valkey(inject("valkeyUrl"));
 const stripe = new Stripe("sk_test_arrosticini", { ...inject("stripeMock"), protocol: "http" });
 const app = createApp(
   logger,
   new Lifecycle(),
-  createApi({ dynamo, valkey, stripe }, { tables, stripeWebhookSecret }),
+  createApi({ dynamo, s3, valkey, stripe }, { tables, mediaBucket, stripeWebhookSecret }),
 );
 let server: Server;
 
@@ -78,6 +93,7 @@ beforeAll(async () => {
   await dynamo.send(new CreateTableCommand(identityTableDefinition(tables.identity)));
   await dynamo.send(new CreateTableCommand(orderingTableDefinition(tables.ordering)));
   await dynamo.send(new CreateTableCommand(paymentsTableDefinition(tables.payments)));
+  await s3.send(new CreateBucketCommand({ Bucket: mediaBucket }));
   const products = new DynamoDbProductRepository(dynamo, tables.catalog);
   await products.create(product("fornacella", 10000, "ACTIVE"));
   await products.create(product("vino", 500, "ACTIVE"));
@@ -171,6 +187,132 @@ describe("catalog", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({ code: "BAD_REQUEST" });
+  });
+});
+
+describe("catalog administration", () => {
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
+  const salsiccia = {
+    slug: "salsiccia",
+    name: { it: "Salsiccia di fegato", en: "Liver sausage" },
+    description: { it: "Specialità teramana", en: "A Teramo speciality" },
+    priceCents: 1200,
+  };
+
+  it("creates a draft product hidden from customers", async () => {
+    const response = await request(app)
+      .post("/catalog/products")
+      .set(ACTOR_HEADER, JSON.stringify(admin))
+      .send(salsiccia);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({
+      ...salsiccia,
+      currency: "EUR",
+      images: [],
+      status: "DRAFT",
+      updatedAt: expect.any(String),
+    });
+    const hidden = await client()
+      .catalog.getProduct({ slug: "salsiccia" })
+      .catch((caught: unknown) => caught);
+    expect(hidden).toMatchObject({ code: "PRODUCT_NOT_FOUND", status: 404 });
+  });
+
+  it("answers PRODUCT_SLUG_TAKEN on a slug already used", async () => {
+    const error = await client(admin)
+      .catalog.createProduct(salsiccia)
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "PRODUCT_SLUG_TAKEN", status: 409, defined: true });
+  });
+
+  it("reserves product management to admins", async () => {
+    const anonymous = await client()
+      .catalog.createProduct({ ...salsiccia, slug: "ventricina" })
+      .catch((caught: unknown) => caught);
+    const forbidden = await client(customer)
+      .catalog.updateProduct({ slug: "salsiccia", priceCents: 1 })
+      .catch((caught: unknown) => caught);
+
+    expect(anonymous).toMatchObject({ code: "UNAUTHORIZED", status: 401, defined: true });
+    expect(forbidden).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
+  });
+
+  it("updates and publishes a product", async () => {
+    const updated = await client(admin).catalog.updateProduct({
+      slug: "salsiccia",
+      pieces: 4,
+      priceCents: 1350,
+      status: "ACTIVE",
+    });
+
+    expect(updated).toMatchObject({ pieces: 4, priceCents: 1350, status: "ACTIVE" });
+    expect(await client().catalog.getProduct({ slug: "salsiccia" })).toEqual(updated);
+
+    const cleared = await client(admin).catalog.updateProduct({ slug: "salsiccia", pieces: null });
+    expect(cleared).not.toHaveProperty("pieces");
+  });
+
+  it("answers PRODUCT_NOT_FOUND when updating an unknown product", async () => {
+    const error = await client(admin)
+      .catalog.updateProduct({ slug: "pecora-volante", priceCents: 1 })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "PRODUCT_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("uploads an image to S3 and removes it", async () => {
+    const withImage = await client(admin).catalog.addProductImage({
+      slug: "salsiccia",
+      file: new File([png], "salsiccia.png", { type: "image/png" }),
+    });
+
+    const [image] = withImage.images;
+    expect(image?.key).toBe(`products/salsiccia/${image?.id}.png`);
+    const stored = await s3.send(new GetObjectCommand({ Bucket: mediaBucket, Key: image?.key }));
+    expect(stored.ContentType).toBe("image/png");
+    expect(await stored.Body?.transformToByteArray()).toEqual(png);
+
+    const withoutImage = await client(admin).catalog.removeProductImage({
+      slug: "salsiccia",
+      imageId: image?.id ?? "",
+    });
+
+    expect(withoutImage.images).toEqual([]);
+    await expect(
+      s3.send(new HeadObjectCommand({ Bucket: mediaBucket, Key: image?.key })),
+    ).rejects.toBeInstanceOf(NotFound);
+  });
+
+  it("answers INVALID_IMAGE when the content is not an image", async () => {
+    const error = await client(admin)
+      .catalog.addProductImage({
+        slug: "salsiccia",
+        file: new File(["<svg></svg>"], "salsiccia.png", { type: "image/png" }),
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "INVALID_IMAGE", status: 422, defined: true });
+  });
+
+  it("rejects files with a type that is not allowed", async () => {
+    const error = await client(admin)
+      .catalog.addProductImage({
+        slug: "salsiccia",
+        file: new File([png], "salsiccia.gif", { type: "image/gif" }),
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "BAD_REQUEST", status: 400 });
+  });
+
+  it("answers PRODUCT_IMAGE_NOT_FOUND on an unknown image", async () => {
+    const error = await client(admin)
+      .catalog.removeProductImage({ slug: "salsiccia", imageId: "01JB2Q7Z8X4M3N5P6R7S8T9V96" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "PRODUCT_IMAGE_NOT_FOUND", status: 404, defined: true });
   });
 });
 

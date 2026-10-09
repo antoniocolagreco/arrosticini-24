@@ -352,6 +352,9 @@ importers:
       '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
         version: 3.1147.0
+      '@aws-sdk/client-s3':
+        specifier: 'catalog:'
+        version: 3.1147.0
       '@aws-sdk/lib-dynamodb':
         specifier: 'catalog:'
         version: 3.1147.0(@aws-sdk/client-dynamodb@3.1147.0)
@@ -380,9 +383,6 @@ importers:
       '@arrosticini/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
-      '@aws-sdk/client-s3':
-        specifier: 'catalog:'
-        version: 3.1147.0
       '@orpc/client':
         specifier: 'catalog:'
         version: 1.15.5
