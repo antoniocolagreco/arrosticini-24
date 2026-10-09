@@ -2,8 +2,8 @@ import { IdDto } from "@arrosticini/contracts";
 import { ArrowRight, CircleCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
+import { AccountLayout } from "../components/account-layout.js";
 import { AddressCard } from "../components/address-card.js";
-import { Breadcrumb } from "../components/breadcrumb.js";
 import { FormAlert } from "../components/form-alert.js";
 import { Price } from "../components/price.js";
 import { StatusBadge } from "../components/status-badge.js";
@@ -44,20 +44,12 @@ export default function AdminUser({ loaderData, actionData }: Route.ComponentPro
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
   const name = `${user.firstName} ${user.lastName}`;
   return (
-    <section className="catalog-page admin-page">
-      <Breadcrumb
-        items={[
-          { label: t("account", { ns: "account" }), to: `/${locale}/account` },
-          { label: t("users"), to: `/${locale}/admin/users` },
-          { label: name },
-        ]}
-      />
-      <div className="admin-heading">
-        <div className="catalog-heading">
-          <p className="eyebrow">{t("userCard")}</p>
-          <h1>{name}</h1>
-        </div>
-        {user.role === "customer" && (
+    <AccountLayout
+      crumbs={[{ label: t("users"), to: `/${locale}/admin/users` }, { label: name }]}
+      eyebrow={t("userCard")}
+      title={name}
+      actions={
+        user.role === "customer" && (
           <Form method="post">
             <input
               type="hidden"
@@ -72,8 +64,9 @@ export default function AdminUser({ loaderData, actionData }: Route.ComponentPro
               {t(user.status === "ACTIVE" ? "suspend" : "reactivate")}
             </Button>
           </Form>
-        )}
-      </div>
+        )
+      }
+    >
       {actionData?.error && <FormAlert message={t(actionData.error)} />}
       {(saved === "suspended" || saved === "reactivated") && (
         <p className="admin-notice" role="status">
@@ -163,6 +156,6 @@ export default function AdminUser({ loaderData, actionData }: Route.ComponentPro
           )}
         </section>
       </div>
-    </section>
+    </AccountLayout>
   );
 }

@@ -2,7 +2,7 @@ import { type ProductDto, ProductStatus } from "@arrosticini/contracts";
 import { Archive, CircleCheck, Package, Pencil, Plus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { data, Form, Link, useFetcher, useNavigation } from "react-router";
-import { Breadcrumb } from "../components/breadcrumb.js";
+import { AccountLayout } from "../components/account-layout.js";
 import { FormAlert } from "../components/form-alert.js";
 import { Price } from "../components/price.js";
 import { ProductImage } from "../components/product-image.js";
@@ -47,26 +47,20 @@ export default function AdminProducts({ loaderData }: Route.ComponentProps) {
   const busy: boolean = fetcher.state !== "idle";
   const archived = fetcher.data?.archived;
   return (
-    <section className="catalog-page admin-page">
-      <Breadcrumb
-        items={[
-          { label: t("account", { ns: "account" }), to: `/${locale}/account` },
-          { label: t("catalog") },
-        ]}
-      />
-      <div className="admin-heading">
-        <div className="catalog-heading">
-          <p className="eyebrow">{t("eyebrow")}</p>
-          <h1>{t("catalog")}</h1>
-          <p className="catalog-intro">{t("intro")}</p>
-        </div>
+    <AccountLayout
+      crumbs={[{ label: t("catalog") }]}
+      eyebrow={t("eyebrow")}
+      title={t("catalog")}
+      intro={t("intro")}
+      actions={
         <Button asChild>
           <Link to={`/${locale}/admin/products/new`}>
             <Plus aria-hidden="true" />
             {t("newProduct")}
           </Link>
         </Button>
-      </div>
+      }
+    >
       <Form
         method="get"
         className="admin-filters"
@@ -231,6 +225,6 @@ export default function AdminProducts({ loaderData }: Route.ComponentProps) {
       <span className="sr-only" role="status">
         {busy ? t("working") : ""}
       </span>
-    </section>
+    </AccountLayout>
   );
 }
