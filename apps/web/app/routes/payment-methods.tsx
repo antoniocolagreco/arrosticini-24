@@ -7,8 +7,10 @@ import { PaymentMethodCard } from "../components/payment-method-card.js";
 import { Button } from "../components/ui/button.js";
 import { api } from "../lib/api.server.js";
 import { paymentMethodsAction } from "../lib/payments.server.js";
-import { requireUser } from "../lib/session.server.js";
+import { customerOnlyMiddleware, requireUser } from "../lib/session.server.js";
 import type { Route } from "./+types/payment-methods.js";
+
+export const middleware = [customerOnlyMiddleware];
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const user = requireUser(context, params.lang);

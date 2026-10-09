@@ -15,7 +15,10 @@ import {
   changeCart,
   readCart,
 } from "../lib/cart.server.js";
+import { customerOnlyMiddleware } from "../lib/session.server.js";
 import type { Route } from "./+types/cart.js";
+
+export const middleware = [customerOnlyMiddleware];
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const lines: CartProduct[] = await cartProducts(request, await readCart(request, context));

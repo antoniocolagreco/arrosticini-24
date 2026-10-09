@@ -1,8 +1,9 @@
 import { Check, ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher, useFetchers } from "react-router";
+import { useFetcher, useFetchers, useRouteLoaderData } from "react-router";
 import type { CartResult } from "../lib/cart.server.js";
+import type { loader } from "../root.js";
 import { FormAlert } from "./form-alert.js";
 import { QuantityStepper } from "./quantity-stepper.js";
 import { Button } from "./ui/button.js";
@@ -11,6 +12,7 @@ export function AddToCart({ slug }: { slug: string }) {
   const { t, i18n } = useTranslation("shop");
   const fetcher = useFetcher<CartResult>();
   const fetchers = useFetchers();
+  const root = useRouteLoaderData<typeof loader>("root");
   const [quantity, setQuantity] = useState<number>(1);
   const [status, setStatus] = useState<"add" | "adding" | "added">("add");
   const [minimumPending, setMinimumPending] = useState<boolean>(false);
@@ -32,6 +34,7 @@ export function AddToCart({ slug }: { slug: string }) {
       return () => clearTimeout(timer);
     }
   }, [fetcher.data, fetcher.state, minimumPending, status]);
+  if (root?.isAdmin) return null;
   return (
     <div className="add-to-cart">
       <fetcher.Form

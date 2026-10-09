@@ -107,6 +107,15 @@ export function requireUser(
   return AuthSessionData.parse(session.data);
 }
 
+export const customerOnlyMiddleware: MiddlewareFunction<Response> = async (
+  { params, context },
+  next,
+) => {
+  if (context.get(sessionContext).get("role") === "admin")
+    throw redirect(`/${params.lang}/admin/orders`);
+  return next();
+};
+
 export function assertSameOrigin(request: Request): void {
   const origin: string | null = request.headers.get("origin");
   const expected: string = new URL(process.env.PUBLIC_ORIGIN ?? request.url).origin;
