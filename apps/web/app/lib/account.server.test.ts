@@ -18,6 +18,7 @@ const mario: UserDto = {
   id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
   email: "mario.rossi@example.com",
   role: "customer",
+  status: "ACTIVE",
   firstName: "Mario",
   lastName: "Bianchi",
   preferredLocale: "en",

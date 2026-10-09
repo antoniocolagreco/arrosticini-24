@@ -52,6 +52,9 @@ export class VerifyCredentials {
     if (user === undefined || !valid) {
       throw new DomainError("INVALID_CREDENTIALS", "Invalid email or password");
     }
+    if (user.status === "SUSPENDED") {
+      throw new DomainError("ACCOUNT_SUSPENDED", `User ${user.id} is suspended`);
+    }
     return user;
   }
 }

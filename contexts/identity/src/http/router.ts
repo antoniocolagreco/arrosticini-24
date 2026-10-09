@@ -8,6 +8,7 @@ import type {
   ListAddresses,
   UpdateAddress,
 } from "../application/addresses.js";
+import type { GetUser, ListUsers, SetUserStatus } from "../application/administration.js";
 import type { RegisterUser, VerifyCredentials } from "../application/registration.js";
 import type { Address, User } from "../domain/user.js";
 
@@ -25,6 +26,9 @@ export interface IdentityUseCases {
   addAddress: AddAddress;
   updateAddress: UpdateAddress;
   deleteAddress: DeleteAddress;
+  listUsers: ListUsers;
+  getUser: GetUser;
+  setUserStatus: SetUserStatus;
 }
 
 type Defined<T> = { [K in keyof T]: Exclude<T[K], undefined> };
@@ -42,6 +46,7 @@ function toUserDto(user: User): UserDto {
     id: user.id,
     email: user.email,
     role: user.role,
+    status: user.status,
     firstName: user.firstName,
     lastName: user.lastName,
     preferredLocale: user.preferredLocale,
@@ -84,5 +89,15 @@ export function identityRouter(useCases: IdentityUseCases) {
     deleteAddress: os.deleteAddress.handler(async ({ input, context }) => {
       await useCases.deleteAddress.execute(context.actor, input.id);
     }),
+    listUsers: os.listUsers.handler(async ({ context }) => ({
+      items: (await useCases.listUsers.execute(context.actor)).map(toUserDto),
+    })),
+    getUser: os.getUser.handler(async ({ input, context }) => {
+      const user = await useCases.getUser.execute(context.actor, input.id);
+      return { user: toUserDto(user), addresses: user.addresses.map(toAddressDto) };
+    }),
+    setUserStatus: os.setUserStatus.handler(async ({ input, context }) =>
+      toUserDto(await useCases.setUserStatus.execute(context.actor, input.id, input.status)),
+    ),
   };
 }

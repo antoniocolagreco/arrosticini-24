@@ -1,6 +1,6 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
-import { authed, IdDto, LocaleDto } from "./common.js";
+import { admin, authed, IdDto, LocaleDto } from "./common.js";
 
 export const MAX_ADDRESSES_PER_USER = 5;
 
@@ -10,12 +10,15 @@ export const Password = z.string().min(8).max(128);
 
 export const Role = z.enum(["customer", "admin"]);
 
+export const UserStatus = z.enum(["ACTIVE", "SUSPENDED"]);
+
 const PersonName = z.string().trim().min(1).max(60);
 
 export const UserDto = z.object({
   id: IdDto,
   email: Email,
   role: Role,
+  status: UserStatus,
   firstName: PersonName,
   lastName: PersonName,
   preferredLocale: LocaleDto,
@@ -40,10 +43,13 @@ export const AddressDto = z.object({
 
 export type Email = z.infer<typeof Email>;
 export type Role = z.infer<typeof Role>;
+export type UserStatus = z.infer<typeof UserStatus>;
 export type UserDto = z.infer<typeof UserDto>;
 export type AddressDto = z.infer<typeof AddressDto>;
 
 const addressNotFound = { ADDRESS_NOT_FOUND: { status: 404 } } as const;
+
+const userNotFound = { USER_NOT_FOUND: { status: 404 } } as const;
 
 export const registerUser = oc
   .route({ method: "POST", path: "/identity/users", successStatus: 201 })
@@ -63,7 +69,7 @@ export const verifyCredentials = oc
   .route({ method: "POST", path: "/identity/credentials/verify" })
   .input(z.object({ email: Email, password: z.string().min(1).max(128) }))
   .output(UserDto)
-  .errors({ INVALID_CREDENTIALS: { status: 401 } });
+  .errors({ INVALID_CREDENTIALS: { status: 401 }, ACCOUNT_SUSPENDED: { status: 403 } });
 
 export const getMe = authed.route({ method: "GET", path: "/identity/me" }).output(UserDto);
 
@@ -118,6 +124,22 @@ export const deleteAddress = authed
   .output(z.void())
   .errors(addressNotFound);
 
+export const listUsers = admin
+  .route({ method: "GET", path: "/identity/admin/users" })
+  .output(z.object({ items: z.array(UserDto) }));
+
+export const getUser = admin
+  .route({ method: "GET", path: "/identity/admin/users/{id}" })
+  .input(z.object({ id: IdDto }))
+  .output(z.object({ user: UserDto, addresses: z.array(AddressDto) }))
+  .errors(userNotFound);
+
+export const setUserStatus = admin
+  .route({ method: "PATCH", path: "/identity/admin/users/{id}" })
+  .input(z.object({ id: IdDto, status: UserStatus }))
+  .output(UserDto)
+  .errors({ ...userNotFound, USER_NOT_SUSPENDABLE: { status: 409 } });
+
 export const identityContract = {
   registerUser,
   verifyCredentials,
@@ -128,4 +150,7 @@ export const identityContract = {
   addAddress,
   updateAddress,
   deleteAddress,
+  listUsers,
+  getUser,
+  setUserStatus,
 };

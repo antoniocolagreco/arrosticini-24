@@ -168,3 +168,36 @@ describe("User addresses", () => {
     );
   });
 });
+
+describe("User status", () => {
+  it("starts active, can be suspended and reactivated", () => {
+    const target = user();
+    expect(target.status).toBe("ACTIVE");
+
+    target.suspend();
+    expect(target.status).toBe("SUSPENDED");
+
+    target.reactivate();
+    expect(target.status).toBe("ACTIVE");
+  });
+
+  it("never suspends an admin", () => {
+    const admin = User.register(
+      {
+        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        email: "admin@example.com",
+        password: { hash: "aGFzaA==", salt: "c2FsdA==" },
+        role: "admin",
+        firstName: "Admin",
+        lastName: "Arrosticini 24ore",
+        preferredLocale: "it",
+      },
+      now,
+    );
+
+    expect(() => admin.suspend()).toThrow(
+      expect.objectContaining({ code: "USER_NOT_SUSPENDABLE" }),
+    );
+    expect(admin.status).toBe("ACTIVE");
+  });
+});
