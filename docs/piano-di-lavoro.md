@@ -105,7 +105,7 @@ Il bus esegue gli handler in modo sincrono, e `api` risponde 2xx a Stripe solo q
 
 Stati dell'ordine: `PENDING_PAYMENT` → `PAID` oppure `PENDING_PAYMENT` → `CANCELLED`, poi a mano dall'admin `PAID` → `SHIPPED` → `DELIVERED` oppure `SHIPPED` → `LOST`. L'aggregato `Order` vieta ogni altra transizione.
 
-- **Spedizione:** `SHIPPED` richiede corriere e numero di tracking; il link di tracking (`https`) è facoltativo. I tre campi si correggono finché l'ordine è `SHIPPED`.
+- **Spedizione:** `SHIPPED` richiede il corriere; numero di tracking e link di tracking (`https`) sono facoltativi, perché il corriere spesso li comunica dopo. I dati di spedizione restano modificabili anche dopo `DELIVERED` o `LOST`.
 - **Indirizzo:** l'admin lo modifica finché l'ordine è `PENDING_PAYMENT` o `PAID`.
 - **Webhook ripetuto:** un pagamento confermato su un ordine già `PAID`, `SHIPPED`, `DELIVERED` o `LOST` non ha effetti.
 

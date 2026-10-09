@@ -77,7 +77,7 @@ export function orderingRouter(useCases: OrderingUseCases) {
         toDto(
           await useCases.shipOrder.execute(context.actor, id, {
             carrier,
-            trackingNumber,
+            ...(trackingNumber === undefined ? {} : { trackingNumber }),
             ...(trackingUrl === undefined ? {} : { trackingUrl }),
           }),
         ),

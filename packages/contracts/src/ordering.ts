@@ -14,7 +14,7 @@ export const OrderStatus = z.enum([
 
 export const ShipmentDto = z.object({
   carrier: z.string().trim().min(1).max(60),
-  trackingNumber: z.string().trim().min(1).max(60),
+  trackingNumber: z.string().trim().min(1).max(60).optional(),
   trackingUrl: z
     .url({ protocol: /^https$/ })
     .max(500)
