@@ -4,8 +4,8 @@ import { CircleCheck, Clock3, RefreshCw, ShoppingCart } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useRevalidator } from "react-router";
+import { AccountLayout } from "../components/account-layout.js";
 import { AddressCard } from "../components/address-card.js";
-import { Breadcrumb } from "../components/breadcrumb.js";
 import { OrderSummary } from "../components/order-summary.js";
 import { StatusBadge } from "../components/status-badge.js";
 import { Button } from "../components/ui/button.js";
@@ -43,29 +43,29 @@ export default function Order({ loaderData }: Route.ComponentProps) {
     return () => clearInterval(timer);
   }, [order.status, revalidator]);
   return (
-    <section className="catalog-page">
-      <Breadcrumb
-        items={[
-          { label: t("orders"), to: `/${locale}/orders` },
-          { label: t("orderReference", { id: order.id }) },
-        ]}
-      />
-      <div className="catalog-heading">
-        <p className="eyebrow">{t("eyebrow")}</p>
-        <h1>{t("orderDetails")}</h1>
-        <StatusBadge status={order.status} />
-        <p className="order-date">
-          {new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
-            new Date(order.createdAt),
-          )}
-        </p>
-      </div>
+    <AccountLayout
+      crumbs={[
+        { label: t("orders"), to: `/${locale}/orders` },
+        { label: t("orderReference", { id: order.id }) },
+      ]}
+      eyebrow={t("orderReference", { id: order.id })}
+      title={t("orderTitle", {
+        date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
+          new Date(order.createdAt),
+        ),
+      })}
+      intro={t("orderPlacedAt", {
+        time: new Intl.DateTimeFormat(locale, { timeStyle: "short" }).format(
+          new Date(order.createdAt),
+        ),
+      })}
+    >
       <div className={`payment-notice payment-${order.status.toLowerCase()}`}>
         <p role="status">
           {order.status === "PAID" ? (
-            <CircleCheck aria-hidden="true" />
+            <CircleCheck className="payment-notice-icon" size={20} aria-hidden="true" />
           ) : (
-            <Clock3 aria-hidden="true" />
+            <Clock3 className="payment-notice-icon" size={20} aria-hidden="true" />
           )}
           {t(
             `payment${order.status === "PAID" ? "Paid" : order.status === "CANCELLED" ? "Cancelled" : "Pending"}`,
@@ -92,11 +92,7 @@ export default function Order({ loaderData }: Route.ComponentProps) {
           </Button>
         )}
       </div>
-      <div className="cart-layout">
-        <div>
-          <h2 className="section-title">{t("shippingAddress")}</h2>
-          <AddressCard address={order.shippingAddress} />
-        </div>
+      <div className="order-detail">
         <OrderSummary
           lines={order.lines.map((line) => ({
             slug: line.slug,
@@ -105,8 +101,15 @@ export default function Order({ loaderData }: Route.ComponentProps) {
             cents: line.unitPriceCents * line.quantity,
           }))}
           total={order.totalCents}
+          badge={<StatusBadge status={order.status} />}
         />
+        <section className="panel" aria-labelledby="shipping-title">
+          <h2 id="shipping-title" className="panel-title">
+            {t("shippingAddress")}
+          </h2>
+          <AddressCard address={order.shippingAddress} />
+        </section>
       </div>
-    </section>
+    </AccountLayout>
   );
 }
