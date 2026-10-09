@@ -13,28 +13,31 @@ paths:
             schema:
               type: object
               properties:
-                username:
+                email:
                   type: string
-                  pattern: ^[a-z0-9._-]{3,32}$
+                  maxLength: 254
                 password:
                   type: string
                   minLength: 8
                   maxLength: 128
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
                 preferredLocale:
                   enum:
                     - it
                     - en
                   type: string
-                displayName:
-                  type: string
-                  minLength: 1
-                  maxLength: 60
-                email:
-                  type: string
-                  format: email
               required:
-                - username
+                - email
                 - password
+                - firstName
+                - lastName
                 - preferredLocale
       responses:
         "201":
@@ -47,19 +50,22 @@ paths:
                   id:
                     type: string
                     pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
-                  username:
+                  email:
                     type: string
-                    pattern: ^[a-z0-9._-]{3,32}$
+                    format: email
                   role:
                     enum:
                       - customer
                       - admin
                     type: string
-                  displayName:
+                  firstName:
                     type: string
-                  email:
+                    minLength: 1
+                    maxLength: 60
+                  lastName:
                     type: string
-                    format: email
+                    minLength: 1
+                    maxLength: 60
                   preferredLocale:
                     enum:
                       - it
@@ -70,8 +76,10 @@ paths:
                     format: date-time
                 required:
                   - id
-                  - username
+                  - email
                   - role
+                  - firstName
+                  - lastName
                   - preferredLocale
                   - createdAt
         "409":
@@ -85,12 +93,12 @@ paths:
                       defined:
                         const: true
                       code:
-                        const: USERNAME_TAKEN
+                        const: EMAIL_TAKEN
                       status:
                         const: 409
                       message:
                         type: string
-                        default: USERNAME_TAKEN
+                        default: EMAIL_TAKEN
                       data: {}
                     required:
                       - defined
@@ -123,15 +131,15 @@ paths:
             schema:
               type: object
               properties:
-                username:
+                email:
                   type: string
-                  pattern: ^[a-z0-9._-]{3,32}$
+                  maxLength: 254
                 password:
                   type: string
                   minLength: 1
                   maxLength: 128
               required:
-                - username
+                - email
                 - password
       responses:
         "200":
@@ -144,19 +152,22 @@ paths:
                   id:
                     type: string
                     pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
-                  username:
+                  email:
                     type: string
-                    pattern: ^[a-z0-9._-]{3,32}$
+                    format: email
                   role:
                     enum:
                       - customer
                       - admin
                     type: string
-                  displayName:
+                  firstName:
                     type: string
-                  email:
+                    minLength: 1
+                    maxLength: 60
+                  lastName:
                     type: string
-                    format: email
+                    minLength: 1
+                    maxLength: 60
                   preferredLocale:
                     enum:
                       - it
@@ -167,8 +178,10 @@ paths:
                     format: date-time
                 required:
                   - id
-                  - username
+                  - email
                   - role
+                  - firstName
+                  - lastName
                   - preferredLocale
                   - createdAt
         "401":
@@ -224,19 +237,22 @@ paths:
                   id:
                     type: string
                     pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
-                  username:
+                  email:
                     type: string
-                    pattern: ^[a-z0-9._-]{3,32}$
+                    format: email
                   role:
                     enum:
                       - customer
                       - admin
                     type: string
-                  displayName:
+                  firstName:
                     type: string
-                  email:
+                    minLength: 1
+                    maxLength: 60
+                  lastName:
                     type: string
-                    format: email
+                    minLength: 1
+                    maxLength: 60
                   preferredLocale:
                     enum:
                       - it
@@ -247,8 +263,10 @@ paths:
                     format: date-time
                 required:
                   - id
-                  - username
+                  - email
                   - role
+                  - firstName
+                  - lastName
                   - preferredLocale
                   - createdAt
         "401":
@@ -299,13 +317,14 @@ paths:
             schema:
               type: object
               properties:
-                displayName:
+                firstName:
                   type: string
                   minLength: 1
                   maxLength: 60
-                email:
+                lastName:
                   type: string
-                  format: email
+                  minLength: 1
+                  maxLength: 60
                 preferredLocale:
                   enum:
                     - it
@@ -322,19 +341,22 @@ paths:
                   id:
                     type: string
                     pattern: ^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$
-                  username:
+                  email:
                     type: string
-                    pattern: ^[a-z0-9._-]{3,32}$
+                    format: email
                   role:
                     enum:
                       - customer
                       - admin
                     type: string
-                  displayName:
+                  firstName:
                     type: string
-                  email:
+                    minLength: 1
+                    maxLength: 60
+                  lastName:
                     type: string
-                    format: email
+                    minLength: 1
+                    maxLength: 60
                   preferredLocale:
                     enum:
                       - it
@@ -345,8 +367,10 @@ paths:
                     format: date-time
                 required:
                   - id
-                  - username
+                  - email
                   - role
+                  - firstName
+                  - lastName
                   - preferredLocale
                   - createdAt
         "401":
@@ -551,6 +575,7 @@ paths:
                         - city
                         - postalCode
                         - country
+                        - phone
                         - isDefault
                 required:
                   - items
@@ -637,6 +662,7 @@ paths:
                 - city
                 - postalCode
                 - country
+                - phone
       responses:
         "201":
           description: OK
@@ -684,6 +710,7 @@ paths:
                   - city
                   - postalCode
                   - country
+                  - phone
                   - isDefault
         "401":
           description: "401"
@@ -806,11 +833,9 @@ paths:
                   type: string
                   pattern: ^[A-Z]{2}$
                 phone:
-                  anyOf:
-                    - type: string
-                      minLength: 1
-                      maxLength: 30
-                    - type: "null"
+                  type: string
+                  minLength: 1
+                  maxLength: 30
                 isDefault:
                   const: true
       responses:
@@ -860,6 +885,7 @@ paths:
                   - city
                   - postalCode
                   - country
+                  - phone
                   - isDefault
         "401":
           description: "401"

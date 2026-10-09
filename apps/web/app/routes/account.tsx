@@ -33,19 +33,21 @@ export default function Account({ loaderData }: Route.ComponentProps) {
       <Breadcrumb items={[{ label: t("account") }]} />
       <div className="auth-panel">
         <p className="eyebrow">{t("eyebrow")}</p>
-        <h1>{t("welcome", { name: loaderData.user.displayName ?? loaderData.user.username })}</h1>
+        <h1>{t("welcome", { name: loaderData.user.firstName })}</h1>
         <p className="account-intro">{t("accountIntro")}</p>
         <dl className="account-details">
           <div>
-            <dt>{t("username")}</dt>
-            <dd>{loaderData.user.username}</dd>
+            <dt>{t("firstName")}</dt>
+            <dd>{loaderData.user.firstName}</dd>
           </div>
-          {loaderData.user.email && (
-            <div>
-              <dt>{t("email")}</dt>
-              <dd>{loaderData.user.email}</dd>
-            </div>
-          )}
+          <div>
+            <dt>{t("lastName")}</dt>
+            <dd>{loaderData.user.lastName}</dd>
+          </div>
+          <div>
+            <dt>{t("email")}</dt>
+            <dd>{loaderData.user.email}</dd>
+          </div>
           <div>
             <dt>{t("preferredLocale")}</dt>
             <dd>{loaderData.user.preferredLocale === "it" ? "Italiano" : "English"}</dd>

@@ -27,18 +27,42 @@ export function AuthForm({ register, result }: { register: boolean; result?: Aut
         <Form method="post" ref={form} noValidate>
           {result?.error && <FormAlert message={t(result.error)} />}
           <FormField
-            id="username"
-            name="username"
-            label={t("username")}
-            autoComplete="username"
+            id="email"
+            name="email"
+            type="email"
+            label={t("email")}
+            autoComplete={register ? "email" : "username"}
             autoCapitalize="none"
             spellCheck={false}
             required
-            maxLength={32}
-            defaultValue={result?.values.username}
-            hint={t("usernameHint")}
-            {...(result?.errors.username ? { error: t(result.errors.username) } : {})}
+            maxLength={254}
+            defaultValue={result?.values.email}
+            {...(result?.errors.email ? { error: t(result.errors.email) } : {})}
           />
+          {register && (
+            <>
+              <FormField
+                id="firstName"
+                name="firstName"
+                label={t("firstName")}
+                autoComplete="given-name"
+                required
+                maxLength={60}
+                defaultValue={result?.values.firstName}
+                {...(result?.errors.firstName ? { error: t(result.errors.firstName) } : {})}
+              />
+              <FormField
+                id="lastName"
+                name="lastName"
+                label={t("lastName")}
+                autoComplete="family-name"
+                required
+                maxLength={60}
+                defaultValue={result?.values.lastName}
+                {...(result?.errors.lastName ? { error: t(result.errors.lastName) } : {})}
+              />
+            </>
+          )}
           <FormField
             id="password"
             name="password"

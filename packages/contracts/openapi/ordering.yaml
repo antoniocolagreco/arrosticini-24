@@ -98,6 +98,7 @@ paths:
                           - city
                           - postalCode
                           - country
+                          - phone
                       totalCents:
                         type: integer
                         minimum: 0
@@ -361,6 +362,7 @@ paths:
                             - city
                             - postalCode
                             - country
+                            - phone
                         totalCents:
                           type: integer
                           minimum: 0
@@ -512,6 +514,7 @@ paths:
                       - city
                       - postalCode
                       - country
+                      - phone
                   totalCents:
                     type: integer
                     minimum: 0
@@ -698,6 +701,7 @@ paths:
                             - city
                             - postalCode
                             - country
+                            - phone
                         totalCents:
                           type: integer
                           minimum: 0

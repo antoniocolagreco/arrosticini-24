@@ -17,13 +17,13 @@ export function api(request: Request, actor?: ActorDto): ContractRouterClient<ty
 
 export function getApiError(
   error: unknown,
-): "PRODUCT_NOT_FOUND" | "BAD_REQUEST" | "INVALID_CREDENTIALS" | "USERNAME_TAKEN" | "UNAUTHORIZED" {
+): "PRODUCT_NOT_FOUND" | "BAD_REQUEST" | "INVALID_CREDENTIALS" | "EMAIL_TAKEN" | "UNAUTHORIZED" {
   if (
     error instanceof ORPCError &&
     (error.code === "PRODUCT_NOT_FOUND" ||
       error.code === "BAD_REQUEST" ||
       error.code === "INVALID_CREDENTIALS" ||
-      error.code === "USERNAME_TAKEN" ||
+      error.code === "EMAIL_TAKEN" ||
       error.code === "UNAUTHORIZED")
   ) {
     return error.code;

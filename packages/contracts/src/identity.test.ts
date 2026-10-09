@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { AddressDto, Username } from "./identity.js";
+import { AddressDto, Email } from "./identity.js";
 
-describe("Username", () => {
+describe("Email", () => {
   it("normalizes to lowercase without surrounding spaces", () => {
-    expect(Username.parse("  Mario.R ")).toBe("mario.r");
+    expect(Email.parse("  Mario.Rossi@Example.COM ")).toBe("mario.rossi@example.com");
   });
 
-  it.each(["ab", "a".repeat(33), "mario rossi", "mario!"])("rejects %o", (username) => {
-    expect(Username.safeParse(username).success).toBe(false);
+  it.each([
+    "mario",
+    "mario@",
+    "@example.com",
+    "mario rossi@example.com",
+    `${"a".repeat(250)}@x.it`,
+  ])("rejects %o", (email) => {
+    expect(Email.safeParse(email).success).toBe(false);
   });
 });
 
@@ -19,11 +25,18 @@ describe("AddressDto", () => {
     city: "Chieti",
     postalCode: "66100",
     country: "IT",
+    phone: "+39 0871 000000",
     isDefault: true,
   };
 
   it("accepts an address without optional fields", () => {
     expect(AddressDto.safeParse(address).success).toBe(true);
+  });
+
+  it("requires a phone number for the courier", () => {
+    const { phone: _phone, ...withoutPhone } = address;
+
+    expect(AddressDto.safeParse(withoutPhone).success).toBe(false);
   });
 
   it.each(["it", "ITA", "I"])("rejects country %o", (country) => {

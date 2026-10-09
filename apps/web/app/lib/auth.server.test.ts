@@ -33,7 +33,7 @@ async function context() {
   return context;
 }
 
-function post(username: string, password: string): Request {
+function post(fields: Record<string, string>): Request {
   return new Request("http://web.test/it/login", {
     method: "POST",
     headers: {
@@ -41,25 +41,68 @@ function post(username: string, password: string): Request {
       "x-request-id": "auth-request",
       "x-actor": '{"userId":"forged","role":"admin"}',
     },
-    body: new URLSearchParams({ username, password }),
+    body: new URLSearchParams(fields),
   });
 }
 
 const user: UserDto = {
   id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
-  username: "antonio",
+  email: "antonio@example.com",
+  firstName: "Antonio",
+  lastName: "Colagreco",
   role: "customer",
   preferredLocale: "it",
   createdAt: "2026-10-09T00:00:00.000Z",
 };
 
 describe("authentication actions", () => {
+  it("requires both names before registering and keeps entered values without the password", async () => {
+    const fetchMock: MockInstance<typeof fetch> = vi.spyOn(globalThis, "fetch");
+    const result = await authenticate(
+      post({
+        email: "antonio@example.com",
+        password: "long-password",
+        firstName: "",
+        lastName: " ",
+      }),
+      await context(),
+      "it",
+      true,
+    );
+    if (result instanceof Response) expect.fail("Expected validation errors");
+    expect(result.data.errors).toEqual({ firstName: "firstNameHint", lastName: "lastNameHint" });
+    expect(result.data.values).toEqual({
+      email: "antonio@example.com",
+      firstName: "",
+      lastName: " ",
+    });
+    expect(JSON.stringify(result.data)).not.toContain("long-password");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("signs in with only a normalized email and password", async () => {
+    const fetchMock: MockInstance<typeof fetch> = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json(user));
+    const result = await authenticate(
+      post({ email: " Antonio@Example.com ", password: "long-password" }),
+      await context(),
+      "it",
+      false,
+    );
+    if (!(result instanceof Response)) expect.fail("Expected redirect");
+    expect(result.status).toBe(303);
+    const outbound: Request = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(await outbound.json()).toEqual({
+      email: "antonio@example.com",
+      password: "long-password",
+    });
+  });
   it("rejects unsupported language paths before executing an action", async () => {
     const next = vi.fn(async () => new Response(null));
     await expect(
       localeMiddleware[0]?.(
         {
-          request: post("antonio", "long-password"),
+          request: post({ email: "antonio@example.com", password: "long-password" }),
           params: { lang: "xx" },
           context: await context(),
           url: new URL("http://web.test/xx/login"),
@@ -72,10 +115,15 @@ describe("authentication actions", () => {
   });
   it("validates registration before calling the API and never returns a password", async () => {
     const fetchMock: MockInstance<typeof fetch> = vi.spyOn(globalThis, "fetch");
-    const result = await authenticate(post("a", "short"), await context(), "it", true);
+    const result = await authenticate(
+      post({ email: "a", password: "short", firstName: "Antonio", lastName: "Colagreco" }),
+      await context(),
+      "it",
+      true,
+    );
     if (result instanceof Response) expect.fail("Expected validation errors");
     expect(result.init?.status).toBe(400);
-    expect(result.data.errors).toEqual({ username: "usernameHint", password: "passwordHint" });
+    expect(result.data.errors).toEqual({ email: "emailHint", password: "passwordHint" });
     expect(JSON.stringify(result.data)).not.toContain("short");
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -85,7 +133,12 @@ describe("authentication actions", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json(user));
     const result = await authenticate(
-      post(" Antonio ", "long-password"),
+      post({
+        email: " Antonio@Example.com ",
+        password: "long-password",
+        firstName: " Antonio ",
+        lastName: " Colagreco ",
+      }),
       await context(),
       "en",
       true,
@@ -96,7 +149,9 @@ describe("authentication actions", () => {
     expect(result.headers.get("Set-Cookie")).toContain("__session=");
     const outbound: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(await outbound.json()).toEqual({
-      username: "antonio",
+      email: "antonio@example.com",
+      firstName: "Antonio",
+      lastName: "Colagreco",
       password: "long-password",
       preferredLocale: "en",
     });
@@ -113,7 +168,7 @@ describe("authentication actions", () => {
       ),
     );
     const result = await authenticate(
-      post("antonio", "wrong-password"),
+      post({ email: "antonio@example.com", password: "wrong-password" }),
       await context(),
       "it",
       false,
@@ -124,22 +179,27 @@ describe("authentication actions", () => {
     expect(JSON.stringify(result.data)).not.toContain("wrong-password");
   });
 
-  it("returns a duplicate username on the field that needs changing", async () => {
+  it("returns a duplicate email on the field that needs changing", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       Response.json(
-        { defined: true, code: "USERNAME_TAKEN", status: 409, message: "Taken" },
+        { defined: true, code: "EMAIL_TAKEN", status: 409, message: "Taken" },
         { status: 409 },
       ),
     );
     const result = await authenticate(
-      post("antonio", "long-password"),
+      post({
+        email: "antonio@example.com",
+        password: "long-password",
+        firstName: "Antonio",
+        lastName: "Colagreco",
+      }),
       await context(),
       "it",
       true,
     );
     if (result instanceof Response) expect.fail("Expected field error");
     expect(result.init?.status).toBe(409);
-    expect(result.data.errors.username).toBe("usernameTaken");
+    expect(result.data.errors.email).toBe("emailTaken");
   });
 
   it("lets unexpected API failures reach the shared error boundary", async () => {
@@ -150,7 +210,12 @@ describe("authentication actions", () => {
       ),
     );
     await expect(
-      authenticate(post("antonio", "long-password"), await context(), "it", false),
+      authenticate(
+        post({ email: "antonio@example.com", password: "long-password" }),
+        await context(),
+        "it",
+        false,
+      ),
     ).rejects.toThrow();
   });
 
@@ -158,7 +223,10 @@ describe("authentication actions", () => {
     const fetchMock: MockInstance<typeof fetch> = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json(user));
-    await api(post("antonio", "unused"), { userId: user.id, role: "customer" }).identity.getMe();
+    await api(post({ email: "antonio@example.com", password: "unused" }), {
+      userId: user.id,
+      role: "customer",
+    }).identity.getMe();
     const outbound: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(outbound.headers.get("x-actor")).toBe(
       JSON.stringify({ userId: user.id, role: "customer" }),

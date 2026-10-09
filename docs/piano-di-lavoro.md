@@ -21,7 +21,7 @@ Riferimenti visivi: `docs/mock.png` (home) e `docs/images/` (immagini del sito e
 - **api:** Express 5, Zod 4, AWS SDK v3 su Fargate. Non raggiungibile dalla rete pubblica.
 - **Contratto web↔api:** oRPC contract-first in `packages/contracts`.
 - **Persistenza:** DynamoDB (una tabella per bounded context), Valkey (sessioni e carrelli), S3 (asset della build e immagini dei prodotti).
-- **Autenticazione:** username e password, sessione su Valkey, cookie HttpOnly.
+- **Autenticazione:** email e password, sessione su Valkey, cookie HttpOnly. In registrazione si chiedono anche nome e cognome; il telefono sta su ogni indirizzo di spedizione, perché il corriere chiama chi riceve.
 - **Pagamenti:** Stripe Checkout ospitato, modalità test.
 - **Multilingua:** IT ed EN, lingua nel prefisso dell'URL (`/it/...`, `/en/...`).
 - **Segreti:** AWS Systems Manager Parameter Store.
@@ -183,11 +183,13 @@ Prezzi in centesimi interi con valuta `EUR` (value object `Money`). Testi locali
 
 | Item | PK | SK | Attributi |
 |---|---|---|---|
-| Utente | `USER#<userId>` | `PROFILE` | username, passwordHash, salt, role, displayName, email, preferredLocale, createdAt |
-| Indice username | `USERNAME#<username>` | `LOOKUP` | userId |
+| Utente | `USER#<userId>` | `PROFILE` | email, passwordHash, salt, role, firstName, lastName, preferredLocale, createdAt |
+| Indice email | `EMAIL#<email>` | `LOOKUP` | userId |
 | Indirizzo | `USER#<userId>` | `ADDRESS#<addressId>` | fullName, line1, line2, city, postalCode, country, phone, isDefault |
 
-- La registrazione scrive utente e indice username in una `TransactWriteItems`, con condizione di non esistenza su entrambi.
+- L'email è salvata in minuscolo, senza spazi ai lati.
+- Il telefono dell'indirizzo è obbligatorio; `line2` è l'unico campo facoltativo.
+- La registrazione scrive utente e indice email in una `TransactWriteItems`, con condizione di non esistenza su entrambi.
 - Massimo 5 indirizzi per utente.
 
 ### `ordering`
@@ -227,7 +229,7 @@ Le carte salvate restano su Stripe.
 | `fornacella` | Fornacella / Arrosticini grill | — | 10000 | `p_fornacella.webp` |
 
 - Le immagini dei prodotti stanno in `apps/api/seed/images/`, copiate da `docs/images/p_*.webp`. Il seed le carica nel bucket `media`.
-- L'utente admin si crea dal seed con `ADMIN_USERNAME` e `ADMIN_PASSWORD`.
+- L'utente admin si crea dal seed con `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
 
 ## Contratto web↔api (oRPC)
 
@@ -250,7 +252,7 @@ Dal contratto si ricavano:
 Regole:
 - Un contratto per bounded context, tutti composti nel composition root.
 - Path REST con prefisso per contesto.
-- Errori dichiarati nel contratto, con codici stabili (`USERNAME_TAKEN`, `INVALID_CREDENTIALS`, `PRODUCT_NOT_FOUND`, `ORDER_INVALID_TRANSITION`, ...).
+- Errori dichiarati nel contratto, con codici stabili (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `PRODUCT_NOT_FOUND`, `ORDER_INVALID_TRANSITION`, ...).
 - Un middleware oRPC legge `x-actor` e lo mette nel contesto della procedura. I middleware `authed` e `admin` proteggono le procedure riservate.
 - **In CI:** la spec rigenerata deve coincidere con quella committata, e `oasdiff breaking` la confronta con quella dell'ultima release.
 - **Fuori dal contratto, come route Express:** il webhook Stripe (serve il corpo grezzo) e `/healthz`.
