@@ -55,6 +55,9 @@
   "PENDING_PAYMENT": "Awaiting payment",
   "PAID": "Paid",
   "CANCELLED": "Cancelled",
+  "SHIPPED": "Shipped",
+  "DELIVERED": "Delivered",
+  "LOST": "Lost",
   "add": "Add",
   "adding": "Adding…",
   "added": "Added",
@@ -102,5 +105,12 @@
   "paymentPending": "Your payment is not confirmed yet. If you have completed it, this page updates automatically.",
   "paymentPaid": "Payment received. Your order is confirmed.",
   "paymentCancelled": "The payment session has expired. You can start again from your cart.",
+  "orderShipped": "Your order is on its way.",
+  "orderDelivered": "Your order has been delivered.",
+  "orderLost": "The carrier lost your order. We will contact you to sort it out.",
+  "shipment": "Shipment",
+  "carrier": "Carrier",
+  "trackingNumber": "Tracking number",
+  "trackShipment": "Track the shipment",
   "refreshPayment": "Refresh status"
 }

@@ -1,4 +1,5 @@
 import {
+  ClipboardList,
   CreditCard,
   LogOut,
   type LucideIcon,
@@ -39,6 +40,7 @@ export function AccountLayout({
   ];
   if (root?.isAdmin)
     links.push(
+      { to: `${base}/admin/orders`, label: t("allOrders", { ns: "admin" }), Icon: ClipboardList },
       { to: `${base}/admin/products`, label: t("catalog", { ns: "admin" }), Icon: Settings },
       { to: `${base}/admin/users`, label: t("users", { ns: "admin" }), Icon: UsersRound },
     );

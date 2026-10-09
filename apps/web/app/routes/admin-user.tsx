@@ -1,7 +1,7 @@
 import { IdDto } from "@arrosticini/contracts";
-import { CircleCheck } from "lucide-react";
+import { ArrowRight, CircleCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Form, useNavigation, useSearchParams } from "react-router";
+import { Form, Link, useNavigation, useSearchParams } from "react-router";
 import { AddressCard } from "../components/address-card.js";
 import { Breadcrumb } from "../components/breadcrumb.js";
 import { FormAlert } from "../components/form-alert.js";
@@ -137,7 +137,7 @@ export default function AdminUser({ loaderData, actionData }: Route.ComponentPro
             <ul className="order-list">
               {orders.map((order) => (
                 <li key={order.id}>
-                  <div className="order-row">
+                  <Link className="order-row" to={`/${locale}/admin/orders/${order.id}`}>
                     <span className="order-row-when">
                       <strong>{date.format(new Date(order.createdAt))}</strong>
                       <span className="order-row-ref">
@@ -153,7 +153,8 @@ export default function AdminUser({ loaderData, actionData }: Route.ComponentPro
                     <span className="order-row-total">
                       <Price cents={order.totalCents} locale={locale} small />
                     </span>
-                  </div>
+                    <ArrowRight className="order-row-arrow" size={20} aria-hidden="true" />
+                  </Link>
                 </li>
               ))}
             </ul>

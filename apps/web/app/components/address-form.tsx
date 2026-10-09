@@ -1,4 +1,4 @@
-import type { AddressDto } from "@arrosticini/contracts";
+import type { AddressDto, ShippingAddressDto } from "@arrosticini/contracts";
 import { useTranslation } from "react-i18next";
 import { Form, useNavigation } from "react-router";
 import type { AddressFormResult } from "../lib/addresses.server.js";
@@ -15,7 +15,7 @@ export function AddressForm({
 }: {
   title: string;
   intent: string;
-  address?: AddressDto;
+  address?: AddressDto | ShippingAddressDto;
   result: AddressFormResult | undefined;
   onCancel?: () => void;
 }) {
@@ -52,7 +52,7 @@ export function AddressForm({
       </h2>
       <Form method="post" className="address-form" aria-busy={saving}>
         <input type="hidden" name="intent" value={intent} />
-        {address && <input type="hidden" name="id" value={address.id} />}
+        {address && "id" in address && <input type="hidden" name="id" value={address.id} />}
         <FormField
           {...field("fullName")}
           label={t("fullName")}
