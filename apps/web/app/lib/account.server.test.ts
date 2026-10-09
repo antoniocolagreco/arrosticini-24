@@ -114,8 +114,8 @@ describe("account actions", () => {
     const result = await accountAction(
       post({
         intent: "password",
-        currentPassword: "pecora-demo-24",
-        newPassword: "arrosticini-in-volo",
+        currentPassword: "arrosticini-24",
+        newPassword: "pecora-in-overdrive",
       }),
       (await context()).state,
       "en",
@@ -127,8 +127,8 @@ describe("account actions", () => {
     expect(outgoing.method).toBe("POST");
     expect(new URL(outgoing.url).pathname).toBe("/identity/me/password");
     expect(await outgoing.json()).toEqual({
-      currentPassword: "pecora-demo-24",
-      newPassword: "arrosticini-in-volo",
+      currentPassword: "arrosticini-24",
+      newPassword: "pecora-in-overdrive",
     });
   });
 
@@ -178,8 +178,8 @@ describe("account actions", () => {
     const result = await accountAction(
       post({
         intent: "password",
-        currentPassword: "password-sbagliata",
-        newPassword: "arrosticini-in-volo",
+        currentPassword: "wrong-password",
+        newPassword: "pecora-in-overdrive",
       }),
       (await context()).state,
       "it",
