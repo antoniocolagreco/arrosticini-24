@@ -24,5 +24,14 @@ services:
     volumes:
       - s3-data:/data
 
+  stripe:
+    image: stripe/stripe-cli:v1.51.0
+    profiles: ["stripe"]
+    command: ["listen", "--forward-to", "host.docker.internal:3100/webhooks/stripe"]
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   s3-data:

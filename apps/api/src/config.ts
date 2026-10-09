@@ -10,7 +10,10 @@ export const Env = z.object({
   CATALOG_TABLE: z.string().min(1),
   IDENTITY_TABLE: z.string().min(1),
   ORDERING_TABLE: z.string().min(1),
+  PAYMENTS_TABLE: z.string().min(1),
   VALKEY_URL: z.url(),
+  STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
+  STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
 });
 
 export type Config = z.infer<typeof Env>;

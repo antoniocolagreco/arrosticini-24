@@ -3,8 +3,22 @@ import { describe, expect, it } from "vitest";
 import { Order } from "../domain/order.js";
 import type { OrderRepository } from "../domain/order-repository.js";
 import type { Actor } from "./actor.js";
-import { GetOrder, ListAllOrders, ListOrders, PlaceOrder } from "./orders.js";
-import type { CartReader, CartSnapshot, CatalogPricing, CustomerDirectory } from "./ports.js";
+import {
+  CancelOrder,
+  GetOrder,
+  ListAllOrders,
+  ListOrders,
+  MarkOrderPaid,
+  PlaceOrder,
+} from "./orders.js";
+import type {
+  CartReader,
+  CartSnapshot,
+  CatalogPricing,
+  CustomerDirectory,
+  PaymentInitiator,
+  PaymentRequest,
+} from "./ports.js";
 
 class InMemoryOrderRepository implements OrderRepository {
   readonly orders = new Map<Id, Order>();
@@ -23,6 +37,19 @@ class InMemoryOrderRepository implements OrderRepository {
 
   async create(order: Order) {
     this.orders.set(order.id, order);
+  }
+
+  async save(order: Order) {
+    this.orders.set(order.id, order);
+  }
+}
+
+class RecordingPaymentInitiator implements PaymentInitiator {
+  readonly requests: [Actor, PaymentRequest][] = [];
+
+  async start(actor: Actor, request: PaymentRequest) {
+    this.requests.push([actor, request]);
+    return `https://checkout.stripe.test/${request.orderId}`;
   }
 }
 
@@ -78,8 +105,10 @@ const customers: CustomerDirectory = {
       : undefined,
 };
 
-function placeOrder(orders: OrderRepository) {
-  return new PlaceOrder(orders, cartReader, pricing, customers);
+const checkout = { locale: "it", ordersUrl: "https://shop.test/it/orders" } as const;
+
+function placeOrder(orders: OrderRepository, payments = new RecordingPaymentInitiator()) {
+  return new PlaceOrder(orders, cartReader, pricing, customers, payments);
 }
 
 function stored(orders: InMemoryOrderRepository, id: Id, userId: Id): Order {
@@ -107,9 +136,10 @@ describe("PlaceOrder", () => {
   it("creates a pending order with server prices and a copy of the address", async () => {
     const orders = new InMemoryOrderRepository();
 
-    const order = await placeOrder(orders).execute(mario, {
+    const { order } = await placeOrder(orders).execute(mario, {
       cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
       addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+      ...checkout,
     });
 
     expect(order.userId).toBe(mario.userId);
@@ -133,11 +163,39 @@ describe("PlaceOrder", () => {
     expect(orders.orders.get(order.id)).toBe(order);
   });
 
+  it("starts the payment and returns its URL", async () => {
+    const payments = new RecordingPaymentInitiator();
+
+    const { order, paymentUrl } = await placeOrder(new InMemoryOrderRepository(), payments).execute(
+      mario,
+      {
+        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        locale: "en",
+        ordersUrl: "https://shop.test/en/orders/",
+      },
+    );
+
+    expect(paymentUrl).toBe(`https://checkout.stripe.test/${order.id}`);
+    expect(payments.requests).toEqual([
+      [
+        mario,
+        {
+          orderId: order.id,
+          lines: order.lines,
+          locale: "en",
+          returnUrl: `https://shop.test/en/orders/${order.id}`,
+        },
+      ],
+    ]);
+  });
+
   it("requires a signed-in user", async () => {
     await expect(
       placeOrder(new InMemoryOrderRepository()).execute(undefined, {
         cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
         addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        ...checkout,
       }),
     ).rejects.toEqual(new DomainError("UNAUTHORIZED", "Authentication required"));
   });
@@ -150,6 +208,7 @@ describe("PlaceOrder", () => {
       placeOrder(new InMemoryOrderRepository()).execute(mario, {
         cartId,
         addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        ...checkout,
       }),
     ).rejects.toEqual(new DomainError("CART_NOT_FOUND", `Cart not found: ${cartId}`));
   });
@@ -159,6 +218,7 @@ describe("PlaceOrder", () => {
       placeOrder(new InMemoryOrderRepository()).execute(lucia, {
         cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
         addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        ...checkout,
       }),
     ).rejects.toEqual(
       new DomainError("CART_NOT_FOUND", "Cart not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
@@ -170,6 +230,7 @@ describe("PlaceOrder", () => {
       placeOrder(new InMemoryOrderRepository()).execute(mario, {
         cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0C",
         addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        ...checkout,
       }),
     ).rejects.toMatchObject({ code: "CART_EMPTY" });
   });
@@ -179,6 +240,7 @@ describe("PlaceOrder", () => {
       placeOrder(new InMemoryOrderRepository()).execute(mario, {
         cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
         addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0N",
+        ...checkout,
       }),
     ).rejects.toEqual(
       new DomainError("ADDRESS_NOT_FOUND", "Address not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0N"),
@@ -187,14 +249,60 @@ describe("PlaceOrder", () => {
 
   it("answers PRODUCT_UNAVAILABLE when a product is no longer on sale", async () => {
     const orders = new InMemoryOrderRepository();
+    const payments = new RecordingPaymentInitiator();
 
     await expect(
-      placeOrder(orders).execute(mario, {
+      placeOrder(orders, payments).execute(mario, {
         cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0D",
         addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        ...checkout,
       }),
     ).rejects.toEqual(new DomainError("PRODUCT_UNAVAILABLE", "Product unavailable: carbone"));
     expect(orders.orders.size).toBe(0);
+    expect(payments.requests).toEqual([]);
+  });
+});
+
+describe("MarkOrderPaid", () => {
+  it("marks a pending order as paid and ignores repeated events", async () => {
+    const orders = new InMemoryOrderRepository();
+    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+
+    await new MarkOrderPaid(orders).execute(order.id);
+    const paidAt = order.paidAt;
+    await new MarkOrderPaid(orders).execute(order.id);
+
+    expect(order.status).toBe("PAID");
+    expect(paidAt).toBeInstanceOf(Date);
+    expect(order.paidAt).toBe(paidAt);
+  });
+
+  it("ignores unknown orders", async () => {
+    await expect(
+      new MarkOrderPaid(new InMemoryOrderRepository()).execute("01JB2Q7Z8X4M3N5P6R7S8T9V0H"),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("CancelOrder", () => {
+  it("cancels a pending order and ignores repeated events", async () => {
+    const orders = new InMemoryOrderRepository();
+    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+
+    await new CancelOrder(orders).execute(order.id);
+    await new CancelOrder(orders).execute(order.id);
+
+    expect(order.status).toBe("CANCELLED");
+  });
+
+  it("refuses to cancel a paid order", async () => {
+    const orders = new InMemoryOrderRepository();
+    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
+
+    await expect(new CancelOrder(orders).execute(order.id)).rejects.toMatchObject({
+      code: "ORDER_INVALID_TRANSITION",
+    });
   });
 });
 

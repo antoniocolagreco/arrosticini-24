@@ -1,5 +1,5 @@
-import type { Id, LocalizedText, Money } from "@arrosticini/kernel";
-import type { ShippingAddress } from "../domain/order.js";
+import type { Id, Locale, LocalizedText, Money } from "@arrosticini/kernel";
+import type { OrderLine, ShippingAddress } from "../domain/order.js";
 import type { Actor } from "./actor.js";
 
 export interface CartSnapshot {
@@ -22,4 +22,15 @@ export interface CatalogPricing {
 
 export interface CustomerDirectory {
   shippingAddress(actor: Actor, addressId: Id): Promise<ShippingAddress | undefined>;
+}
+
+export interface PaymentRequest {
+  orderId: Id;
+  lines: readonly OrderLine[];
+  locale: Locale;
+  returnUrl: string;
+}
+
+export interface PaymentInitiator {
+  start(actor: Actor, request: PaymentRequest): Promise<string>;
 }

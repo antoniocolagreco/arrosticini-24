@@ -269,6 +269,9 @@ catalogs:
     remix-i18next:
       specifier: 8.0.0
       version: 8.0.0
+    stripe:
+      specifier: 22.6.0
+      version: 22.6.0
     supertest:
       specifier: 7.3.1
       version: 7.3.1
@@ -340,6 +343,9 @@ importers:
       '@arrosticini/ordering':
         specifier: workspace:*
         version: link:../../contexts/ordering
+      '@arrosticini/payments':
+        specifier: workspace:*
+        version: link:../../contexts/payments
       '@arrosticini/shopping':
         specifier: workspace:*
         version: link:../../contexts/shopping
@@ -361,6 +367,9 @@ importers:
       iovalkey:
         specifier: 'catalog:'
         version: 0.4.0
+      stripe:
+        specifier: 'catalog:'
+        version: 22.6.0(@types/node@24.19.1)
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -608,6 +617,43 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.15.5
+    devDependencies:
+      '@arrosticini/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@arrosticini/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  contexts/payments:
+    dependencies:
+      '@arrosticini/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@arrosticini/kernel':
+        specifier: workspace:*
+        version: link:../../packages/kernel
+      '@aws-sdk/client-dynamodb':
+        specifier: 'catalog:'
+        version: 3.1147.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: 'catalog:'
+        version: 3.1147.0(@aws-sdk/client-dynamodb@3.1147.0)
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.15.5
+      stripe:
+        specifier: 'catalog:'
+        version: 22.6.0(@types/node@24.19.1)
     devDependencies:
       '@arrosticini/testing':
         specifier: workspace:*
@@ -3845,6 +3891,15 @@ packages:
   strip-json-comments@5.0.3:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
+
+  stripe@22.6.0:
+    resolution: {integrity: sha512-Ezk+WYEEwX2DLxFrKfb6coznlCMZvCaCYMNPXNHFSZkBIEzF5Hgm7RLb38q/0h9Ol5jsUJGJRorvhzAvckgfhw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/node': '>=18'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   superagent@10.4.1:
     resolution: {integrity: sha512-PVMkMrhKrSTtFhUU8jiWuGh/gyRMKiyCTCmm0+qVzRNxlfntmRKJkDhlEXN62x3HIb33sQ4kmL8lcSdccWAchQ==}
@@ -7300,6 +7355,10 @@ snapshots:
       ansi-regex: 6.4.0
 
   strip-json-comments@5.0.3: {}
+
+  stripe@22.6.0(@types/node@24.19.1):
+    optionalDependencies:
+      '@types/node': 24.19.1
 
   superagent@10.4.1:
     dependencies:

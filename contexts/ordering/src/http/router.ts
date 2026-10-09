@@ -38,9 +38,10 @@ function toDto(order: Order): OrderDto {
 
 export function orderingRouter(useCases: OrderingUseCases) {
   return {
-    placeOrder: os.placeOrder.handler(async ({ input, context }) => ({
-      order: toDto(await useCases.placeOrder.execute(context.actor, input)),
-    })),
+    placeOrder: os.placeOrder.handler(async ({ input, context }) => {
+      const { order, paymentUrl } = await useCases.placeOrder.execute(context.actor, input);
+      return { order: toDto(order), paymentUrl };
+    }),
     listOrders: os.listOrders.handler(async ({ context }) => ({
       items: (await useCases.listOrders.execute(context.actor)).map(toDto),
     })),

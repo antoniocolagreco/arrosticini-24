@@ -91,11 +91,11 @@ contexts/ordering/src/
 
 ### Checkout e pagamento
 
-1. Il browser fa `POST /it/checkout` su `web`, che chiama `POST /ordering/orders` con `cartId` e `addressId`.
+1. Il browser fa `POST /it/checkout` su `web`, che chiama `POST /ordering/orders` con `cartId`, `addressId`, `locale` e `ordersUrl` (URL assoluto delle pagine ordine, per esempio `<PUBLIC_ORIGIN>/it/orders`).
 2. Ordering (`PlaceOrder`) legge carrello (`CartReader` → Shopping), prezzi (`CatalogPricing` → Catalog) e indirizzo (`CustomerDirectory` → Identity). Poi crea l'`Order` in `PENDING_PAYMENT`, con la copia di nome, prezzo unitario e indirizzo.
-3. Ordering chiama `PaymentInitiator` (→ Payments), che crea la Checkout Session con `orderId` nei metadata, lingua e cliente Stripe dell'utente, e restituisce l'URL di pagamento.
+3. Ordering chiama `PaymentInitiator` (→ Payments), che crea la Checkout Session con `orderId` nei metadata, lingua e cliente Stripe dell'utente, e restituisce l'URL di pagamento. La sessione scade dopo 30 minuti, il minimo ammesso da Stripe.
 4. `web` reindirizza il browser su Stripe (303). Carta di test: `4242 4242 4242 4242`.
-5. Stripe riporta il browser su `/it/orders/<id>` e invia il webhook `checkout.session.completed`.
+5. Stripe riporta il browser su `<ordersUrl>/<id>`, sia dopo il pagamento sia se l'utente torna indietro, e invia il webhook `checkout.session.completed`.
 6. Payments verifica la firma, scarta gli eventi già visti, segna il `Payment` come `SUCCEEDED` e pubblica `PaymentSucceeded`.
 7. Ordering porta l'ordine a `PAID`, Shopping svuota il carrello.
 8. La pagina dell'ordine interroga lo stato finché non diventa `PAID`.
@@ -436,11 +436,13 @@ Variabili GitHub: `AWS_REGION`, `AWS_ROLE_ARN`.
 | `valkey` | `valkey/valkey` (stessa major di ElastiCache) | sessioni e carrelli |
 | `dynamodb` | `amazon/dynamodb-local` | tabelle `catalog`, `identity`, `ordering`, `payments` |
 | `s3` | `rustfs/rustfs` | bucket `media`, lettura anonima |
-| `stripe` | `stripe/stripe-cli` | `listen --forward-to` verso `web` |
+| `stripe` | `stripe/stripe-cli` | `listen --forward-to` verso `web`, nel profilo `stripe` |
 
 - **Client AWS:** `endpoint` e `forcePathStyle` arrivano dalle variabili d'ambiente.
 - **`pnpm setup:local`:** crea tabelle (con GSI e TTL), bucket e seed.
 - **`pnpm dev`:** avvia `web` e `api` sull'host. Il profilo compose `full` avvia tutto dalle immagini Docker.
+- **Stripe in locale:** `STRIPE_SECRET_KEY` (chiave di test `sk_test_...`) sta in `.env.local`. `docker compose --env-file .env.local --profile stripe up -d stripe` inoltra i webhook a `web`; `docker compose --env-file .env.local --profile stripe run --rm stripe listen --print-secret` stampa il `whsec_...` da mettere in `STRIPE_WEBHOOK_SECRET`.
+- **Test:** usano `stripe/stripe-mock`, quindi non servono chiavi Stripe.
 
 ## Immagini
 

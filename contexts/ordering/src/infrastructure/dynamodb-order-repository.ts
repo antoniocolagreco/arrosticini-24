@@ -113,6 +113,16 @@ export class DynamoDbOrderRepository implements OrderRepository {
     );
   }
 
+  async save(order: Order): Promise<void> {
+    await this.#client.send(
+      new PutCommand({
+        TableName: this.#tableName,
+        Item: toItem(order),
+        ConditionExpression: "attribute_exists(PK)",
+      }),
+    );
+  }
+
   async #newestFirst(indexName: string, keyName: string, keyValue: string): Promise<Order[]> {
     const orders: Order[] = [];
     const pages = paginateQuery(

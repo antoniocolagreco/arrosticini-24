@@ -10,19 +10,26 @@ import {
   mapProcedureErrors,
 } from "@arrosticini/ops";
 import type { OrderingContext } from "@arrosticini/ordering";
+import type { PaymentsContext } from "@arrosticini/payments";
 import type { ShoppingContext } from "@arrosticini/shopping";
 import { OpenAPIHandler } from "@orpc/openapi/node";
 import express, { type Express } from "express";
 import { readActor } from "./actor.js";
-import type { ApiRouter } from "./wiring.js";
+import { stripeWebhook } from "./stripe-webhook.js";
+import type { Api } from "./wiring.js";
 
 type ApiContext = CatalogContext &
   IdentityContext &
   ShoppingContext &
   OrderingContext &
+  PaymentsContext &
   ErrorContext;
 
-export function createApp(logger: Logger, lifecycle: Lifecycle, router: ApiRouter): Express {
+export function createApp(
+  logger: Logger,
+  lifecycle: Lifecycle,
+  { router, handleStripeEvent }: Api,
+): Express {
   const handler = new OpenAPIHandler<ApiContext>(router, {
     clientInterceptors: [mapProcedureErrors],
   });
@@ -37,6 +44,11 @@ export function createApp(logger: Logger, lifecycle: Lifecycle, router: ApiRoute
     }),
   );
   app.get("/healthz", healthz(lifecycle));
+  app.post(
+    "/payments/webhooks/stripe",
+    express.raw({ type: "application/json" }),
+    stripeWebhook(handleStripeEvent),
+  );
   app.use(async (req, res, next) => {
     const header = readActor(req);
     if (!header.valid) {

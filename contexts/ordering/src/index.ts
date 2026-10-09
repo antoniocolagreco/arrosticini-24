@@ -1,8 +1,11 @@
 export type { Actor } from "./application/actor.js";
 export {
+  CancelOrder,
   GetOrder,
   ListAllOrders,
   ListOrders,
+  MarkOrderPaid,
+  type PlacedOrder,
   PlaceOrder,
   type PlaceOrderCommand,
 } from "./application/orders.js";
@@ -11,6 +14,8 @@ export type {
   CartSnapshot,
   CatalogPricing,
   CustomerDirectory,
+  PaymentInitiator,
+  PaymentRequest,
   ProductPrice,
 } from "./application/ports.js";
 export {

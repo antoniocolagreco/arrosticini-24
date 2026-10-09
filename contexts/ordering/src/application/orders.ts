@@ -1,12 +1,19 @@
-import { DomainError, type Id, newId } from "@arrosticini/kernel";
+import { DomainError, type Id, type Locale, newId } from "@arrosticini/kernel";
 import { Order, type OrderLine } from "../domain/order.js";
 import type { OrderRepository } from "../domain/order-repository.js";
 import { type Actor, requireActor } from "./actor.js";
-import type { CartReader, CatalogPricing, CustomerDirectory } from "./ports.js";
+import type { CartReader, CatalogPricing, CustomerDirectory, PaymentInitiator } from "./ports.js";
 
 export interface PlaceOrderCommand {
   cartId: Id;
   addressId: Id;
+  locale: Locale;
+  ordersUrl: string;
+}
+
+export interface PlacedOrder {
+  order: Order;
+  paymentUrl: string;
 }
 
 export class PlaceOrder {
@@ -14,23 +21,26 @@ export class PlaceOrder {
   readonly #carts: CartReader;
   readonly #pricing: CatalogPricing;
   readonly #customers: CustomerDirectory;
+  readonly #payments: PaymentInitiator;
 
   constructor(
     orders: OrderRepository,
     carts: CartReader,
     pricing: CatalogPricing,
     customers: CustomerDirectory,
+    payments: PaymentInitiator,
   ) {
     this.#orders = orders;
     this.#carts = carts;
     this.#pricing = pricing;
     this.#customers = customers;
+    this.#payments = payments;
   }
 
   async execute(
     actor: Actor | undefined,
-    { cartId, addressId }: PlaceOrderCommand,
-  ): Promise<Order> {
+    { cartId, addressId, locale, ordersUrl }: PlaceOrderCommand,
+  ): Promise<PlacedOrder> {
     const buyer = requireActor(actor);
     const cart = await this.#carts.find(cartId);
     if (cart === undefined || cart.ownerId !== buyer.userId) {
@@ -53,7 +63,47 @@ export class PlaceOrder {
       new Date(),
     );
     await this.#orders.create(order);
-    return order;
+    const paymentUrl = await this.#payments.start(buyer, {
+      orderId: order.id,
+      lines: order.lines,
+      locale,
+      returnUrl: `${ordersUrl.replace(/\/+$/, "")}/${order.id}`,
+    });
+    return { order, paymentUrl };
+  }
+}
+
+export class MarkOrderPaid {
+  readonly #orders: OrderRepository;
+
+  constructor(orders: OrderRepository) {
+    this.#orders = orders;
+  }
+
+  async execute(orderId: Id): Promise<void> {
+    const order = await this.#orders.findById(orderId);
+    if (order === undefined || order.status === "PAID") {
+      return;
+    }
+    order.markPaid(new Date());
+    await this.#orders.save(order);
+  }
+}
+
+export class CancelOrder {
+  readonly #orders: OrderRepository;
+
+  constructor(orders: OrderRepository) {
+    this.#orders = orders;
+  }
+
+  async execute(orderId: Id): Promise<void> {
+    const order = await this.#orders.findById(orderId);
+    if (order === undefined || order.status === "CANCELLED") {
+      return;
+    }
+    order.cancel();
+    await this.#orders.save(order);
   }
 }
 

@@ -12,17 +12,19 @@ import { identityTableDefinition } from "@arrosticini/identity";
 import { localizedText, Money } from "@arrosticini/kernel";
 import { createLogger, Lifecycle } from "@arrosticini/ops";
 import { orderingTableDefinition } from "@arrosticini/ordering";
+import { paymentsTableDefinition } from "@arrosticini/payments";
 import { CreateTableCommand, DeleteTableCommand } from "@aws-sdk/client-dynamodb";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
 import { OpenAPILink } from "@orpc/openapi-client/fetch";
 import { Valkey } from "iovalkey";
+import Stripe from "stripe";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { createApp } from "./app.js";
 import { createDynamoDbClient } from "./aws.js";
-import { createRouter } from "./wiring.js";
+import { createApi } from "./wiring.js";
 
 const logger = createLogger(
   { service: "api", version: "test", level: "silent", pretty: false },
@@ -32,10 +34,17 @@ const tables = {
   catalog: `catalog-test-${randomUUID()}`,
   identity: `identity-test-${randomUUID()}`,
   ordering: `ordering-test-${randomUUID()}`,
+  payments: `payments-test-${randomUUID()}`,
 };
+const stripeWebhookSecret = "whsec_arrosticini";
 const dynamo = createDynamoDbClient("local", inject("dynamodbEndpoint"));
 const valkey = new Valkey(inject("valkeyUrl"));
-const app = createApp(logger, new Lifecycle(), createRouter(dynamo, valkey, tables));
+const stripe = new Stripe("sk_test_arrosticini", { ...inject("stripeMock"), protocol: "http" });
+const app = createApp(
+  logger,
+  new Lifecycle(),
+  createApi({ dynamo, valkey, stripe }, { tables, stripeWebhookSecret }),
+);
 let server: Server;
 
 function client(actor?: { userId: string; role: "customer" | "admin" }) {
@@ -68,6 +77,7 @@ beforeAll(async () => {
   await dynamo.send(new CreateTableCommand(catalogTableDefinition(tables.catalog)));
   await dynamo.send(new CreateTableCommand(identityTableDefinition(tables.identity)));
   await dynamo.send(new CreateTableCommand(orderingTableDefinition(tables.ordering)));
+  await dynamo.send(new CreateTableCommand(paymentsTableDefinition(tables.payments)));
   const products = new DynamoDbProductRepository(dynamo, tables.catalog);
   await products.create(product("fornacella", 10000, "ACTIVE"));
   await products.create(product("vino", 500, "ACTIVE"));
@@ -80,6 +90,7 @@ afterAll(async () => {
   await dynamo.send(new DeleteTableCommand({ TableName: tables.catalog }));
   await dynamo.send(new DeleteTableCommand({ TableName: tables.identity }));
   await dynamo.send(new DeleteTableCommand({ TableName: tables.ordering }));
+  await dynamo.send(new DeleteTableCommand({ TableName: tables.payments }));
   await valkey.quit();
 });
 
@@ -497,6 +508,7 @@ describe("ordering", () => {
         status: "PENDING_PAYMENT",
         createdAt: expect.any(String),
       },
+      paymentUrl: expect.stringMatching(/^https:\/\//),
     });
     orderId = response.body.order.id;
   });
@@ -582,6 +594,146 @@ describe("ordering", () => {
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "PRODUCT_UNAVAILABLE", status: 422, defined: true });
+  });
+});
+
+describe("payments", () => {
+  const address = {
+    fullName: "Marco Neri",
+    line1: "Piazza San Giustino 1",
+    city: "Chieti",
+    postalCode: "66100",
+    country: "IT",
+    phone: "+39 333 2222222",
+  };
+  const stranger = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0V", role: "customer" } as const;
+  let marco: { userId: string; role: "customer" };
+  let addressId: string;
+
+  async function placeOrder() {
+    const { id } = await client().shopping.createCart();
+    await client().shopping.setCartLine({ id, slug: "vino", quantity: 3 });
+    const cartId = (await client(marco).shopping.mergeCart({ id })).id;
+    const placed = await client(marco).ordering.placeOrder({
+      cartId,
+      addressId,
+      locale: "en",
+      ordersUrl: "http://localhost:3100/en/orders",
+    });
+    return { cartId, ...placed };
+  }
+
+  function webhook(eventId: string, type: string, orderId: string, paymentStatus: string) {
+    const payload = JSON.stringify({
+      id: eventId,
+      object: "event",
+      type,
+      data: {
+        object: {
+          id: "cs_test_a1",
+          object: "checkout.session",
+          mode: "payment",
+          payment_status: paymentStatus,
+          client_reference_id: orderId,
+        },
+      },
+    });
+    return request(app)
+      .post("/payments/webhooks/stripe")
+      .set("content-type", "application/json")
+      .set(
+        "stripe-signature",
+        stripe.webhooks.generateTestHeaderString({ payload, secret: stripeWebhookSecret }),
+      )
+      .send(payload);
+  }
+
+  beforeAll(async () => {
+    const registered = await client().identity.registerUser({
+      email: "marco.neri@example.com",
+      password: "arrosticini-24",
+      firstName: "Marco",
+      lastName: "Neri",
+      preferredLocale: "en",
+    });
+    marco = { userId: registered.id, role: "customer" };
+    addressId = (await client(marco).identity.addAddress(address)).id;
+  });
+
+  it("marks the order as paid and empties the cart when Stripe confirms the payment", async () => {
+    const { cartId, order, paymentUrl } = await placeOrder();
+    expect(paymentUrl).toMatch(/^https:\/\//);
+
+    const response = await webhook("evt_paid_1", "checkout.session.completed", order.id, "paid");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ received: true });
+    const paid = await client(marco).ordering.getOrder({ id: order.id });
+    expect(paid).toMatchObject({ status: "PAID", paidAt: expect.any(String) });
+    expect((await client().shopping.getCart({ id: cartId })).lines).toEqual([]);
+
+    const repeated = await webhook("evt_paid_1", "checkout.session.completed", order.id, "paid");
+
+    expect(repeated.status).toBe(200);
+    expect(await client(marco).ordering.getOrder({ id: order.id })).toEqual(paid);
+  });
+
+  it("cancels the order when the checkout expires", async () => {
+    const { order } = await placeOrder();
+
+    const response = await webhook("evt_expired_1", "checkout.session.expired", order.id, "unpaid");
+
+    expect(response.status).toBe(200);
+    expect((await client(marco).ordering.getOrder({ id: order.id })).status).toBe("CANCELLED");
+  });
+
+  it("rejects webhooks without a valid signature", async () => {
+    const forged = await request(app)
+      .post("/payments/webhooks/stripe")
+      .set("content-type", "application/json")
+      .set("stripe-signature", "t=1,v1=forged")
+      .send(JSON.stringify({ id: "evt_forged", object: "event", type: "customer.created" }));
+    const unsigned = await request(app)
+      .post("/payments/webhooks/stripe")
+      .set("content-type", "application/json")
+      .send("{}");
+
+    for (const response of [forged, unsigned]) {
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ code: "INVALID_WEBHOOK_SIGNATURE", status: 400 });
+    }
+  });
+
+  it("lists no saved cards before the first checkout", async () => {
+    expect(await client(stranger).payments.listPaymentMethods()).toEqual({ items: [] });
+  });
+
+  it("opens a card setup session and lists the saved cards", async () => {
+    const response = await request(app)
+      .post("/payments/methods/setup-session")
+      .set(ACTOR_HEADER, JSON.stringify(marco))
+      .send({ returnUrl: "http://localhost:3100/en/account/payment-methods", locale: "en" });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({ url: expect.stringMatching(/^https:\/\//) });
+    const { items } = await client(marco).payments.listPaymentMethods();
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it("answers PAYMENT_METHOD_NOT_FOUND for a card of another customer", async () => {
+    const error = await client(marco)
+      .payments.deletePaymentMethod({ id: "pm_card_visa" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "PAYMENT_METHOD_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("answers UNAUTHORIZED without an actor", async () => {
+    const error = await client()
+      .payments.listPaymentMethods()
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "UNAUTHORIZED", status: 401, defined: true });
   });
 });
 

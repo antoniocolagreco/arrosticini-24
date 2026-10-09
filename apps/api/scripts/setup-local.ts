@@ -14,10 +14,12 @@ import {
 } from "@arrosticini/identity";
 import { localizedText, Money, newId } from "@arrosticini/kernel";
 import { orderingTableDefinition } from "@arrosticini/ordering";
+import { paymentsTableDefinition, paymentsTimeToLive } from "@arrosticini/payments";
 import {
   CreateTableCommand,
   type CreateTableCommandInput,
   ResourceInUseException,
+  UpdateTimeToLiveCommand,
 } from "@aws-sdk/client-dynamodb";
 import {
   BucketAlreadyOwnedByYou,
@@ -37,6 +39,7 @@ const env = z
     CATALOG_TABLE: z.string().min(1),
     IDENTITY_TABLE: z.string().min(1),
     ORDERING_TABLE: z.string().min(1),
+    PAYMENTS_TABLE: z.string().min(1),
     MEDIA_BUCKET: z.string().min(1),
     ADMIN_EMAIL: Email.optional(),
     ADMIN_PASSWORD: z.string().min(8).optional(),
@@ -135,6 +138,8 @@ async function seedAdmin() {
 await createTable(catalogTableDefinition(env.CATALOG_TABLE));
 await createTable(identityTableDefinition(env.IDENTITY_TABLE));
 await createTable(orderingTableDefinition(env.ORDERING_TABLE));
+await createTable(paymentsTableDefinition(env.PAYMENTS_TABLE));
+await dynamo.send(new UpdateTimeToLiveCommand(paymentsTimeToLive(env.PAYMENTS_TABLE)));
 await createPublicBucket(env.MEDIA_BUCKET);
 await seedCatalog();
 await seedAdmin();
