@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import type { PaymentMethodResult } from "../lib/payments.server.js";
 import { FormAlert } from "./form-alert.js";
-import { Button } from "./ui/button.js";
 
 export function PaymentMethodCard({ method }: { method: PaymentMethodDto }) {
   const { t } = useTranslation("account");
@@ -25,19 +24,22 @@ export function PaymentMethodCard({ method }: { method: PaymentMethodDto }) {
           year: method.expYear,
         })}
       </p>
-      <fetcher.Form method="post" className="tile-actions">
-        <input type="hidden" name="intent" value="delete" />
-        <input type="hidden" name="id" value={method.id} />
-        <Button
-          type="submit"
-          variant="text"
-          busy={busy}
-          aria-label={t("removeCardLabel", { brand: method.brand, last4: method.last4 })}
-        >
-          <Trash2 aria-hidden="true" />
-          {t(busy ? "removingCard" : "removeCard")}
-        </Button>
-      </fetcher.Form>
+      <div className="tile-actions">
+        <fetcher.Form method="post" className="tile-icons">
+          <input type="hidden" name="intent" value="delete" />
+          <input type="hidden" name="id" value={method.id} />
+          <button
+            type="submit"
+            className="icon-action icon-action-danger"
+            disabled={busy}
+            aria-busy={busy}
+            title={t("removeCard")}
+            aria-label={t("removeCardLabel", { brand: method.brand, last4: method.last4 })}
+          >
+            <Trash2 size={20} aria-hidden="true" />
+          </button>
+        </fetcher.Form>
+      </div>
       {fetcher.data?.error && <FormAlert message={t(fetcher.data.error)} />}
     </li>
   );

@@ -37,7 +37,6 @@
   "addCardHint": "Enter the details on Stripe.",
   "openingStripe": "Redirecting to Stripe…",
   "removeCard": "Remove",
-  "removingCard": "Removing…",
   "removeCardLabel": "Remove the {{brand}} card ending in {{last4}}",
   "cardExpires": "Expires {{month}}/{{year}}",
   "noCardsTitle": "No saved cards.",

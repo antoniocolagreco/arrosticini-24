@@ -2,7 +2,6 @@ import type { AddressDto, ShippingAddressDto } from "@arrosticini/contracts";
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Form, useNavigation } from "react-router";
-import { Button } from "./ui/button.js";
 
 function AddressLines({ address }: { address: AddressDto | ShippingAddressDto }) {
   const { t, i18n } = useTranslation("shop");
@@ -63,45 +62,47 @@ export function ManagedAddress({ address, onEdit }: { address: AddressDto; onEdi
     <li className="tile">
       <AddressLines address={address} />
       <div className="tile-actions">
-        <Button
-          type="button"
-          variant="text"
-          onClick={onEdit}
-          busy={busy}
-          aria-label={t("editAddressLabel", { name: address.fullName })}
-        >
-          <Pencil aria-hidden="true" />
-          {t("editAddress")}
-        </Button>
         {!address.isDefault && (
-          <>
+          <Form method="post">
+            <input type="hidden" name="intent" value="default" />
+            <input type="hidden" name="id" value={address.id} />
+            <button
+              type="submit"
+              className="tile-link"
+              disabled={busy}
+              aria-label={t("makeDefaultLabel", { name: address.fullName })}
+            >
+              {t("makeDefault")}
+            </button>
+          </Form>
+        )}
+        <div className="tile-icons">
+          <button
+            type="button"
+            className="icon-action"
+            onClick={onEdit}
+            disabled={busy}
+            title={t("editAddress")}
+            aria-label={t("editAddressLabel", { name: address.fullName })}
+          >
+            <Pencil size={20} aria-hidden="true" />
+          </button>
+          {!address.isDefault && (
             <Form method="post">
               <input type="hidden" name="intent" value="delete" />
               <input type="hidden" name="id" value={address.id} />
-              <Button
+              <button
                 type="submit"
-                variant="text"
-                busy={busy}
+                className="icon-action icon-action-danger"
+                disabled={busy}
+                title={t("removeAddress")}
                 aria-label={t("removeAddressLabel", { name: address.fullName })}
               >
-                <Trash2 aria-hidden="true" />
-                {t("removeAddress")}
-              </Button>
+                <Trash2 size={20} aria-hidden="true" />
+              </button>
             </Form>
-            <Form method="post">
-              <input type="hidden" name="intent" value="default" />
-              <input type="hidden" name="id" value={address.id} />
-              <Button
-                type="submit"
-                variant="text"
-                busy={busy}
-                aria-label={t("makeDefaultLabel", { name: address.fullName })}
-              >
-                {t("makeDefault")}
-              </Button>
-            </Form>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </li>
   );
