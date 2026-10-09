@@ -1,0 +1,8 @@
+{
+  "extends": "@arrosticini/tsconfig/base.json",
+  "include": ["**/*.ts"],
+  "compilerOptions": {
+    "lib": ["DOM", "ES2024"],
+    "noEmit": true
+  }
+}
