@@ -11,7 +11,9 @@ import { ACTOR_HEADER, contract } from "@arrosticini/contracts";
 import { identityTableDefinition } from "@arrosticini/identity";
 import { localizedText, Money } from "@arrosticini/kernel";
 import { createLogger, Lifecycle } from "@arrosticini/ops";
+import { orderingTableDefinition } from "@arrosticini/ordering";
 import { CreateTableCommand, DeleteTableCommand } from "@aws-sdk/client-dynamodb";
+import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
 import { OpenAPILink } from "@orpc/openapi-client/fetch";
@@ -29,6 +31,7 @@ const logger = createLogger(
 const tables = {
   catalog: `catalog-test-${randomUUID()}`,
   identity: `identity-test-${randomUUID()}`,
+  ordering: `ordering-test-${randomUUID()}`,
 };
 const dynamo = createDynamoDbClient("local", inject("dynamodbEndpoint"));
 const valkey = new Valkey(inject("valkeyUrl"));
@@ -64,6 +67,7 @@ function product(slug: string, priceCents: number, status: ProductStatus): Produ
 beforeAll(async () => {
   await dynamo.send(new CreateTableCommand(catalogTableDefinition(tables.catalog)));
   await dynamo.send(new CreateTableCommand(identityTableDefinition(tables.identity)));
+  await dynamo.send(new CreateTableCommand(orderingTableDefinition(tables.ordering)));
   const products = new DynamoDbProductRepository(dynamo, tables.catalog);
   await products.create(product("fornacella", 10000, "ACTIVE"));
   await products.create(product("vino", 500, "ACTIVE"));
@@ -75,6 +79,7 @@ afterAll(async () => {
   server.close();
   await dynamo.send(new DeleteTableCommand({ TableName: tables.catalog }));
   await dynamo.send(new DeleteTableCommand({ TableName: tables.identity }));
+  await dynamo.send(new DeleteTableCommand({ TableName: tables.ordering }));
   await valkey.quit();
 });
 
@@ -426,6 +431,156 @@ describe("shopping", () => {
       .shopping.getCart({ id: second.id })
       .catch((caught: unknown) => caught);
     expect(gone).toMatchObject({ code: "CART_NOT_FOUND" });
+  });
+});
+
+describe("ordering", () => {
+  const address = {
+    fullName: "Anna Bianchi",
+    line1: "Corso Marrucino 5",
+    city: "Chieti",
+    postalCode: "66100",
+    country: "IT",
+    phone: "+39 333 1111111",
+  };
+  const lucia = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", role: "customer" } as const;
+  let anna: { userId: string; role: "customer" };
+  let addressId: string;
+  let cartId: string;
+  let orderId: string;
+
+  beforeAll(async () => {
+    const registered = await client().identity.registerUser({
+      email: "anna.bianchi@example.com",
+      password: "arrosticini-24",
+      firstName: "Anna",
+      lastName: "Bianchi",
+      preferredLocale: "it",
+    });
+    anna = { userId: registered.id, role: "customer" };
+    addressId = (await client(anna).identity.addAddress(address)).id;
+    const { id } = await client().shopping.createCart();
+    await client().shopping.setCartLine({ id, slug: "vino", quantity: 2 });
+    await client().shopping.setCartLine({ id, slug: "fornacella", quantity: 1 });
+    cartId = (await client(anna).shopping.mergeCart({ id })).id;
+  });
+
+  it("places a pending order priced by the server with a copy of the address", async () => {
+    const response = await request(app)
+      .post("/ordering/orders")
+      .set(ACTOR_HEADER, JSON.stringify(anna))
+      .send({ cartId, addressId });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({
+      order: {
+        id: expect.stringMatching(/^[0-9A-HJKMNP-TV-Z]{26}$/),
+        userId: anna.userId,
+        lines: [
+          {
+            slug: "vino",
+            name: { it: "Prodotto vino", en: "Product vino" },
+            unitPriceCents: 500,
+            quantity: 2,
+          },
+          {
+            slug: "fornacella",
+            name: { it: "Prodotto fornacella", en: "Product fornacella" },
+            unitPriceCents: 10000,
+            quantity: 1,
+          },
+        ],
+        shippingAddress: address,
+        totalCents: 11000,
+        currency: "EUR",
+        status: "PENDING_PAYMENT",
+        createdAt: expect.any(String),
+      },
+    });
+    orderId = response.body.order.id;
+  });
+
+  it("shows orders only to their owner", async () => {
+    const { items } = await client(anna).ordering.listOrders();
+    expect(items.map(({ id }) => id)).toEqual([orderId]);
+    expect(await client(anna).ordering.getOrder({ id: orderId })).toEqual(items[0]);
+
+    expect((await client(lucia).ordering.listOrders()).items).toEqual([]);
+    const error = await client(lucia)
+      .ordering.getOrder({ id: orderId })
+      .catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ code: "ORDER_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("lets only admins see every order", async () => {
+    const { items } = await client(admin).ordering.listAllOrders();
+    expect(items.map(({ id }) => id)).toContain(orderId);
+    expect((await client(admin).ordering.getOrder({ id: orderId })).id).toBe(orderId);
+
+    const error = await client(anna)
+      .ordering.listAllOrders()
+      .catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
+  });
+
+  it("answers UNAUTHORIZED without an actor", async () => {
+    const error = await client()
+      .ordering.placeOrder({ cartId, addressId })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "UNAUTHORIZED", status: 401, defined: true });
+  });
+
+  it("answers CART_NOT_FOUND on a cart the user does not own", async () => {
+    const { id } = await client().shopping.createCart();
+    await client().shopping.setCartLine({ id, slug: "vino", quantity: 1 });
+
+    const error = await client(anna)
+      .ordering.placeOrder({ cartId: id, addressId })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "CART_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("answers ADDRESS_NOT_FOUND on an address the user does not have", async () => {
+    const error = await client(anna)
+      .ordering.placeOrder({ cartId, addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V97" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "ADDRESS_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("answers CART_EMPTY on an empty cart", async () => {
+    await client().shopping.setCartLine({ id: cartId, slug: "vino", quantity: 0 });
+    await client().shopping.setCartLine({ id: cartId, slug: "fornacella", quantity: 0 });
+
+    const error = await client(anna)
+      .ordering.placeOrder({ cartId, addressId })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "CART_EMPTY", status: 422, defined: true });
+  });
+
+  it("answers PRODUCT_UNAVAILABLE when a product in the cart leaves the catalog", async () => {
+    await new DynamoDbProductRepository(dynamo, tables.catalog).create(
+      product("birra", 400, "ACTIVE"),
+    );
+    await client().shopping.setCartLine({ id: cartId, slug: "birra", quantity: 1 });
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: tables.catalog,
+        Key: { PK: "PRODUCT#birra", SK: "META" },
+        UpdateExpression: "SET #status = :archived",
+        ExpressionAttributeNames: { "#status": "status" },
+        ExpressionAttributeValues: { ":archived": "ARCHIVED" },
+      }),
+    );
+
+    const error = await client(anna)
+      .ordering.placeOrder({ cartId, addressId })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "PRODUCT_UNAVAILABLE", status: 422, defined: true });
   });
 });
 

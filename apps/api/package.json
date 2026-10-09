@@ -18,6 +18,7 @@
     "@arrosticini/identity": "workspace:*",
     "@arrosticini/kernel": "workspace:*",
     "@arrosticini/ops": "workspace:*",
+    "@arrosticini/ordering": "workspace:*",
     "@arrosticini/shopping": "workspace:*",
     "@aws-sdk/client-dynamodb": "catalog:",
     "@aws-sdk/lib-dynamodb": "catalog:",
