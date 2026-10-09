@@ -4,36 +4,42 @@ import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import type { PaymentMethodResult } from "../lib/payments.server.js";
 import { FormAlert } from "./form-alert.js";
-import { Button } from "./ui/button.js";
 
 export function PaymentMethodCard({ method }: { method: PaymentMethodDto }) {
   const { t } = useTranslation("account");
   const fetcher = useFetcher<PaymentMethodResult>();
   const busy: boolean = fetcher.state !== "idle";
   return (
-    <li className="payment-method-card">
-      <CreditCard size={28} aria-hidden="true" />
-      <h2 className="payment-method-brand">{method.brand}</h2>
+    <li className="tile" aria-busy={busy}>
+      <div className="tile-head">
+        <strong className="payment-method-brand">
+          <CreditCard size={20} aria-hidden="true" />
+          {method.brand}
+        </strong>
+      </div>
       <p className="payment-method-number">•••• {method.last4}</p>
-      <p className="payment-method-expiry">
+      <p className="tile-meta">
         {t("cardExpires", {
           month: String(method.expMonth).padStart(2, "0"),
           year: method.expYear,
         })}
       </p>
-      <fetcher.Form method="post" aria-busy={busy}>
-        <input type="hidden" name="intent" value="delete" />
-        <input type="hidden" name="id" value={method.id} />
-        <Button
-          type="submit"
-          variant="outline"
-          busy={busy}
-          aria-label={t("removeCardLabel", { brand: method.brand, last4: method.last4 })}
-        >
-          <Trash2 size={20} aria-hidden="true" />
-          {t("removeCard")}
-        </Button>
-      </fetcher.Form>
+      <div className="tile-actions">
+        <fetcher.Form method="post" className="tile-icons">
+          <input type="hidden" name="intent" value="delete" />
+          <input type="hidden" name="id" value={method.id} />
+          <button
+            type="submit"
+            className="icon-action icon-action-danger"
+            disabled={busy}
+            aria-busy={busy}
+            title={t("removeCard")}
+            aria-label={t("removeCardLabel", { brand: method.brand, last4: method.last4 })}
+          >
+            <Trash2 size={20} aria-hidden="true" />
+          </button>
+        </fetcher.Form>
+      </div>
       {fetcher.data?.error && <FormAlert message={t(fetcher.data.error)} />}
     </li>
   );

@@ -1,6 +1,14 @@
 import type { Locale } from "@arrosticini/kernel";
 
-export function Price({ cents, locale }: { cents: number; locale: Locale }) {
+export function Price({
+  cents,
+  locale,
+  small = false,
+}: {
+  cents: number;
+  locale: Locale;
+  small?: boolean;
+}) {
   const parts: Intl.NumberFormatPart[] = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EUR",
@@ -12,7 +20,7 @@ export function Price({ cents, locale }: { cents: number; locale: Locale }) {
     .map(({ value }) => value)
     .join("");
   return (
-    <span className="price">
+    <span className={small ? "price price-sm" : "price"}>
       {currency}
       {locale === "it" ? " " : ""}
       {amount}

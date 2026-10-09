@@ -1,8 +1,6 @@
-import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Form, Link, redirect, useNavigation } from "react-router";
-import { Breadcrumb } from "../components/breadcrumb.js";
-import { Button } from "../components/ui/button.js";
+import { redirect } from "react-router";
+import { AccountLayout } from "../components/account-layout.js";
 import { api, getApiError } from "../lib/api.server.js";
 import {
   type AuthSessionData,
@@ -26,46 +24,37 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 }
 
 export default function Account({ loaderData }: Route.ComponentProps) {
-  const { t, i18n } = useTranslation("account");
-  const navigation: ReturnType<typeof useNavigation> = useNavigation();
+  const { t } = useTranslation("account");
+  const { user } = loaderData;
   return (
-    <section className="account-page shell">
-      <Breadcrumb items={[{ label: t("account") }]} />
-      <div className="auth-panel">
-        <p className="eyebrow">{t("eyebrow")}</p>
-        <h1>{t("welcome", { name: loaderData.user.firstName })}</h1>
-        <p className="account-intro">{t("accountIntro")}</p>
-        <Link className="checkout-back" to={`/${i18n.language}/orders`}>
-          {t("orders", { ns: "shop" })}
-        </Link>
-        <Link className="checkout-back" to={`/${i18n.language}/account/payment-methods`}>
-          {t("paymentMethods")}
-        </Link>
+    <AccountLayout
+      crumbs={[]}
+      title={t("welcome", { name: user.firstName })}
+      intro={t("accountIntro")}
+    >
+      <section className="panel" aria-labelledby="profile-title">
+        <h2 id="profile-title" className="panel-title">
+          {t("profileTitle")}
+        </h2>
         <dl className="account-details">
           <div>
             <dt>{t("firstName")}</dt>
-            <dd>{loaderData.user.firstName}</dd>
+            <dd>{user.firstName}</dd>
           </div>
           <div>
             <dt>{t("lastName")}</dt>
-            <dd>{loaderData.user.lastName}</dd>
+            <dd>{user.lastName}</dd>
           </div>
           <div>
             <dt>{t("email")}</dt>
-            <dd>{loaderData.user.email}</dd>
+            <dd>{user.email}</dd>
           </div>
           <div>
             <dt>{t("preferredLocale")}</dt>
-            <dd>{loaderData.user.preferredLocale === "it" ? "Italiano" : "English"}</dd>
+            <dd>{user.preferredLocale === "it" ? "Italiano" : "English"}</dd>
           </div>
         </dl>
-        <Form method="post" action={`/${i18n.language}/logout`}>
-          <Button type="submit" variant="outline" busy={navigation.state !== "idle"}>
-            <LogOut aria-hidden="true" />
-            {t("logout")}
-          </Button>
-        </Form>
-      </div>
-    </section>
+      </section>
+    </AccountLayout>
   );
 }

@@ -1,7 +1,7 @@
 import { CreditCard, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Form, useNavigation } from "react-router";
-import { Breadcrumb } from "../components/breadcrumb.js";
+import { AccountLayout } from "../components/account-layout.js";
 import { FormAlert } from "../components/form-alert.js";
 import { PaymentMethodCard } from "../components/payment-method-card.js";
 import { Button } from "../components/ui/button.js";
@@ -20,42 +20,47 @@ export async function action({ request, context, params }: Route.ActionArgs) {
 }
 
 export default function PaymentMethods({ loaderData, actionData }: Route.ComponentProps) {
-  const { t, i18n } = useTranslation("account");
+  const { t } = useTranslation("account");
   const navigation = useNavigation();
+  const busy: boolean = navigation.state !== "idle";
+  const opening: boolean = busy && navigation.formData?.get("intent") === "setup";
   return (
-    <section className="catalog-page">
-      <Breadcrumb
-        items={[
-          { label: t("account"), to: `/${i18n.language}/account` },
-          { label: t("paymentMethods") },
-        ]}
-      />
-      <div className="catalog-heading">
-        <p className="eyebrow">{t("eyebrow")}</p>
-        <h1>{t("paymentMethods")}</h1>
-        <p className="catalog-intro">{t("paymentMethodsIntro")}</p>
-      </div>
-      <Form method="post" className="payment-method-add" aria-busy={navigation.state !== "idle"}>
-        <input type="hidden" name="intent" value="setup" />
-        <Button type="submit" busy={navigation.state !== "idle"}>
-          <Plus size={20} aria-hidden="true" />
-          {t("addCard")}
-        </Button>
-      </Form>
+    <AccountLayout
+      crumbs={[{ label: t("paymentMethods") }]}
+      title={t("paymentMethodsTitle")}
+      intro={t("paymentMethodsIntro")}
+    >
       {actionData?.error && <FormAlert message={t(actionData.error)} />}
-      {loaderData.items.length === 0 ? (
-        <div className="catalog-empty">
-          <CreditCard size={48} aria-hidden="true" />
-          <h2>{t("noCardsTitle")}</h2>
-          <p>{t("noCards")}</p>
-        </div>
-      ) : (
-        <ul className="payment-method-grid">
+      {loaderData.items.length ? (
+        <ul className="tile-grid">
           {loaderData.items.map((method) => (
             <PaymentMethodCard key={method.id} method={method} />
           ))}
+          <li>
+            <Form method="post" aria-busy={opening}>
+              <input type="hidden" name="intent" value="setup" />
+              <button type="submit" className="tile-add" disabled={busy}>
+                <Plus size={20} aria-hidden="true" />
+                <b>{t(opening ? "openingStripe" : "addCard")}</b>
+                <span className="tile-add-hint">{t("addCardHint")}</span>
+              </button>
+            </Form>
+          </li>
         </ul>
+      ) : (
+        <div className="catalog-empty">
+          <img src="/images/sheep.webp" alt="" width="112" height="112" />
+          <h2>{t("noCardsTitle")}</h2>
+          <p>{t("noCards")}</p>
+          <Form method="post" aria-busy={opening}>
+            <input type="hidden" name="intent" value="setup" />
+            <Button type="submit" busy={busy}>
+              <CreditCard aria-hidden="true" />
+              {t(opening ? "openingStripe" : "addCard")}
+            </Button>
+          </Form>
+        </div>
       )}
-    </section>
+    </AccountLayout>
   );
 }
