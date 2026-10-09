@@ -1,13 +1,12 @@
-import { identityContract, orderingContract } from "@arrosticini/contracts";
+import { orderingContract } from "@arrosticini/contracts";
 import { ORPCError } from "@orpc/client";
 import { data, type RouterContextProvider, redirect } from "react-router";
+import { type AddressFormResult, parseAddress, readAddressValues } from "./addresses.server.js";
 import { api } from "./api.server.js";
 import { assertSameOrigin, requireUser, sessionContext } from "./session.server.js";
 
-export interface CheckoutResult {
+export interface CheckoutResult extends AddressFormResult {
   kind: "address" | "order";
-  values: Record<string, string>;
-  errors: Record<string, string>;
   error: string | null;
 }
 
@@ -20,29 +19,15 @@ export async function checkoutAction(
   const user = requireUser(context, locale);
   const client = api(request, { userId: user.userId, role: user.role });
   const form: FormData = await request.formData();
-  const values: Record<string, string> = {};
-  for (const field of ["fullName", "line1", "line2", "city", "postalCode", "country", "phone"]) {
-    const value: FormDataEntryValue | null = form.get(field);
-    values[field] = typeof value === "string" ? value : "";
-  }
+  const values: Record<string, string> = readAddressValues(form);
   const kind: "address" | "order" = form.get("intent") === "address" ? "address" : "order";
   const result: CheckoutResult = { kind, values, errors: {}, error: null };
   if (kind === "address") {
-    const schema = identityContract.addAddress["~orpc"].inputSchema;
-    if (!schema) throw new Error("Identity input schema is missing");
-    const input = schema.safeParse({
-      ...values,
-      line2: values.line2?.trim() || undefined,
-      country: values.country?.trim().toUpperCase(),
-    });
-    if (!input.success) {
-      for (const issue of input.error.issues)
-        result.errors[String(issue.path[0])] =
-          issue.path[0] === "country" ? "countryHint" : "addressFieldHint";
-      return data<CheckoutResult>(result, { status: 400 });
-    }
+    const parsed = parseAddress(values);
+    if (!parsed.data)
+      return data<CheckoutResult>({ ...result, errors: parsed.errors }, { status: 400 });
     try {
-      await client.identity.addAddress(input.data);
+      await client.identity.addAddress(parsed.data);
       return redirect(`/${locale}/checkout`, { status: 303 });
     } catch (error: unknown) {
       if (error instanceof ORPCError && error.code === "ADDRESS_LIMIT_REACHED")

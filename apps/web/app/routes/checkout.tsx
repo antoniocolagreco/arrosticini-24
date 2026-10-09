@@ -1,9 +1,9 @@
 import { MAX_ADDRESSES_PER_USER } from "@arrosticini/contracts";
-import { CreditCard } from "lucide-react";
+import { CreditCard, MapPin, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, redirect, useNavigation } from "react-router";
-import { AddressCard } from "../components/address-card.js";
+import { AddressChoice } from "../components/address-card.js";
 import { AddressForm } from "../components/address-form.js";
 import { Breadcrumb } from "../components/breadcrumb.js";
 import { CartSummary } from "../components/cart-summary.js";
@@ -40,10 +40,18 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
   const navigation = useNavigation();
   const busy: boolean = navigation.state !== "idle";
   const placingOrder: boolean = busy && navigation.formData?.get("intent") === "order";
-  const [showAddress, setShowAddress] = useState<boolean>(false);
+  const failedAddress: boolean = actionData?.kind === "address";
+  const full: boolean = loaderData.addresses.length >= MAX_ADDRESSES_PER_USER;
+  const [showAddress, setShowAddress] = useState<boolean>(failedAddress);
   useEffect(() => {
     setShowAddress(false);
   }, [loaderData.addresses.length]);
+  useEffect(() => {
+    if (failedAddress) setShowAddress(true);
+  }, [failedAddress]);
+  useEffect(() => {
+    if (showAddress) document.getElementById("address-fullName")?.focus();
+  }, [showAddress]);
   useEffect(() => {
     if (actionData)
       document
@@ -63,37 +71,51 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
       </div>
       {actionData?.error && <FormAlert message={t(actionData.error)} />}
       <div className="cart-layout">
-        <div>
+        <div className="checkout-main">
           <Form method="post" id="place-order" aria-busy={placingOrder}>
             <input type="hidden" name="intent" value="order" />
             <fieldset className="address-picker">
               <legend className="section-title">{t("shippingAddress")}</legend>
-              <div className="address-grid">
-                {loaderData.addresses.map((address) => (
-                  <AddressCard
-                    key={address.id}
-                    address={address}
-                    choose
-                    selected={address.isDefault}
-                  />
-                ))}
-              </div>
+              {loaderData.addresses.length > 0 && (
+                <div className="tile-grid">
+                  {loaderData.addresses.map((address) => (
+                    <AddressChoice key={address.id} address={address} />
+                  ))}
+                  <button
+                    type="button"
+                    className="tile-add"
+                    disabled={busy || full || showAddress}
+                    onClick={() => setShowAddress(true)}
+                  >
+                    {full ? (
+                      <MapPin size={20} aria-hidden="true" />
+                    ) : (
+                      <Plus size={20} aria-hidden="true" />
+                    )}
+                    <b>{t("anotherAddress")}</b>
+                    <span className="tile-add-hint">
+                      {t(full ? "addressSlotsFull" : "addressSlots", {
+                        count: loaderData.addresses.length,
+                        max: MAX_ADDRESSES_PER_USER,
+                      })}
+                    </span>
+                  </button>
+                </div>
+              )}
             </fieldset>
           </Form>
-          {loaderData.addresses.length === 0 || showAddress || actionData?.kind === "address" ? (
-            <AddressForm result={actionData?.kind === "address" ? actionData : undefined} />
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => setShowAddress(true)}
-              busy={busy}
-              disabled={loaderData.addresses.length >= MAX_ADDRESSES_PER_USER}
-            >
-              {t("anotherAddress")}
-            </Button>
+          {full && (
+            <Link className="checkout-back" to={`/${locale}/account/addresses`}>
+              {t("manageAddresses")}
+            </Link>
           )}
-          {loaderData.addresses.length >= MAX_ADDRESSES_PER_USER && (
-            <p className="field-hint">{t("addressLimit")}</p>
+          {(loaderData.addresses.length === 0 || showAddress) && (
+            <AddressForm
+              title={t("newAddress")}
+              intent="address"
+              result={failedAddress ? actionData : undefined}
+              {...(loaderData.addresses.length ? { onCancel: () => setShowAddress(false) } : {})}
+            />
           )}
         </div>
         <CartSummary lines={loaderData.lines} total={loaderData.total}>

@@ -5,17 +5,22 @@ import { Price } from "./price.js";
 export function OrderSummary({
   lines,
   total,
+  badge,
   children,
 }: {
   lines: { slug: string; name: string; quantity: number; cents: number | null }[];
   total: number | null;
+  badge?: ReactNode;
   children?: ReactNode;
 }) {
   const { t, i18n } = useTranslation("shop");
   const locale: "it" | "en" = i18n.language === "en" ? "en" : "it";
   return (
     <aside className="order-summary" aria-labelledby="summary-title">
-      <h2 id="summary-title">{t("summary")}</h2>
+      <div className="order-summary-head">
+        <h2 id="summary-title">{t("summary")}</h2>
+        {badge}
+      </div>
       <dl>
         {lines.map((line) => (
           <div key={line.slug}>

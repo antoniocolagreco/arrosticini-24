@@ -10,9 +10,11 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary-hover",
         outline: "border-input bg-secondary hover:bg-card hover:border-foreground",
+        text: "text-[15px] text-primary underline decoration-1 underline-offset-4 hover:text-primary-hover hover:decoration-2 [&_svg]:size-4",
       },
       size: { default: "min-h-11 px-5", lg: "min-h-[62px] px-8 py-3 text-[22px]" },
     },
+    compoundVariants: [{ variant: "text", size: "default", class: "gap-1.5 px-1" }],
     defaultVariants: { variant: "default", size: "default" },
   },
 );
