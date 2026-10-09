@@ -5,6 +5,7 @@ import {
   Product,
   S3ImageStorage,
 } from "@arrosticini/catalog";
+import { Email } from "@arrosticini/contracts";
 import {
   DynamoDbUserRepository,
   EnsureAdmin,
@@ -35,7 +36,7 @@ const env = z
     CATALOG_TABLE: z.string().min(1),
     IDENTITY_TABLE: z.string().min(1),
     MEDIA_BUCKET: z.string().min(1),
-    ADMIN_USERNAME: z.string().min(1).optional(),
+    ADMIN_EMAIL: Email.optional(),
     ADMIN_PASSWORD: z.string().min(8).optional(),
   })
   .parse(process.env);
@@ -117,16 +118,16 @@ async function seedCatalog() {
 }
 
 async function seedAdmin() {
-  if (env.ADMIN_USERNAME === undefined || env.ADMIN_PASSWORD === undefined) {
-    console.log("admin skipped: set ADMIN_USERNAME and ADMIN_PASSWORD (min 8 chars) in .env.local");
+  if (env.ADMIN_EMAIL === undefined || env.ADMIN_PASSWORD === undefined) {
+    console.log("admin skipped: set ADMIN_EMAIL and ADMIN_PASSWORD (min 8 chars) in .env.local");
     return;
   }
   const users = new DynamoDbUserRepository(dynamo, env.IDENTITY_TABLE);
   const result = await new EnsureAdmin(users, new ScryptPasswordHasher()).execute({
-    username: env.ADMIN_USERNAME,
+    email: env.ADMIN_EMAIL,
     password: env.ADMIN_PASSWORD,
   });
-  console.log(`admin ${env.ADMIN_USERNAME} ${result === "created" ? "created" : "already exists"}`);
+  console.log(`admin ${env.ADMIN_EMAIL} ${result === "created" ? "created" : "already exists"}`);
 }
 
 await createTable(catalogTableDefinition(env.CATALOG_TABLE));

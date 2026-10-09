@@ -13,7 +13,7 @@ export interface Address {
   readonly city: string;
   readonly postalCode: string;
   readonly country: string;
-  readonly phone?: string;
+  readonly phone: string;
   readonly isDefault: boolean;
 }
 
@@ -26,29 +26,29 @@ export interface AddressChanges {
   city?: string;
   postalCode?: string;
   country?: string;
-  phone?: string | null;
+  phone?: string;
   isDefault?: true;
 }
 
 export interface ProfileChanges {
-  displayName?: string;
-  email?: string;
+  firstName?: string;
+  lastName?: string;
   preferredLocale?: Locale;
 }
 
 export interface UserProps {
   id: Id;
-  username: string;
+  email: string;
   password: PasswordHash;
   role: Role;
-  displayName?: string;
-  email?: string;
+  firstName: string;
+  lastName: string;
   preferredLocale: Locale;
   createdAt: Date;
   addresses: Address[];
 }
 
-const USERNAME_PATTERN = /^[a-z0-9._-]{3,32}$/;
+const EMAIL_PATTERN = /^[^\s@A-Z]+@[^\s@A-Z]+$/;
 
 export class User {
   readonly #props: UserProps;
@@ -58,8 +58,8 @@ export class User {
   }
 
   static register(props: Omit<UserProps, "createdAt" | "addresses">, now: Date): User {
-    if (!USERNAME_PATTERN.test(props.username)) {
-      throw new DomainError("INVALID_USERNAME", `Invalid username: ${props.username}`);
+    if (!EMAIL_PATTERN.test(props.email)) {
+      throw new DomainError("INVALID_EMAIL", `Invalid email: ${props.email}`);
     }
     return new User({ ...props, createdAt: now, addresses: [] });
   }
@@ -72,8 +72,8 @@ export class User {
     return this.#props.id;
   }
 
-  get username(): string {
-    return this.#props.username;
+  get email(): string {
+    return this.#props.email;
   }
 
   get password(): PasswordHash {
@@ -84,12 +84,12 @@ export class User {
     return this.#props.role;
   }
 
-  get displayName(): string | undefined {
-    return this.#props.displayName;
+  get firstName(): string {
+    return this.#props.firstName;
   }
 
-  get email(): string | undefined {
-    return this.#props.email;
+  get lastName(): string {
+    return this.#props.lastName;
   }
 
   get preferredLocale(): Locale {
@@ -133,10 +133,10 @@ export class User {
     return address;
   }
 
-  updateAddress(id: Id, { line2, phone, isDefault, ...changes }: AddressChanges): Address {
+  updateAddress(id: Id, { line2, isDefault, ...changes }: AddressChanges): Address {
     const current = this.#findAddress(id);
     const merged: Address = { ...current, ...changes, isDefault: isDefault ?? current.isDefault };
-    const updated = applyClearable(applyClearable(merged, "line2", line2), "phone", phone);
+    const updated = applyLine2(merged, line2);
     this.#props.addresses = this.#props.addresses.map((other) => {
       if (other.id === id) {
         return updated;
@@ -163,14 +163,10 @@ export class User {
   }
 }
 
-function applyClearable(
-  address: Address,
-  key: "line2" | "phone",
-  value: string | null | undefined,
-): Address {
-  if (value === undefined) {
+function applyLine2(address: Address, line2: string | null | undefined): Address {
+  if (line2 === undefined) {
     return address;
   }
-  const { [key]: _removed, ...rest } = address;
-  return value === null ? rest : { ...rest, [key]: value };
+  const { line2: _removed, ...rest } = address;
+  return line2 === null ? rest : { ...rest, line2 };
 }

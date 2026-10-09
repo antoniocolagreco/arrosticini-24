@@ -4,11 +4,11 @@ import { User } from "../domain/user.js";
 import type { UserRepository } from "../domain/user-repository.js";
 
 export interface RegisterUserCommand {
-  username: string;
+  email: string;
   password: string;
+  firstName: string;
+  lastName: string;
   preferredLocale: Locale;
-  displayName?: string;
-  email?: string;
 }
 
 export class RegisterUser {
@@ -31,7 +31,7 @@ export class RegisterUser {
 }
 
 export interface Credentials {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -44,10 +44,10 @@ export class VerifyCredentials {
     this.#hasher = hasher;
   }
 
-  async execute({ username, password }: Credentials): Promise<User> {
-    const user = await this.#users.findByUsername(username);
+  async execute({ email, password }: Credentials): Promise<User> {
+    const user = await this.#users.findByEmail(email);
     if (user === undefined || !(await this.#hasher.verify(password, user.password))) {
-      throw new DomainError("INVALID_CREDENTIALS", "Invalid username or password");
+      throw new DomainError("INVALID_CREDENTIALS", "Invalid email or password");
     }
     return user;
   }
@@ -62,17 +62,19 @@ export class EnsureAdmin {
     this.#hasher = hasher;
   }
 
-  async execute({ username, password }: Credentials): Promise<"created" | "exists"> {
-    if (await this.#users.findByUsername(username)) {
+  async execute({ email, password }: Credentials): Promise<"created" | "exists"> {
+    if (await this.#users.findByEmail(email)) {
       return "exists";
     }
     await this.#users.create(
       User.register(
         {
           id: newId(),
-          username,
+          email,
           password: await this.#hasher.hash(password),
           role: "admin",
+          firstName: "Admin",
+          lastName: "Arrosticini 24ore",
           preferredLocale: "it",
         },
         new Date(),

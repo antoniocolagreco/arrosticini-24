@@ -9,10 +9,12 @@ describe("createLogger", () => {
       { write: (line: string) => lines.push(JSON.parse(line)) },
     );
 
-    logger.info({ body: { username: "antonio", password: "pecora" } }, "register");
+    logger.info({ body: { email: "mario.rossi@example.com", password: "pecora" } }, "register");
 
     expect(lines[0]).toEqual(
-      expect.objectContaining({ body: { username: "antonio", password: "[REDACTED]" } }),
+      expect.objectContaining({
+        body: { email: "mario.rossi@example.com", password: "[REDACTED]" },
+      }),
     );
   });
 });

@@ -38,15 +38,15 @@ function defined<T extends object>(value: T): Defined<T> {
 const os = implement(identityContract).$context<IdentityContext>();
 
 function toUserDto(user: User): UserDto {
-  return defined({
+  return {
     id: user.id,
-    username: user.username,
-    role: user.role,
-    displayName: user.displayName,
     email: user.email,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
     preferredLocale: user.preferredLocale,
     createdAt: user.createdAt.toISOString(),
-  });
+  };
 }
 
 function toAddressDto(address: Address): AddressDto {
@@ -56,7 +56,7 @@ function toAddressDto(address: Address): AddressDto {
 export function identityRouter(useCases: IdentityUseCases) {
   return {
     registerUser: os.registerUser.handler(async ({ input }) =>
-      toUserDto(await useCases.registerUser.execute(defined(input))),
+      toUserDto(await useCases.registerUser.execute(input)),
     ),
     verifyCredentials: os.verifyCredentials.handler(async ({ input }) =>
       toUserDto(await useCases.verifyCredentials.execute(input)),
