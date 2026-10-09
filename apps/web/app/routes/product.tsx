@@ -1,6 +1,7 @@
 import { ProductSlug } from "@arrosticini/contracts";
 import type { Locale } from "@arrosticini/kernel";
 import { useTranslation } from "react-i18next";
+import { AddToCart } from "../components/add-to-cart.js";
 import { Breadcrumb } from "../components/breadcrumb.js";
 import { Price } from "../components/price.js";
 import { ProductImage } from "../components/product-image.js";
@@ -47,6 +48,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
             <Price cents={product.priceCents} locale={locale} />
           </p>
           <p className="product-description">{product.description[locale]}</p>
+          <AddToCart slug={product.slug} />
         </div>
       </div>
     </section>

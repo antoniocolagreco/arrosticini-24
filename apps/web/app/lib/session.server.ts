@@ -14,8 +14,10 @@ import {
 } from "react-router";
 import { z } from "zod";
 
-const SessionData = z.object({ userId: IdDto, role: Role, locale: LocaleDto });
-export type AuthSessionData = z.infer<typeof SessionData>;
+const AuthSessionData = z.object({ userId: IdDto, role: Role, locale: LocaleDto });
+const SessionData = AuthSessionData.partial().extend({ cartId: IdDto.optional() });
+export type AuthSessionData = z.infer<typeof AuthSessionData>;
+type SessionData = z.infer<typeof SessionData>;
 export const SESSION_TTL = 60 * 60 * 24 * 7;
 
 export interface SessionClient {
@@ -28,7 +30,7 @@ export function createValkeySessionStorage(
   client: SessionClient,
   secret: string,
   secure: boolean,
-): SessionStorage<AuthSessionData> & { cookie: Cookie } {
+): SessionStorage<SessionData> & { cookie: Cookie } {
   const cookie: Cookie = createCookie("__session", {
     path: "/",
     httpOnly: true,
@@ -37,7 +39,7 @@ export function createValkeySessionStorage(
     maxAge: SESSION_TTL,
     secrets: [secret],
   });
-  const storage: SessionStorage<AuthSessionData> = createSessionStorage<AuthSessionData>({
+  const storage: SessionStorage<SessionData> = createSessionStorage<SessionData>({
     cookie,
     async createData(value) {
       const id: string = randomBytes(32).toString("hex");
@@ -59,25 +61,25 @@ export function createValkeySessionStorage(
   return { ...storage, cookie };
 }
 
-type SessionStore = SessionStorage<AuthSessionData> & { cookie: Cookie };
+type SessionStore = SessionStorage<SessionData> & { cookie: Cookie };
 const shared: typeof globalThis & {
   arrosticiniSessionStorageContext?: RouterContext<SessionStore>;
 } = globalThis;
 export const sessionStorageContext: RouterContext<SessionStore> =
   shared.arrosticiniSessionStorageContext ?? createContext<SessionStore>();
 shared.arrosticiniSessionStorageContext = sessionStorageContext;
-export const sessionContext = createContext<Session<AuthSessionData>>();
+export const sessionContext = createContext<Session<SessionData>>();
 
 export const sessionMiddleware: MiddlewareFunction<Response> = async (
   { request, context },
   next,
 ) => {
   const storage: SessionStore = context.get(sessionStorageContext);
-  const session: Session<AuthSessionData> = await storage.getSession(request.headers.get("cookie"));
+  const session: Session<SessionData> = await storage.getSession(request.headers.get("cookie"));
   context.set(sessionContext, session);
   const response: Response = await next();
   if (
-    session.has("userId") &&
+    session.id &&
     !response.headers.getSetCookie().some((cookie: string) => cookie.startsWith("__session="))
   ) {
     response.headers.append("Set-Cookie", await storage.cookie.serialize(session.id));
@@ -90,9 +92,9 @@ export function requireUser(
   context: Readonly<RouterContextProvider>,
   locale: string,
 ): AuthSessionData {
-  const session: Session<AuthSessionData> = context.get(sessionContext);
+  const session: Session<SessionData> = context.get(sessionContext);
   if (!session.has("userId")) throw redirect(`/${locale}/login`);
-  return SessionData.parse(session.data);
+  return AuthSessionData.parse(session.data);
 }
 
 export function assertSameOrigin(request: Request): void {
@@ -104,13 +106,15 @@ export function assertSameOrigin(request: Request): void {
 export async function loginSession(
   context: Readonly<RouterContextProvider>,
   user: UserDto,
+  cartId?: string,
 ): Promise<string> {
-  const storage: SessionStorage<AuthSessionData> = context.get(sessionStorageContext);
-  const previous: Session<AuthSessionData> = context.get(sessionContext);
+  const storage: SessionStorage<SessionData> = context.get(sessionStorageContext);
+  const previous: Session<SessionData> = context.get(sessionContext);
   if (previous.id) await storage.destroySession(previous);
-  const session: Session<AuthSessionData> = await storage.getSession();
+  const session: Session<SessionData> = await storage.getSession();
   session.set("userId", user.id);
   session.set("role", user.role);
   session.set("locale", user.preferredLocale);
+  if (cartId) session.set("cartId", cartId);
   return storage.commitSession(session);
 }

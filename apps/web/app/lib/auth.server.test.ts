@@ -1,4 +1,4 @@
-import type { UserDto } from "@arrosticini/contracts";
+import type { CartDto, UserDto } from "@arrosticini/contracts";
 import { RouterContextProvider } from "react-router";
 import { afterEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { middleware as localeMiddleware } from "../routes/locale.js";
@@ -55,6 +55,12 @@ const user: UserDto = {
   createdAt: "2026-10-09T00:00:00.000Z",
 };
 
+const cart: CartDto = {
+  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+  lines: [],
+  updatedAt: "2026-10-09T00:00:00.000Z",
+};
+
 describe("authentication actions", () => {
   it("requires both names before registering and keeps entered values without the password", async () => {
     const fetchMock: MockInstance<typeof fetch> = vi.spyOn(globalThis, "fetch");
@@ -82,7 +88,9 @@ describe("authentication actions", () => {
   it("signs in with only a normalized email and password", async () => {
     const fetchMock: MockInstance<typeof fetch> = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(Response.json(user));
+      .mockResolvedValueOnce(Response.json(user))
+      .mockResolvedValueOnce(Response.json(cart))
+      .mockResolvedValueOnce(Response.json(cart));
     const result = await authenticate(
       post({ email: " Antonio@Example.com ", password: "long-password" }),
       await context(),
@@ -131,7 +139,9 @@ describe("authentication actions", () => {
   it("registers with the page locale and returns a signed session redirect", async () => {
     const fetchMock: MockInstance<typeof fetch> = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(Response.json(user));
+      .mockResolvedValueOnce(Response.json(user))
+      .mockResolvedValueOnce(Response.json(cart))
+      .mockResolvedValueOnce(Response.json(cart));
     const result = await authenticate(
       post({
         email: " Antonio@Example.com ",
