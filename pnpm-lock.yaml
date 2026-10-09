@@ -194,6 +194,9 @@ catalogs:
     '@orpc/zod':
       specifier: 1.15.5
       version: 1.15.5
+    '@playwright/test':
+      specifier: 1.64.0
+      version: 1.64.0
     '@react-router/dev':
       specifier: 8.4.0
       version: 8.4.0
@@ -701,6 +704,57 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  e2e:
+    devDependencies:
+      '@arrosticini/catalog':
+        specifier: workspace:*
+        version: link:../contexts/catalog
+      '@arrosticini/identity':
+        specifier: workspace:*
+        version: link:../contexts/identity
+      '@arrosticini/kernel':
+        specifier: workspace:*
+        version: link:../packages/kernel
+      '@arrosticini/ordering':
+        specifier: workspace:*
+        version: link:../contexts/ordering
+      '@arrosticini/payments':
+        specifier: workspace:*
+        version: link:../contexts/payments
+      '@arrosticini/tsconfig':
+        specifier: workspace:*
+        version: link:../packages/tsconfig
+      '@aws-sdk/client-dynamodb':
+        specifier: 'catalog:'
+        version: 3.1147.0
+      '@aws-sdk/client-s3':
+        specifier: 'catalog:'
+        version: 3.1147.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: 'catalog:'
+        version: 3.1147.0(@aws-sdk/client-dynamodb@3.1147.0)
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.64.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      iovalkey:
+        specifier: 'catalog:'
+        version: 0.4.0
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      stripe:
+        specifier: 'catalog:'
+        version: 22.6.0(@types/node@24.19.1)
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
 
   packages/contracts:
     dependencies:
@@ -1346,6 +1400,11 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@playwright/test@1.64.0':
+    resolution: {integrity: sha512-oTN9FNYuN6bqQMwiho6jJKLCG2/QOYCixGXuCjRmzOq23eODeukuY2XiAVoVpAECbuezMt1MHQjAiQxK8F+Y+g==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -3570,6 +3629,16 @@ packages:
   pkg-types@2.3.3:
     resolution: {integrity: sha512-j/lCFdcppV0JxWpCEITdbDltBxPP6cHT+yNJ6Go2OgoSA9518X847X9z0p6LtA4Nc16+eQzCZjRrWanTGvHJ5w==}
 
+  playwright-core@1.64.0:
+    resolution: {integrity: sha512-T9r+MZkTECl2+oUcZ26YgZzTrYidTsIhYYkJix+6iDOymOb1FB2RLLSOxRGnZGv5DStt+aduIVbt+E8WygXYpg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.64.0:
+    resolution: {integrity: sha512-kVzTnYFYEyQ9RGzBjNCd2+yEqWmVbxl3AHPynv3qQ6JTjv4a+kwRcnqQwIpuP3NnrnIrE/Q6wWAIAvMfIE2/Yg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   postcss@8.5.29:
     resolution: {integrity: sha512-49cGhUbXj8Qenv0iTMxA1cFBzxXoctpC9Ujd77t1WcbJIr6nF/eI7g/8MgxrYldFRuAXvja7xQRwavoW7kgrxQ==}
     engines: {node: ^10 || ^12 || >=14}
@@ -4857,6 +4926,10 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@playwright/test@1.64.0':
+    dependencies:
+      playwright: 1.64.0
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -6937,6 +7010,12 @@ snapshots:
       confbox: 0.3.1
       exsolve: 1.1.3
       pathe: 2.0.3
+
+  playwright-core@1.64.0: {}
+
+  playwright@1.64.0:
+    dependencies:
+      playwright-core: 1.64.0
 
   postcss@8.5.29:
     dependencies:
