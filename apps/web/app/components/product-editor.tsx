@@ -4,7 +4,7 @@ import { type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useFetcher, useNavigation } from "react-router";
 import type { CatalogAdminResult } from "../lib/catalog-admin.server.js";
-import { Breadcrumb } from "./breadcrumb.js";
+import { AccountLayout } from "./account-layout.js";
 import { FormAlert } from "./form-alert.js";
 import { FormField } from "./form-field.js";
 import { ProductImage } from "./product-image.js";
@@ -39,29 +39,25 @@ export function ProductEditor({
     return result?.values[name] ?? fallback;
   }
   return (
-    <section className="catalog-page admin-page">
-      <Breadcrumb
-        items={[
-          { label: t("account", { ns: "account" }), to: `/${locale}/account` },
-          { label: t("catalog"), to: `/${locale}/admin/products` },
-          { label: product ? product.name[locale] : t("newProduct") },
-        ]}
-      />
-      <div className="admin-heading">
-        <div className="catalog-heading">
-          <p className="eyebrow">{t("eyebrow")}</p>
-          <h1>{product ? t("editProduct") : t("newProduct")}</h1>
-          <p className="catalog-intro">{product ? product.name[locale] : t("detailsIntro")}</p>
-        </div>
-        {product?.status === "ACTIVE" && (
+    <AccountLayout
+      crumbs={[
+        { label: t("catalog"), to: `/${locale}/admin/products` },
+        { label: product ? product.name[locale] : t("newProduct") },
+      ]}
+      eyebrow={t("eyebrow")}
+      title={product ? t("editProduct") : t("newProduct")}
+      intro={product ? product.name[locale] : t("detailsIntro")}
+      actions={
+        product?.status === "ACTIVE" && (
           <Button asChild variant="outline">
             <Link to={`/${locale}/products/${product.slug}`}>
               <ExternalLink aria-hidden="true" />
               {t("preview")}
             </Link>
           </Button>
-        )}
-      </div>
+        )
+      }
+    >
       <Form
         method="post"
         ref={form}
@@ -261,6 +257,6 @@ export function ProductEditor({
           </p>
         )}
       </section>
-    </section>
+    </AccountLayout>
   );
 }

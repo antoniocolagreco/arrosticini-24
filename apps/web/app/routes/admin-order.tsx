@@ -4,9 +4,9 @@ import { CircleCheck, Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
+import { AccountLayout } from "../components/account-layout.js";
 import { AddressCard } from "../components/address-card.js";
 import { AddressForm } from "../components/address-form.js";
-import { Breadcrumb } from "../components/breadcrumb.js";
 import { FormAlert } from "../components/form-alert.js";
 import { FormField } from "../components/form-field.js";
 import { OrderSummary } from "../components/order-summary.js";
@@ -73,7 +73,9 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
   useEffect(() => {
     if (actionData)
       document
-        .querySelector<HTMLElement>('.admin-page [aria-invalid="true"],.admin-page [role="alert"]')
+        .querySelector<HTMLElement>(
+          '.account-content [aria-invalid="true"],.account-content [role="alert"]',
+        )
         ?.focus();
   }, [actionData]);
   const shipping: boolean = order.status === "PAID" || open === "ship";
@@ -94,30 +96,21 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
   });
   const reference: string = t("orderReference", { ns: "shop", id: order.id });
   return (
-    <section className="catalog-page admin-page">
-      <Breadcrumb
-        items={[
-          { label: t("account", { ns: "account" }), to: `/${locale}/account` },
-          { label: t("allOrders"), to: `/${locale}/admin/orders` },
-          { label: reference },
-        ]}
-      />
-      <div className="catalog-heading">
-        <p className="eyebrow">{reference}</p>
-        <h1>
-          {t("orderTitle", {
-            ns: "shop",
-            date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
-              new Date(order.createdAt),
-            ),
-          })}
-        </h1>
-        <p className="catalog-intro">
-          <Link className="admin-table-link" to={`/${locale}/admin/users/${order.userId}`}>
-            {t("customerCard", { name: order.shippingAddress.fullName })}
-          </Link>
-        </p>
-      </div>
+    <AccountLayout
+      crumbs={[{ label: t("allOrders"), to: `/${locale}/admin/orders` }, { label: reference }]}
+      eyebrow={reference}
+      title={t("orderTitle", {
+        ns: "shop",
+        date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
+          new Date(order.createdAt),
+        ),
+      })}
+      intro={
+        <Link className="admin-table-link" to={`/${locale}/admin/users/${order.userId}`}>
+          {t("customerCard", { name: order.shippingAddress.fullName })}
+        </Link>
+      }
+    >
       {actionData?.error && <FormAlert message={t(actionData.error)} />}
       {saved && ["address", "shipment", "delivered", "lost"].includes(saved) && (
         <p className="admin-notice" role="status">
@@ -246,6 +239,6 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
           )}
         </div>
       </div>
-    </section>
+    </AccountLayout>
   );
 }

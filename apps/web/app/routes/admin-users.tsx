@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { Breadcrumb } from "../components/breadcrumb.js";
+import { AccountLayout } from "../components/account-layout.js";
 import { api } from "../lib/api.server.js";
 import { requireAdmin } from "../lib/catalog-admin.server.js";
 import type { Route } from "./+types/admin-users.js";
@@ -15,18 +15,12 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
   const locale: "it" | "en" = i18n.language === "en" ? "en" : "it";
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
   return (
-    <section className="catalog-page admin-page">
-      <Breadcrumb
-        items={[
-          { label: t("account", { ns: "account" }), to: `/${locale}/account` },
-          { label: t("users") },
-        ]}
-      />
-      <div className="catalog-heading">
-        <p className="eyebrow">{t("eyebrow")}</p>
-        <h1>{t("users")}</h1>
-        <p className="catalog-intro">{t("usersIntro")}</p>
-      </div>
+    <AccountLayout
+      crumbs={[{ label: t("users") }]}
+      eyebrow={t("eyebrow")}
+      title={t("users")}
+      intro={t("usersIntro")}
+    >
       <p className="catalog-count" role="status">
         {t("userResults", { count: loaderData.items.length })}
       </p>
@@ -63,6 +57,6 @@ export default function AdminUsers({ loaderData }: Route.ComponentProps) {
           </tbody>
         </table>
       </section>
-    </section>
+    </AccountLayout>
   );
 }

@@ -1833,6 +1833,12 @@ h2 {
 .admin-feedback {
   margin-top: var(--space-4);
 }
+.account-content > .catalog-count,
+.account-content > .admin-feedback,
+.account-content > .admin-user,
+.account-content > .admin-order {
+  margin-block: 0;
+}
 .admin-notice {
   display: flex;
   align-items: center;
@@ -1845,7 +1851,7 @@ h2 {
   border-radius: var(--radius-md);
   line-height: 1.5;
 }
-.admin-page .admin-notice > svg {
+.account-content .admin-notice > svg {
   flex-shrink: 0;
 }
 .admin-notice form {

@@ -20,12 +20,14 @@ export function AccountLayout({
   eyebrow,
   title,
   intro,
+  actions,
   children,
 }: {
   crumbs: { label: string; to?: string }[];
   eyebrow?: string;
   title: ReactNode;
   intro?: ReactNode;
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   const { t, i18n } = useTranslation("account");
@@ -50,6 +52,13 @@ export function AccountLayout({
           { to: `${base}/account/payment-methods`, label: t("paymentMethods"), Icon: CreditCard },
         ]),
   ];
+  const heading: ReactNode = (
+    <div className="catalog-heading">
+      <p className="eyebrow">{eyebrow ?? t("eyebrow")}</p>
+      <h1>{title}</h1>
+      {intro && <div className="catalog-intro">{intro}</div>}
+    </div>
+  );
   return (
     <section className="catalog-page account-area">
       <Breadcrumb
@@ -59,11 +68,14 @@ export function AccountLayout({
             : [{ label: t("account") }]
         }
       />
-      <div className="catalog-heading">
-        <p className="eyebrow">{eyebrow ?? t("eyebrow")}</p>
-        <h1>{title}</h1>
-        {intro && <div className="catalog-intro">{intro}</div>}
-      </div>
+      {actions ? (
+        <div className="admin-heading">
+          {heading}
+          {actions}
+        </div>
+      ) : (
+        heading
+      )}
       <div className="account-layout">
         <nav className="account-nav" aria-label={t("accountNav")}>
           <ul>

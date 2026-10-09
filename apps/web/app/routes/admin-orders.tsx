@@ -1,7 +1,7 @@
 import { Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { Breadcrumb } from "../components/breadcrumb.js";
+import { AccountLayout } from "../components/account-layout.js";
 import { Price } from "../components/price.js";
 import { StatusBadge } from "../components/status-badge.js";
 import { api } from "../lib/api.server.js";
@@ -18,18 +18,12 @@ export default function AdminOrders({ loaderData }: Route.ComponentProps) {
   const locale: "it" | "en" = i18n.language === "en" ? "en" : "it";
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
   return (
-    <section className="catalog-page admin-page">
-      <Breadcrumb
-        items={[
-          { label: t("account", { ns: "account" }), to: `/${locale}/account` },
-          { label: t("allOrders") },
-        ]}
-      />
-      <div className="catalog-heading">
-        <p className="eyebrow">{t("eyebrow")}</p>
-        <h1>{t("allOrders")}</h1>
-        <p className="catalog-intro">{t("ordersIntro")}</p>
-      </div>
+    <AccountLayout
+      crumbs={[{ label: t("allOrders") }]}
+      eyebrow={t("eyebrow")}
+      title={t("allOrders")}
+      intro={t("ordersIntro")}
+    >
       <p className="catalog-count" role="status">
         {t("orderResults", { count: loaderData.items.length })}
       </p>
@@ -76,6 +70,6 @@ export default function AdminOrders({ loaderData }: Route.ComponentProps) {
           </tbody>
         </table>
       </section>
-    </section>
+    </AccountLayout>
   );
 }
