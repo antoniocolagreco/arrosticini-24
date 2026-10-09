@@ -116,4 +116,14 @@ export class DynamoDbProductRepository implements ProductRepository {
       throw error;
     }
   }
+
+  async save(product: Product): Promise<void> {
+    await this.#client.send(
+      new PutCommand({
+        TableName: this.#tableName,
+        Item: toItem(product),
+        ConditionExpression: "attribute_exists(PK)",
+      }),
+    );
+  }
 }

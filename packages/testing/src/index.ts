@@ -6,7 +6,25 @@ declare module "vitest" {
     dynamodbEndpoint: string;
     valkeyUrl: string;
     stripeMock: { host: string; port: number };
+    s3Endpoint: string;
   }
+}
+
+export const S3_TEST_CREDENTIALS = { accessKeyId: "rustfsadmin", secretAccessKey: "rustfsadmin" };
+
+export async function startS3(project: TestProject): Promise<() => Promise<void>> {
+  const container = await new GenericContainer("rustfs/rustfs:1.0.1")
+    .withEnvironment({
+      RUSTFS_ACCESS_KEY: S3_TEST_CREDENTIALS.accessKeyId,
+      RUSTFS_SECRET_KEY: S3_TEST_CREDENTIALS.secretAccessKey,
+    })
+    .withExposedPorts(9000)
+    .withWaitStrategy(Wait.forListeningPorts())
+    .start();
+  project.provide("s3Endpoint", `http://${container.getHost()}:${container.getMappedPort(9000)}`);
+  return async () => {
+    await container.stop();
+  };
 }
 
 export async function startDynamoDb(project: TestProject): Promise<() => Promise<void>> {

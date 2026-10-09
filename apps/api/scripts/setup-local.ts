@@ -25,10 +25,9 @@ import {
   BucketAlreadyOwnedByYou,
   CreateBucketCommand,
   PutBucketPolicyCommand,
-  S3Client,
 } from "@aws-sdk/client-s3";
 import { z } from "zod";
-import { createDynamoDbClient } from "../src/aws.js";
+import { createDynamoDbClient, createS3Client } from "../src/aws.js";
 import { seedProducts } from "./seed-products.js";
 
 const env = z
@@ -47,11 +46,7 @@ const env = z
   .parse(process.env);
 
 const dynamo = createDynamoDbClient(env.AWS_REGION, env.DYNAMODB_ENDPOINT);
-const s3 = new S3Client({
-  region: env.AWS_REGION,
-  endpoint: env.S3_ENDPOINT,
-  forcePathStyle: true,
-});
+const s3 = createS3Client(env.AWS_REGION, env.S3_ENDPOINT);
 
 async function createTable(definition: CreateTableCommandInput) {
   try {

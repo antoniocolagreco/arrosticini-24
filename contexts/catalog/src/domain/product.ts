@@ -20,7 +20,21 @@ export interface ProductProps {
   updatedAt: Date;
 }
 
+export interface ProductChanges {
+  name?: LocalizedText;
+  description?: LocalizedText;
+  pieces?: number | null;
+  price?: Money;
+  status?: ProductStatus;
+}
+
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function assertPieces(pieces: number | undefined): void {
+  if (pieces !== undefined && (!Number.isSafeInteger(pieces) || pieces < 1)) {
+    throw new DomainError("INVALID_PRODUCT_PIECES", `Invalid pieces: ${pieces}`);
+  }
+}
 
 export function normalizeSearchText(text: string): string {
   return text
@@ -41,9 +55,7 @@ export class Product {
     if (props.slug.length > 64 || !SLUG_PATTERN.test(props.slug)) {
       throw new DomainError("INVALID_PRODUCT_SLUG", `Invalid slug: ${props.slug}`);
     }
-    if (props.pieces !== undefined && (!Number.isSafeInteger(props.pieces) || props.pieces < 1)) {
-      throw new DomainError("INVALID_PRODUCT_PIECES", `Invalid pieces: ${props.pieces}`);
-    }
+    assertPieces(props.pieces);
     return new Product({ ...props, updatedAt: now });
   }
 
@@ -86,5 +98,30 @@ export class Product {
   get searchText(): string {
     const { name, description } = this.#props;
     return normalizeSearchText([name.it, name.en, description.it, description.en].join(" "));
+  }
+
+  update({ pieces, ...changes }: ProductChanges, now: Date): void {
+    if (pieces === null) {
+      delete this.#props.pieces;
+    } else if (pieces !== undefined) {
+      assertPieces(pieces);
+      this.#props.pieces = pieces;
+    }
+    Object.assign(this.#props, changes, { updatedAt: now });
+  }
+
+  addImage(image: ProductImage, now: Date): void {
+    this.#props.images = [...this.#props.images, image];
+    this.#props.updatedAt = now;
+  }
+
+  removeImage(imageId: Id, now: Date): ProductImage {
+    const image = this.#props.images.find(({ id }) => id === imageId);
+    if (image === undefined) {
+      throw new DomainError("PRODUCT_IMAGE_NOT_FOUND", `Image not found: ${imageId}`);
+    }
+    this.#props.images = this.#props.images.filter(({ id }) => id !== imageId);
+    this.#props.updatedAt = now;
+    return image;
   }
 }

@@ -1,6 +1,7 @@
-import { PutObjectCommand, type S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, type S3Client } from "@aws-sdk/client-s3";
+import type { ImageStorage } from "../application/image-storage.js";
 
-export class S3ImageStorage {
+export class S3ImageStorage implements ImageStorage {
   readonly #client: S3Client;
   readonly #bucket: string;
 
@@ -18,5 +19,9 @@ export class S3ImageStorage {
         ContentType: contentType,
       }),
     );
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.#client.send(new DeleteObjectCommand({ Bucket: this.#bucket, Key: key }));
   }
 }

@@ -2,7 +2,7 @@ import { createLogger, exitOnProcessErrors, Lifecycle, shutdownOnSignals } from 
 import { Valkey } from "iovalkey";
 import Stripe from "stripe";
 import { createApp } from "./app.js";
-import { createDynamoDbClient } from "./aws.js";
+import { createDynamoDbClient, createS3Client } from "./aws.js";
 import { loadConfig } from "./config.js";
 import { createApi } from "./wiring.js";
 
@@ -16,10 +16,12 @@ const logger = createLogger({
 exitOnProcessErrors(logger);
 
 const dynamo = createDynamoDbClient(config.AWS_REGION, config.DYNAMODB_ENDPOINT);
+const s3 = createS3Client(config.AWS_REGION, config.S3_ENDPOINT);
 const valkey = new Valkey(config.VALKEY_URL);
 const api = createApi(
-  { dynamo, valkey, stripe: new Stripe(config.STRIPE_SECRET_KEY) },
+  { dynamo, s3, valkey, stripe: new Stripe(config.STRIPE_SECRET_KEY) },
   {
+    mediaBucket: config.MEDIA_BUCKET,
     tables: {
       catalog: config.CATALOG_TABLE,
       identity: config.IDENTITY_TABLE,
@@ -31,6 +33,7 @@ const api = createApi(
 );
 const lifecycle = new Lifecycle();
 lifecycle.onShutdown(async () => dynamo.destroy());
+lifecycle.onShutdown(async () => s3.destroy());
 lifecycle.onShutdown(async () => {
   await valkey.quit();
 });
