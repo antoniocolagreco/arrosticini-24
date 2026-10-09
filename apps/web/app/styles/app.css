@@ -822,6 +822,7 @@ h2 {
 }
 .product-media > img,
 .product-gallery > img {
+  object-fit: cover;
   background: var(--card);
 }
 .product-placeholder {
@@ -979,7 +980,7 @@ h2 {
   width: 100%;
   height: auto;
   aspect-ratio: 1;
-  object-fit: contain;
+  object-fit: cover;
   background: var(--card);
   border-radius: var(--radius-md);
 }
@@ -1091,7 +1092,7 @@ h2 {
   width: 96px;
   aspect-ratio: 1;
   height: auto;
-  object-fit: contain;
+  object-fit: cover;
   border-radius: var(--radius-md);
   background: var(--card);
 }
@@ -1747,7 +1748,7 @@ h2 {
 .admin-image img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 .admin-thumb .product-placeholder {
   min-height: 0;
