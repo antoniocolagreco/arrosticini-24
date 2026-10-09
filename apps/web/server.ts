@@ -1,6 +1,14 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { exitOnProcessErrors, Lifecycle, shutdownOnSignals } from "@arrosticini/ops";
+import {
+  CpuSampler,
+  createCpuReader,
+  createWhoAmI,
+  exitOnProcessErrors,
+  Lifecycle,
+  loadTaskMetadata,
+  shutdownOnSignals,
+} from "@arrosticini/ops";
 import { createRequestHandler } from "@react-router/express";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { Valkey } from "iovalkey";
@@ -9,12 +17,27 @@ import { createValkeySessionStorage, sessionStorageContext } from "./app/lib/ses
 import { createApp } from "./server/app.js";
 import { type Config, loadConfig } from "./server/config.js";
 import { logger } from "./server/logger.js";
+import { createStressStatus } from "./server/stress-status.js";
 
 const config: Config = loadConfig(process.env);
 const lifecycle: Lifecycle = new Lifecycle();
 const app = createApp(logger, lifecycle);
 const directory: string = path.dirname(fileURLToPath(import.meta.url));
 exitOnProcessErrors(logger);
+
+const cpu: CpuSampler = new CpuSampler(createCpuReader());
+cpu.start();
+lifecycle.onShutdown(async () => cpu.stop());
+const whoami: ReturnType<typeof createWhoAmI> = createWhoAmI({
+  service: "web",
+  version: config.APP_VERSION,
+  task: await loadTaskMetadata(process.env),
+  cpu,
+});
+app.get("/internal/whoami", (_req, res) => {
+  res.set("Cache-Control", "no-store").json(whoami());
+});
+app.get("/stress/status", createStressStatus(whoami));
 
 const valkey: Valkey = new Valkey(config.VALKEY_URL, {
   lazyConnect: true,
