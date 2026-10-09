@@ -23,6 +23,7 @@ import {
   UpdateMe,
   VerifyCredentials,
 } from "@arrosticini/identity";
+import type { WhoAmI } from "@arrosticini/ops";
 import {
   CancelOrder,
   DynamoDbOrderRepository,
@@ -65,6 +66,7 @@ import { catalogPricing } from "./catalog-pricing.js";
 import { identityCustomerDirectory } from "./customer-directory.js";
 import { identityCustomerProfiles } from "./customer-profiles.js";
 import { InProcessEventBus } from "./event-bus.js";
+import { opsRouter } from "./ops-router.js";
 import { paymentsInitiator } from "./payment-initiator.js";
 import { catalogProductAvailability } from "./product-availability.js";
 
@@ -86,11 +88,12 @@ export interface Settings {
   tables: Tables;
   mediaBucket: string;
   stripeWebhookSecret: string;
+  whoami: () => WhoAmI;
 }
 
 export function createApi(
   { dynamo, s3, valkey, stripe }: Clients,
-  { tables, mediaBucket, stripeWebhookSecret }: Settings,
+  { tables, mediaBucket, stripeWebhookSecret, whoami }: Settings,
 ) {
   const products = new DynamoDbProductRepository(dynamo, tables.catalog);
   const images = new S3ImageStorage(s3, mediaBucket);
@@ -158,6 +161,7 @@ export function createApi(
       getOrder: new GetOrder(orders),
       listAllOrders: new ListAllOrders(orders),
     }),
+    ops: opsRouter(whoami),
     payments: paymentsRouter({
       listPaymentMethods: new ListPaymentMethods(stripeCustomers),
       createSetupSession: new CreateSetupSession(stripeCustomers),

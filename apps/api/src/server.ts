@@ -1,4 +1,13 @@
-import { createLogger, exitOnProcessErrors, Lifecycle, shutdownOnSignals } from "@arrosticini/ops";
+import {
+  CpuSampler,
+  createCpuReader,
+  createLogger,
+  createWhoAmI,
+  exitOnProcessErrors,
+  Lifecycle,
+  loadTaskMetadata,
+  shutdownOnSignals,
+} from "@arrosticini/ops";
 import { Valkey } from "iovalkey";
 import Stripe from "stripe";
 import { createApp } from "./app.js";
@@ -15,6 +24,14 @@ const logger = createLogger({
 });
 exitOnProcessErrors(logger);
 
+const cpu = new CpuSampler(createCpuReader());
+cpu.start();
+const whoami = createWhoAmI({
+  service: "api",
+  version: config.APP_VERSION,
+  task: await loadTaskMetadata(process.env),
+  cpu,
+});
 const dynamo = createDynamoDbClient(config.AWS_REGION, config.DYNAMODB_ENDPOINT);
 const s3 = createS3Client(config.AWS_REGION, config.S3_ENDPOINT);
 const valkey = new Valkey(config.VALKEY_URL);
@@ -29,9 +46,11 @@ const api = createApi(
       payments: config.PAYMENTS_TABLE,
     },
     stripeWebhookSecret: config.STRIPE_WEBHOOK_SECRET,
+    whoami,
   },
 );
 const lifecycle = new Lifecycle();
+lifecycle.onShutdown(async () => cpu.stop());
 lifecycle.onShutdown(async () => dynamo.destroy());
 lifecycle.onShutdown(async () => s3.destroy());
 lifecycle.onShutdown(async () => {

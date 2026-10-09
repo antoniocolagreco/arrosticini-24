@@ -58,7 +58,22 @@ const stripe = new Stripe("sk_test_arrosticini", { ...inject("stripeMock"), prot
 const app = createApp(
   logger,
   new Lifecycle(),
-  createApi({ dynamo, s3, valkey, stripe }, { tables, mediaBucket, stripeWebhookSecret }),
+  createApi(
+    { dynamo, s3, valkey, stripe },
+    {
+      tables,
+      mediaBucket,
+      stripeWebhookSecret,
+      whoami: () => ({
+        service: "api",
+        version: "v1.0.0",
+        taskId: "4f1c2b9e8d7a4e3f9a1b",
+        availabilityZone: "eu-south-1a",
+        cpuPercent: 12.5,
+        startedAt: "2026-10-09T10:00:00.000Z",
+      }),
+    },
+  ),
 );
 let server: Server;
 
@@ -876,6 +891,19 @@ describe("payments", () => {
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "UNAUTHORIZED", status: 401, defined: true });
+  });
+});
+
+describe("ops", () => {
+  it("describes the task that served the request", async () => {
+    expect(await client().ops.whoami()).toEqual({
+      service: "api",
+      version: "v1.0.0",
+      taskId: "4f1c2b9e8d7a4e3f9a1b",
+      availabilityZone: "eu-south-1a",
+      cpuPercent: 12.5,
+      startedAt: "2026-10-09T10:00:00.000Z",
+    });
   });
 });
 
