@@ -1027,9 +1027,6 @@ h2,
   color: var(--muted-foreground);
   cursor: not-allowed;
 }
-.quantity-stepper[aria-busy="true"] output {
-  color: var(--muted-foreground);
-}
 .add-to-cart {
   margin-top: var(--space-4);
 }
@@ -1044,6 +1041,15 @@ h2,
 }
 .add-to-cart .is-added {
   background: var(--forest);
+}
+.add-to-cart-label {
+  display: grid;
+}
+.add-to-cart-label > span {
+  grid-area: 1 / 1;
+}
+.add-to-cart-label > [aria-hidden="true"] {
+  visibility: hidden;
 }
 .cart-layout {
   display: grid;
@@ -1065,10 +1071,6 @@ h2,
   gap: var(--space-4);
   padding-block: var(--space-6);
   border-bottom: 1px solid var(--border);
-}
-.cart-row[aria-busy="true"],
-.cart-lines[aria-busy="true"] {
-  opacity: 0.6;
 }
 .cart-thumbnail img,
 .cart-thumbnail :where(.product-placeholder) {

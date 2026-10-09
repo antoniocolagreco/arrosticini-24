@@ -1,5 +1,5 @@
 import { CircleCheck, ShoppingCart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher } from "react-router";
 import { Breadcrumb } from "../components/breadcrumb.js";
@@ -32,10 +32,14 @@ export default function Cart({ loaderData }: Route.ComponentProps) {
   const locale: "it" | "en" = i18n.language === "en" ? "en" : "it";
   const fetcher = useFetcher<CartResult>();
   const [removed, setRemoved] = useState<CartProduct | null>(null);
-  useEffect(() => {
-    if (fetcher.data?.ok && fetcher.data.quantity > 0) setRemoved(null);
-  }, [fetcher.data]);
+  const [previousRemoval, setPreviousRemoval] = useState<CartProduct | null>(null);
   const pending: boolean = fetcher.state !== "idle";
+  const notice: CartProduct | null =
+    !pending && fetcher.data?.ok && fetcher.data.slug === removed?.slug
+      ? fetcher.data.quantity === 0
+        ? removed
+        : null
+      : previousRemoval;
   return (
     <section className="catalog-page cart-page">
       <Breadcrumb items={[{ label: t("cart") }]} />
@@ -47,29 +51,25 @@ export default function Cart({ loaderData }: Route.ComponentProps) {
         <p className="catalog-intro">{t("cartIntro")}</p>
       </div>
       {fetcher.data?.error && <FormAlert message={t(fetcher.data.error)} />}
-      {removed &&
-        !pending &&
-        fetcher.data?.ok &&
-        fetcher.data.slug === removed.slug &&
-        fetcher.data.quantity === 0 && (
-          <div className="cart-notice" role="status">
-            <CircleCheck size={20} aria-hidden="true" />
-            <p>{t("removed", { name: removed.product?.name[locale] ?? removed.slug })}</p>
-            <Button
-              variant="outline"
-              disabled={pending}
-              onClick={() => {
-                if (removed)
-                  void fetcher.submit(
-                    { intent: "set", slug: removed.slug, quantity: removed.quantity },
-                    { method: "post" },
-                  );
-              }}
-            >
-              {t("undo")}
-            </Button>
-          </div>
-        )}
+      {notice && (
+        <div className="cart-notice" role="status">
+          <CircleCheck size={20} aria-hidden="true" />
+          <p>{t("removed", { name: notice.product?.name[locale] ?? notice.slug })}</p>
+          <Button
+            variant="outline"
+            disabled={pending}
+            onClick={() => {
+              setPreviousRemoval(notice);
+              void fetcher.submit(
+                { intent: "set", slug: notice.slug, quantity: notice.quantity },
+                { method: "post" },
+              );
+            }}
+          >
+            {t("undo")}
+          </Button>
+        </div>
+      )}
       {loaderData.lines.length === 0 ? (
         <div className="catalog-empty">
           <ShoppingCart size={48} aria-hidden="true" />
@@ -87,6 +87,7 @@ export default function Cart({ loaderData }: Route.ComponentProps) {
                 key={line.slug}
                 line={line}
                 onRemove={(removedLine: CartProduct) => {
+                  setPreviousRemoval(notice);
                   setRemoved(removedLine);
                   void fetcher.submit(
                     { intent: "set", slug: removedLine.slug, quantity: 0 },
