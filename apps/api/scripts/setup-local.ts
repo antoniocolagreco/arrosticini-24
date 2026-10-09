@@ -13,6 +13,7 @@ import {
   ScryptPasswordHasher,
 } from "@arrosticini/identity";
 import { localizedText, Money, newId } from "@arrosticini/kernel";
+import { orderingTableDefinition } from "@arrosticini/ordering";
 import {
   CreateTableCommand,
   type CreateTableCommandInput,
@@ -35,6 +36,7 @@ const env = z
     S3_ENDPOINT: z.url(),
     CATALOG_TABLE: z.string().min(1),
     IDENTITY_TABLE: z.string().min(1),
+    ORDERING_TABLE: z.string().min(1),
     MEDIA_BUCKET: z.string().min(1),
     ADMIN_EMAIL: Email.optional(),
     ADMIN_PASSWORD: z.string().min(8).optional(),
@@ -132,6 +134,7 @@ async function seedAdmin() {
 
 await createTable(catalogTableDefinition(env.CATALOG_TABLE));
 await createTable(identityTableDefinition(env.IDENTITY_TABLE));
+await createTable(orderingTableDefinition(env.ORDERING_TABLE));
 await createPublicBucket(env.MEDIA_BUCKET);
 await seedCatalog();
 await seedAdmin();

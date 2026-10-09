@@ -9,6 +9,7 @@ export const Env = z.object({
   DYNAMODB_ENDPOINT: z.url().optional(),
   CATALOG_TABLE: z.string().min(1),
   IDENTITY_TABLE: z.string().min(1),
+  ORDERING_TABLE: z.string().min(1),
   VALKEY_URL: z.url(),
 });
 
