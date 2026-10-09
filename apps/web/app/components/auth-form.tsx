@@ -74,7 +74,7 @@ export function AuthForm({ register, result }: { register: boolean; result?: Aut
             {...(register ? { hint: t("passwordHint"), minLength: 8 } : {})}
             {...(result?.errors.password ? { error: t(result.errors.password) } : {})}
           />
-          <Button type="submit" disabled={pending} aria-busy={pending}>
+          <Button type="submit" busy={pending}>
             {t(pending ? "submitting" : register ? "createAccount" : "login")}
           </Button>
         </Form>

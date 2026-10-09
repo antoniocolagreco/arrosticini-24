@@ -37,7 +37,7 @@ export default function PaymentMethods({ loaderData, actionData }: Route.Compone
       </div>
       <Form method="post" className="payment-method-add" aria-busy={navigation.state !== "idle"}>
         <input type="hidden" name="intent" value="setup" />
-        <Button type="submit" disabled={navigation.state !== "idle"}>
+        <Button type="submit" busy={navigation.state !== "idle"}>
           <Plus size={20} aria-hidden="true" />
           {t("addCard")}
         </Button>

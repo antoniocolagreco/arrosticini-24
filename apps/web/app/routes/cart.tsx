@@ -57,7 +57,7 @@ export default function Cart({ loaderData }: Route.ComponentProps) {
           <p>{t("removed", { name: notice.product?.name[locale] ?? notice.slug })}</p>
           <Button
             variant="outline"
-            disabled={pending}
+            busy={pending}
             onClick={() => {
               setPreviousRemoval(notice);
               void fetcher.submit(

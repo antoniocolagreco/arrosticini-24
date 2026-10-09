@@ -47,11 +47,7 @@ export function AddToCart({ slug }: { slug: string }) {
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="quantity" value={quantity} />
         <QuantityStepper value={quantity} onChange={setQuantity} busy={busy} />
-        <Button
-          type="submit"
-          disabled={busy}
-          className={status === "added" ? "is-added" : undefined}
-        >
+        <Button type="submit" busy={busy} className={status === "added" ? "is-added" : undefined}>
           {status === "added" ? <Check aria-hidden="true" /> : <ShoppingCart aria-hidden="true" />}
           <span className="add-to-cart-label">
             {(["add", "adding", "added"] as const).map((state) => (

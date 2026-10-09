@@ -27,7 +27,7 @@ export function PaymentMethodCard({ method }: { method: PaymentMethodDto }) {
         <Button
           type="submit"
           variant="outline"
-          disabled={busy}
+          busy={busy}
           aria-label={t("removeCardLabel", { brand: method.brand, last4: method.last4 })}
         >
           <Trash2 size={20} aria-hidden="true" />

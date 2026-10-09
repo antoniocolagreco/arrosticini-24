@@ -74,7 +74,7 @@ export default function Order({ loaderData }: Route.ComponentProps) {
         {order.status === "PENDING_PAYMENT" && (
           <Button
             variant="outline"
-            disabled={revalidator.state !== "idle"}
+            busy={revalidator.state !== "idle"}
             onClick={() => {
               void revalidator.revalidate();
             }}

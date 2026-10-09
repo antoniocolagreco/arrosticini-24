@@ -1023,7 +1023,8 @@ h2,
 .quantity-stepper button:hover:not(:disabled) {
   background: var(--secondary);
 }
-.quantity-stepper button:disabled {
+.quantity-stepper button:disabled:not([aria-busy="true"]),
+.quantity-stepper button.is-minimum {
   color: var(--muted-foreground);
   cursor: not-allowed;
 }
@@ -1108,9 +1109,6 @@ h2,
 .cart-remove:hover {
   color: var(--primary);
   background: var(--destructive-soft);
-}
-.cart-remove:disabled {
-  opacity: 0.6;
 }
 .cart-row-error {
   grid-column: 1 / -1;

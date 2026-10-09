@@ -4,7 +4,7 @@ import type { ComponentProps } from "react";
 import { cn } from "../../lib/utils.js";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2.5 rounded-md border border-transparent text-[17px] font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:bg-secondary disabled:text-muted-foreground disabled:border-border [&_svg]:size-5",
+  "inline-flex items-center justify-center gap-2.5 rounded-md border border-transparent text-[17px] font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none [&_svg]:size-5",
   {
     variants: {
       variant: {
@@ -22,14 +22,22 @@ export function Button({
   variant,
   size,
   asChild = false,
+  busy = false,
+  disabled,
   ...props
-}: ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
+}: ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & { asChild?: boolean; busy?: boolean }) {
   const Component = asChild ? Slot.Root : "button";
   return (
     <Component
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(
+        buttonVariants({ variant, size, className }),
+        disabled && "disabled:bg-secondary disabled:text-muted-foreground disabled:border-border",
+      )}
       {...props}
+      disabled={disabled || busy}
+      aria-busy={busy || props["aria-busy"]}
     />
   );
 }
