@@ -1,4 +1,5 @@
 {
+  "cartCount": "Carrello, {{count}} articoli",
   "home": "Home",
   "account": "Il mio account",
   "login": "Accedi",

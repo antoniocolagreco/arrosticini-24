@@ -11,6 +11,7 @@ export default [
     route("login", "routes/login.tsx"),
     route("register", "routes/register.tsx"),
     route("logout", "routes/logout.ts"),
+    route("cart", "routes/cart.tsx"),
     route("account", "routes/account.tsx"),
   ]),
   route("*", "routes/not-found.tsx"),

@@ -1,4 +1,5 @@
 {
+  "cartCount": "Cart, {{count}} items",
   "home": "Home",
   "account": "My account",
   "login": "Sign in",

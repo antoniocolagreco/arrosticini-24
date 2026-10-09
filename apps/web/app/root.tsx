@@ -13,6 +13,7 @@ import {
 import type { Route } from "./+types/root.js";
 import { ErrorPage } from "./components/error-page.js";
 import { SiteLayout } from "./components/site-layout.js";
+import { readCart } from "./lib/cart.server.js";
 import { localeCookie } from "./lib/locale.server.js";
 import { sessionContext, sessionMiddleware } from "./lib/session.server.js";
 import { getLocale, i18nextMiddleware } from "./middleware/i18next.js";
@@ -28,6 +29,9 @@ export async function loader({ context, request }: Route.LoaderArgs) {
       version: process.env.APP_VERSION ?? "dev",
       requestId: request.headers.get("x-request-id"),
       signedIn: context.get(sessionContext).has("userId"),
+      cartCount:
+        (await readCart(request, context))?.lines.reduce((sum, line) => sum + line.quantity, 0) ??
+        0,
     },
     {
       headers: {
@@ -79,7 +83,11 @@ export default function App({ loaderData }: Route.ComponentProps) {
     if (i18n.language !== loaderData.locale) void i18n.changeLanguage(loaderData.locale);
   }, [i18n, loaderData.locale]);
   return (
-    <SiteLayout version={loaderData.version} signedIn={loaderData.signedIn}>
+    <SiteLayout
+      version={loaderData.version}
+      signedIn={loaderData.signedIn}
+      cartCount={loaderData.cartCount}
+    >
       <Outlet />
     </SiteLayout>
   );
@@ -89,7 +97,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const loaderData = useRouteLoaderData<typeof loader>("root");
   const status: number = isRouteErrorResponse(error) ? error.status : 500;
   return (
-    <SiteLayout version={loaderData?.version ?? "dev"} signedIn={loaderData?.signedIn ?? false}>
+    <SiteLayout
+      version={loaderData?.version ?? "dev"}
+      signedIn={loaderData?.signedIn ?? false}
+      cartCount={loaderData?.cartCount ?? 0}
+    >
       <ErrorPage
         status={status}
         {...(loaderData?.requestId ? { requestId: loaderData.requestId } : {})}

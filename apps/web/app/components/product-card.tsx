@@ -2,6 +2,7 @@ import type { ProductDto } from "@arrosticini/contracts";
 import type { Locale } from "@arrosticini/kernel";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { AddToCart } from "./add-to-cart.js";
 import { Price } from "./price.js";
 import { ProductImage } from "./product-image.js";
 
@@ -35,6 +36,7 @@ export function ProductCard({
         </p>
         <div className="product-card-footer">
           <Price cents={product.priceCents} locale={locale} />
+          <AddToCart slug={product.slug} />
         </div>
       </div>
     </article>
