@@ -63,7 +63,7 @@ Stripe ──► webhook ──► CloudFront ──► web /webhooks/stripe ─
 | Contesto | Responsabilità | Aggregati | Persistenza |
 |---|---|---|---|
 | Catalog | prodotti, testi IT/EN, prezzo, immagini, stato, ricerca | `Product` | tabella `catalog`, S3 `media` |
-| Identity | account, credenziali, ruolo (customer/admin), profilo, lingua preferita, indirizzi | `User` (con `Address`) | tabella `identity` |
+| Identity | account, credenziali, ruolo (customer/admin), stato (attivo/sospeso), profilo, lingua preferita, indirizzi | `User` (con `Address`) | tabella `identity` |
 | Shopping | carrello di anonimi e loggati, merge al login | `Cart` | Valkey `cart:*` |
 | Ordering | ordine con copia di righe, prezzi e indirizzo; stati | `Order` | tabella `ordering` |
 | Payments | Checkout Session, stato del pagamento, cliente Stripe, carte salvate, idempotenza dei webhook | `Payment`, `PaymentCustomer` | tabella `payments` |
@@ -103,13 +103,19 @@ contexts/ordering/src/
 
 Il bus esegue gli handler in modo sincrono, e `api` risponde 2xx a Stripe solo quando tutti gli handler sono terminati. Se il container muore a metà, Stripe ripete il webhook e gli handler idempotenti lo riapplicano.
 
-Stati dell'ordine: `PENDING_PAYMENT` → `PAID` oppure `PENDING_PAYMENT` → `CANCELLED`. L'aggregato `Order` vieta ogni altra transizione.
+Stati dell'ordine: `PENDING_PAYMENT` → `PAID` oppure `PENDING_PAYMENT` → `CANCELLED`, poi a mano dall'admin `PAID` → `SHIPPED` → `DELIVERED` oppure `SHIPPED` → `LOST`. L'aggregato `Order` vieta ogni altra transizione.
+
+- **Spedizione:** `SHIPPED` richiede corriere e numero di tracking; il link di tracking (`https`) è facoltativo. I tre campi si correggono finché l'ordine è `SHIPPED`.
+- **Indirizzo:** l'admin lo modifica finché l'ordine è `PENDING_PAYMENT` o `PAID`.
+- **Webhook ripetuto:** un pagamento confermato su un ordine già `PAID`, `SHIPPED`, `DELIVERED` o `LOST` non ha effetti.
 
 ## Sicurezza
 
 - **Login:** `web` verifica le credenziali con `POST /identity/credentials/verify` e salva in sessione `userId`, `role` e `locale`.
 - **Identità verso api:** `web` invia `userId` e `role` nell'header `x-actor`. `api` si fida dell'header perché il suo security group accetta traffico solo da `web`.
 - **Ruolo admin:** controllato sia dal middleware di `web` sia dagli use case di `api`.
+- **Admin senza acquisti:** l'admin gestisce catalogo, ordini e utenti. `web` gli nasconde carrello, checkout, ordini propri, indirizzi e carte; `api` gli rifiuta con `FORBIDDEN` ordine, merge del carrello e salvataggio di una carta.
+- **Utente sospeso:** il login risponde `ACCOUNT_SUSPENDED` dopo una password corretta. Per ogni richiesta con `x-actor`, `api` verifica che l'utente esista e sia attivo, altrimenti risponde 401 e `web` chiude la sessione. Gli admin non si sospendono.
 - **Password:** `crypto.scrypt` nativo di Node, salt casuale per utente, confronto con `timingSafeEqual`.
 
 ## Segreti
@@ -268,10 +274,11 @@ Regole:
 | Identity | `POST /identity/users` · `POST /identity/credentials/verify` | pubblico |
 | Identity | `GET` e `PATCH /identity/me` · `POST /identity/me/password` | utente |
 | Identity | `GET` e `POST /identity/me/addresses` · `PATCH` e `DELETE /identity/me/addresses/{id}` | utente |
+| Identity | `GET /identity/admin/users` · `GET` e `PATCH /identity/admin/users/{id}` | admin |
 | Shopping | `POST /shopping/carts` · `GET /shopping/carts/{id}` | pubblico |
 | Shopping | `PUT /shopping/carts/{id}/lines/{slug}` (quantità 0 rimuove) · `POST /shopping/carts/{id}/merge` | pubblico / utente |
 | Ordering | `POST /ordering/orders` · `GET /ordering/orders` · `GET /ordering/orders/{id}` | utente |
-| Ordering | `GET /ordering/admin/orders` | admin |
+| Ordering | `GET /ordering/admin/orders?userId=` · `PATCH /ordering/admin/orders/{id}` | admin |
 | Payments | `GET /payments/methods` · `POST /payments/methods/setup-session` · `DELETE /payments/methods/{id}` | utente |
 | Payments | `POST /payments/webhooks/stripe` | solo da web |
 | Ops | `GET /internal/whoami` | solo da web |
@@ -299,7 +306,8 @@ Regole:
 | `/:lang/account/password` | cambio password | utente |
 | `/:lang/login` · `/:lang/register` · `/logout` | autenticazione | pubblico |
 | `/:lang/admin/products` · `/:lang/admin/products/new` · `/:lang/admin/products/:slug` | gestione prodotti e immagini | admin |
-| `/:lang/admin/orders` | tutti gli ordini | admin |
+| `/:lang/admin/orders` · `/:lang/admin/orders/:id` | tutti gli ordini; indirizzo, stato e spedizione | admin |
+| `/:lang/admin/users` · `/:lang/admin/users/:id` | utenti; scheda con indirizzi e ordini, sospensione | admin |
 | `/:lang/stress` | pannello pecore | pubblico |
 | `/stress/status` · `/webhooks/stripe` · `/healthz` | resource route | tecnico |
 | 404 / 500 | ErrorBoundary con la pecora in overdrive | — |
