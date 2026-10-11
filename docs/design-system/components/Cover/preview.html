@@ -1,0 +1,44 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Arrosticini 24ore</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { overflow: hidden; }
+  .cover { position: relative; height: 288px; overflow: hidden; }
+  .art { position: absolute; top: 0; left: 480px; width: 480px; height: 288px; overflow: hidden; }
+  .art svg { display: block; }
+  .brand { fill: var(--primary); } .green { fill: var(--forest); } .ink { fill: var(--foreground); }
+  .cloth { fill: var(--card); } .soft { fill: var(--destructive-soft); }
+  .blk { rx: var(--radius-lg); } .chip { rx: var(--radius-sm); }
+  .words { position: absolute; left: var(--space-8); bottom: var(--space-6); max-width: 440px; }
+  .name { margin: 0; font-family: var(--font-display); font-stretch: 75%; font-variation-settings: "wdth" 75; font-weight: 900; font-size: 80px; line-height: .95; letter-spacing: -3px; color: var(--foreground); }
+  .tag { margin: var(--space-3) 0 0 2px; font-size: 14px; line-height: 20px; color: var(--muted-foreground); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      primary 192×280 bled off the top (the ember red, largest) · forest 152×192 · card 144×216 bleeding off the right edge (the cloth) · foreground 96×32 chip — about 35% of 960×288
+  arrangement one tall ember slab with a forest satellite on its left and the cloth on its right, bottoms on one line space-6 above the edge, space-4 gutters
+  pattern     checker, from "tovaglia a quadri bianco-rossa": a gingham of space-6 squares on the cloth block, primary where weft and warp cross, destructive-soft where only one runs
+  scales      sides in space-2 multiples; gutters space-4; pitch space-6; corners radius-lg, chip radius-sm
+-->
+<rect class="ink chip" x="0" y="24" width="96" height="32" rx="4"/>
+<rect class="green blk" x="0" y="72" width="152" height="192" rx="10"/>
+<rect class="brand blk" x="168" y="-16" width="192" height="280" rx="10"/>
+<clipPath id="cloth"><rect class="blk" x="376" y="48" width="144" height="216" rx="10"/></clipPath>
+<g clip-path="url(#cloth)"><rect class="cloth" x="376" y="48" width="144" height="216"/><rect class="soft" x="400" y="48" width="24" height="24"/><rect class="soft" x="448" y="48" width="24" height="24"/><rect class="soft" x="496" y="48" width="24" height="24"/><rect class="soft" x="376" y="72" width="24" height="24"/><rect class="brand" x="400" y="72" width="24" height="24"/><rect class="soft" x="424" y="72" width="24" height="24"/><rect class="brand" x="448" y="72" width="24" height="24"/><rect class="soft" x="472" y="72" width="24" height="24"/><rect class="brand" x="496" y="72" width="24" height="24"/><rect class="soft" x="400" y="96" width="24" height="24"/><rect class="soft" x="448" y="96" width="24" height="24"/><rect class="soft" x="496" y="96" width="24" height="24"/><rect class="soft" x="376" y="120" width="24" height="24"/><rect class="brand" x="400" y="120" width="24" height="24"/><rect class="soft" x="424" y="120" width="24" height="24"/><rect class="brand" x="448" y="120" width="24" height="24"/><rect class="soft" x="472" y="120" width="24" height="24"/><rect class="brand" x="496" y="120" width="24" height="24"/><rect class="soft" x="400" y="144" width="24" height="24"/><rect class="soft" x="448" y="144" width="24" height="24"/><rect class="soft" x="496" y="144" width="24" height="24"/><rect class="soft" x="376" y="168" width="24" height="24"/><rect class="brand" x="400" y="168" width="24" height="24"/><rect class="soft" x="424" y="168" width="24" height="24"/><rect class="brand" x="448" y="168" width="24" height="24"/><rect class="soft" x="472" y="168" width="24" height="24"/><rect class="brand" x="496" y="168" width="24" height="24"/><rect class="soft" x="400" y="192" width="24" height="24"/><rect class="soft" x="448" y="192" width="24" height="24"/><rect class="soft" x="496" y="192" width="24" height="24"/><rect class="soft" x="376" y="216" width="24" height="24"/><rect class="brand" x="400" y="216" width="24" height="24"/><rect class="soft" x="424" y="216" width="24" height="24"/><rect class="brand" x="448" y="216" width="24" height="24"/><rect class="soft" x="472" y="216" width="24" height="24"/><rect class="brand" x="496" y="216" width="24" height="24"/><rect class="soft" x="400" y="240" width="24" height="24"/><rect class="soft" x="448" y="240" width="24" height="24"/><rect class="soft" x="496" y="240" width="24" height="24"/></g>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Arrosticini 24ore</h1>
+<p class="tag">La pecora vola. La tradizione resta.</p>
+</div>
+</div>
+</body>
+</html>

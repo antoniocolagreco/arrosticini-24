@@ -1,0 +1,46 @@
+<!-- @dsCard group="Actions" height=470 -->
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><title>Button</title></head>
+<body>
+<div class="a24-demo">
+  <div class="a24-demo-row">
+    <div class="a24-state"><small>Primary</small><button class="a24-btn a24-btn--primary" type="button" data-add><i data-lucide="shopping-cart" aria-hidden="true"></i><span>Aggiungi</span></button></div>
+    <div class="a24-state"><small>Hover</small><button class="a24-btn a24-btn--primary is-hover" type="button"><i data-lucide="shopping-cart" aria-hidden="true"></i><span>Aggiungi</span></button></div>
+    <div class="a24-state"><small>Focus</small><button class="a24-btn a24-btn--primary is-focus" type="button"><i data-lucide="shopping-cart" aria-hidden="true"></i><span>Aggiungi</span></button></div>
+    <div class="a24-state"><small>Disabled</small><button class="a24-btn a24-btn--primary" type="button" disabled><i data-lucide="shopping-cart" aria-hidden="true"></i><span>Aggiungi</span></button></div>
+    <div class="a24-state"><small>Loading</small><button class="a24-btn a24-btn--primary" type="button" aria-busy="true"><span>Aggiungo…</span></button></div>
+    <div class="a24-state"><small>Added</small><button class="a24-btn a24-btn--primary is-added" type="button"><i data-lucide="check" aria-hidden="true"></i><span>Aggiunto</span></button></div>
+  </div>
+  <div class="a24-demo-row">
+    <div class="a24-state"><small>Secondary</small><button class="a24-btn a24-btn--secondary" type="button">Continua lo shopping</button></div>
+    <div class="a24-state"><small>Hover</small><button class="a24-btn a24-btn--secondary is-hover" type="button">Continua lo shopping</button></div>
+    <div class="a24-state"><small>Disabled</small><button class="a24-btn a24-btn--secondary" type="button" disabled>Continua lo shopping</button></div>
+    <div class="a24-state"><small>Text</small><button class="a24-btn a24-btn--text" type="button"><i data-lucide="pencil" aria-hidden="true"></i>Modifica</button></div>
+    <div class="a24-state"><small>Text · hover</small><button class="a24-btn a24-btn--text is-hover" type="button"><i data-lucide="pencil" aria-hidden="true"></i>Modifica</button></div>
+    <div class="a24-state"><small>Icon</small><button class="a24-btn a24-btn--icon" type="button" aria-label="Rimuovi"><i data-lucide="trash-2" aria-hidden="true"></i></button></div>
+    <div class="a24-state"><small>Icon · hover</small><button class="a24-btn a24-btn--icon is-hover" type="button" aria-label="Rimuovi"><i data-lucide="trash-2" aria-hidden="true"></i></button></div>
+    <div class="a24-state"><small>Icon · disabled</small><button class="a24-btn a24-btn--icon" type="button" aria-label="Rimuovi" disabled><i data-lucide="trash-2" aria-hidden="true"></i></button></div>
+  </div>
+  <div class="a24-demo-row" style="padding-bottom:12px">
+    <div class="a24-state"><small>Call to action · 62px</small><button class="a24-btn a24-btn--primary a24-btn--lg" type="button">Scegli i tuoi arrosticini<i data-lucide="arrow-right" aria-hidden="true" style="width:24px;height:24px"></i></button></div>
+    <div class="a24-state"><small>Hover · lifts 3px</small><button class="a24-btn a24-btn--primary a24-btn--lg is-hover" type="button">Choose your arrosticini<i data-lucide="arrow-right" aria-hidden="true" style="width:24px;height:24px"></i></button></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+<script>document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-add]'); if (!b || b.classList.contains('is-added')) return;
+  var label = b.querySelector('span'), old = label.textContent;
+  b.classList.add('is-added'); label.textContent = 'Aggiunto';
+  var c = document.querySelector('.a24-cart-count');
+  if (c) { c.textContent = '(' + (parseInt(c.textContent.replace(/\D/g, ''), 10) + 1) + ')'; c.classList.remove('is-bump'); void c.offsetWidth; c.classList.add('is-bump'); }
+  setTimeout(function () { b.classList.remove('is-added'); label.textContent = old; }, 1200);
+});
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.a24-qty button'); if (!b) return;
+  var q = b.closest('.a24-qty'), o = q.querySelector('output'), n = parseInt(o.textContent, 10) + (b === q.lastElementChild ? 1 : -1);
+  o.textContent = Math.max(1, n); q.firstElementChild.disabled = n <= 1;
+});</script>
+</body>
+</html>

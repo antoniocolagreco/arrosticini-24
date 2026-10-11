@@ -1,0 +1,36 @@
+<!-- @dsCard group="Commerce" height=420 -->
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><title>OrderSummary</title></head>
+<body>
+<div class="a24-demo">
+  <div class="a24-demo-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,360px))">
+    <section class="a24-summary" aria-labelledby="s1">
+      <h2 id="s1">Riepilogo</h2>
+      <dl>
+        <div><dt>Arrosticini 75 pezzi × 2</dt><dd>€ 75,00</dd></div>
+        <div><dt>Carbone × 1</dt><dd>€ 20,00</dd></div>
+        <div><dt>Vino locale × 3</dt><dd>€ 15,00</dd></div>
+        <div class="a24-total"><dt>Totale</dt><dd class="a24-price">€ 110,00</dd></div>
+      </dl>
+      <button class="a24-btn a24-btn--primary a24-btn--block" type="button"><i data-lucide="credit-card" aria-hidden="true"></i>Vai al pagamento</button>
+      <small>Pagamento sicuro su Stripe</small>
+    </section>
+    <section class="a24-summary" aria-labelledby="s2">
+      <h2 id="s2">Summary</h2>
+      <dl>
+        <div><dt>Arrosticini 75 pieces × 2</dt><dd>€75.00</dd></div>
+        <div><dt>Charcoal × 1</dt><dd>€20.00</dd></div>
+        <div><dt>Local wine × 3</dt><dd>€15.00</dd></div>
+        <div class="a24-total"><dt>Total</dt><dd class="a24-price">€110.00</dd></div>
+      </dl>
+      <button class="a24-btn a24-btn--primary a24-btn--block" type="button" aria-busy="true">Redirecting to Stripe…</button>
+      <small>Secure payment on Stripe</small>
+    </section>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+
+</body>
+</html>
