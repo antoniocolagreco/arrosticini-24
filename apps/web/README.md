@@ -38,7 +38,7 @@ Build output is in `build/client` and `build/server`. The Express launcher is `s
 
 `POST /webhooks/stripe` forwards the unchanged raw JSON body, Stripe signature and request ID to the internal API, preserving its response status. It runs before session and locale middleware and does not forward browser cookies or actor headers. Signature verification and payment state transitions remain in the API. Configure Stripe CLI or the dashboard to send events to the public web origin at `/webhooks/stripe`; Stripe keys and webhook secrets are API configuration, not web requirements.
 
-Stripe CLI v1.51 requires an explicit event selection. Until the compose service command includes it, run `docker compose --env-file .env.local --profile stripe run --rm stripe listen --events checkout.session.completed,checkout.session.expired --forward-to host.docker.internal:3100/webhooks/stripe`. The API's `STRIPE_WEBHOOK_SECRET` must match the signing secret printed by that listener; a dashboard endpoint has a different secret.
+Run `docker compose --env-file .env.local --profile stripe up -d stripe` to forward checkout events to the web port configured by `WEB_PORT`. The API's `STRIPE_WEBHOOK_SECRET` must match the signing secret printed by that listener; a dashboard endpoint has a different secret.
 
 `/:lang/account/payment-methods` requires authentication and lists the customer's saved cards. Adding a card redirects with 303 to Stripe's setup checkout and returns to the localized cards page using `PUBLIC_ORIGIN`. Removing a card refreshes the list without replacing it with a loading screen. Card numbers and security codes are entered only on Stripe; web displays brand, last four digits and expiry.
 

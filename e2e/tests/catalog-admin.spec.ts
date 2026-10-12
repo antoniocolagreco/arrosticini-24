@@ -50,7 +50,7 @@ test("an admin creates a draft, uploads an image and publishes it in both langua
       image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth === 1),
     )
     .toBe(true);
-  expect(await image.evaluate((element) => getComputedStyle(element).objectFit)).toBe("contain");
+  expect(await image.evaluate((element) => getComputedStyle(element).objectFit)).toBe("cover");
   await page.getByLabel("Stato", { exact: true }).selectOption("ACTIVE");
   await page.getByRole("button", { name: "Salva prodotto", exact: true }).click();
   await expect(

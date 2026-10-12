@@ -14,4 +14,13 @@ The suite covers registration with anonymous-cart merge and shipping-address per
 
 The hosted payment test uses real Stripe test-mode Checkout and card `4242 4242 4242 4242`. It reads `STRIPE_SECRET_KEY` from the environment or root `.env.local`, rejects live keys, and skips only that test when no key is supplied. After Stripe confirms payment, the fixture retrieves the actual completion event, signs its local delivery with an isolated webhook secret and forwards it through web `/webhooks/stripe`. This exercises signature verification, payment and order persistence, polling, cart clearing and duplicate delivery. It does not require a Stripe CLI listener, and does not test Stripe's external webhook-delivery configuration. Stripe keeps historical test payments even after the fixture removes the test customer.
 
-`E2E_DYNAMODB_ENDPOINT`, `E2E_S3_ENDPOINT` and `E2E_VALKEY_URL` override local service URLs. `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` optionally selects an installed Chromium. No CI workflow is changed; invoke this suite separately from unit tests. Validation against Docker Compose's `full` profile requires the Dockerfiles and profile from battle-plan step 7, which are not yet on `dev`.
+To run the same journeys against the production container images, build them and select the Docker runtime:
+
+```sh
+docker compose --env-file .env.local --profile full build api web
+E2E_RUNTIME=docker pnpm --filter @arrosticini/e2e test:e2e
+```
+
+The Docker fixture uses the root Compose `full` services with `e2e/docker-compose.yml`, in a UUID-suffixed project. It starts only API and web, publishes web on an allocated port and removes its containers and network afterwards. The shared infrastructure stays running. Images must be built again after application changes. Containers reach the shared host services through `host.docker.internal`; `E2E_DYNAMODB_CONTAINER_ENDPOINT`, `E2E_S3_CONTAINER_ENDPOINT` and `E2E_VALKEY_CONTAINER_URL` override those addresses.
+
+`E2E_DYNAMODB_ENDPOINT`, `E2E_S3_ENDPOINT` and `E2E_VALKEY_URL` override local service URLs used by fixtures and the host runtime. `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` optionally selects an installed Chromium. No CI workflow is changed; invoke this suite separately from unit tests.
