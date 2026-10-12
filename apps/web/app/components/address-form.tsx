@@ -114,7 +114,7 @@ export function AddressForm({
             {t(saving ? "savingAddress" : "saveAddress")}
           </Button>
           {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>
+            <Button type="button" variant="outline" onClick={onCancel} busy={busy}>
               {t("cancel")}
             </Button>
           )}

@@ -80,6 +80,7 @@ export default function Addresses({ loaderData, actionData }: Route.ComponentPro
               type="button"
               className="tile-add"
               disabled={busy || full}
+              aria-busy={busy && !full}
               onClick={() => setOpen("new")}
             >
               {full ? (

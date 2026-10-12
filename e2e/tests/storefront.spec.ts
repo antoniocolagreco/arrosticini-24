@@ -1,6 +1,63 @@
 import { randomUUID } from "node:crypto";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../fixtures/test.js";
+
+interface ButtonAppearance {
+  color: string;
+  background: string;
+  border: string;
+  width: number;
+  height: number;
+}
+
+function buttonAppearance(buttons: HTMLElement[]): ButtonAppearance[] {
+  return buttons.map((button) => {
+    const style: CSSStyleDeclaration = getComputedStyle(button);
+    const bounds: DOMRect = button.getBoundingClientRect();
+    return {
+      color: style.color,
+      background: style.backgroundColor,
+      border: style.borderColor,
+      width: bounds.width,
+      height: bounds.height,
+    };
+  });
+}
+
+async function expectStablePendingControls(
+  page: Page,
+  controls: Locator,
+  submit: string,
+  invalid: string,
+): Promise<void> {
+  await expect(controls).not.toHaveCount(0);
+  const before: ButtonAppearance[] = await controls.evaluateAll(buttonAppearance);
+  const gate: PromiseWithResolvers<void> = Promise.withResolvers<void>();
+  const requests: RegExp = /\/it\/account(?:[/.?]|$)/;
+  await page.route(requests, async (route) => {
+    if (route.request().method() === "POST") await gate.promise;
+    await route.continue();
+  });
+  try {
+    await page.getByRole("button", { name: submit, exact: true }).click();
+    await expect(page.locator(".form-actions button[type=submit]")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    await page.waitForTimeout(250);
+    expect(await controls.evaluateAll(buttonAppearance)).toEqual(before);
+    expect(
+      await controls.evaluateAll((buttons) =>
+        buttons.every((button) => (button as HTMLButtonElement).disabled),
+      ),
+    ).toBe(true);
+  } finally {
+    gate.resolve();
+  }
+  await expect(page.locator(invalid)).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator(invalid)).toBeFocused();
+  await page.unroute(requests);
+}
 
 async function register(page: Page, firstName: string, lastName: string): Promise<void> {
   await page.goto("/it/register");
@@ -77,6 +134,43 @@ test("language switching preserves the product query, cart and preferred locale"
   await expect(page.getByLabel("Quantity", { exact: true })).toHaveText("1");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
+  );
+});
+
+test("profile and address controls retain their appearance while a save is pending", async ({
+  page,
+}) => {
+  await register(page, "Test", "Pending");
+  await page.getByRole("button", { name: "Modifica i tuoi dati", exact: true }).click();
+  await page.locator("#profile-firstName").fill(" ");
+  await expectStablePendingControls(
+    page,
+    page.locator(".account-nav button,.panel .icon-action,.form-actions button[type=button]"),
+    "Salva",
+    "#profile-firstName",
+  );
+  await page.getByRole("button", { name: "Annulla", exact: true }).click();
+  await page.goto("/it/products");
+  await page
+    .getByRole("article")
+    .filter({ hasText: "Arrosticini di prova" })
+    .getByRole("button", { name: "Aggiungi", exact: true })
+    .click();
+  await expect(page.locator(".cart-count")).toHaveText("1");
+  await page.goto("/it/checkout");
+  await addAddress(page);
+  await page.goto("/it/account/addresses");
+  await page
+    .getByRole("button", { name: "Modifica l’indirizzo di Test Customer", exact: true })
+    .click();
+  await page.locator("#address-fullName").fill(" ");
+  await expectStablePendingControls(
+    page,
+    page.locator(
+      ".account-nav button,.tile-add,.tile .icon-action,.form-actions button[type=button]",
+    ),
+    "Salva indirizzo",
+    "#address-fullName",
   );
 });
 

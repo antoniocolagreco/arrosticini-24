@@ -70,6 +70,7 @@ export function ManagedAddress({ address, onEdit }: { address: AddressDto; onEdi
               type="submit"
               className="tile-link"
               disabled={busy}
+              aria-busy={busy}
               aria-label={t("makeDefaultLabel", { name: address.fullName })}
             >
               {t("makeDefault")}
@@ -82,6 +83,7 @@ export function ManagedAddress({ address, onEdit }: { address: AddressDto; onEdi
             className="icon-action"
             onClick={onEdit}
             disabled={busy}
+            aria-busy={busy}
             title={t("editAddress")}
             aria-label={t("editAddressLabel", { name: address.fullName })}
           >
@@ -95,6 +97,7 @@ export function ManagedAddress({ address, onEdit }: { address: AddressDto; onEdi
                 type="submit"
                 className="icon-action icon-action-danger"
                 disabled={busy}
+                aria-busy={busy}
                 title={t("removeAddress")}
                 aria-label={t("removeAddressLabel", { name: address.fullName })}
               >

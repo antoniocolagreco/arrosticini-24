@@ -24,6 +24,7 @@ function Panel({
 }) {
   const { t } = useTranslation("account");
   const navigation = useNavigation();
+  const busy: boolean = navigation.state !== "idle";
   return (
     <section className="panel" aria-labelledby={`${id}-title`}>
       <div className="panel-head">
@@ -36,7 +37,8 @@ function Panel({
             className="icon-action"
             title={t("edit")}
             aria-label={editLabel}
-            disabled={navigation.state !== "idle"}
+            disabled={busy}
+            aria-busy={busy}
             onClick={onEdit}
           >
             <Pencil size={20} aria-hidden="true" />
@@ -64,7 +66,7 @@ function FormActions({
       <Button type="submit" busy={busy}>
         {t(saving ? "saving" : "save")}
       </Button>
-      <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>
+      <Button type="button" variant="outline" onClick={onCancel} busy={busy}>
         {t("cancel")}
       </Button>
     </div>

@@ -87,6 +87,7 @@ export default function Checkout({ loaderData, actionData }: Route.ComponentProp
                     type="button"
                     className="tile-add"
                     disabled={busy || full || showAddress}
+                    aria-busy={busy && !full && !showAddress}
                     onClick={() => setShowAddress(true)}
                   >
                     {full ? (
