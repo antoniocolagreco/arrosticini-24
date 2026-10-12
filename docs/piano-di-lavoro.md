@@ -446,7 +446,9 @@ Variabili GitHub: `AWS_REGION`, `AWS_ROLE_ARN`.
 | `valkey` | `valkey/valkey` (stessa major di ElastiCache) | sessioni e carrelli |
 | `dynamodb` | `amazon/dynamodb-local` | tabelle `catalog`, `identity`, `ordering`, `payments` |
 | `s3` | `rustfs/rustfs` | bucket `media`, lettura anonima |
-| `stripe` | `stripe/stripe-cli` | `listen --forward-to` verso `web`, nel profilo `stripe` |
+| `stripe` | `stripe/stripe-cli` | `listen` sugli eventi `checkout.session.completed` e `checkout.session.expired`, inoltrati a `web` sulla porta `WEB_PORT` dell'host, nel profilo `stripe` |
+| `api` | `apps/api/Dockerfile` | `api` dall'immagine di produzione, nel profilo `full` |
+| `web` | `apps/web/Dockerfile` | `web` dall'immagine di produzione, pubblicato sulla porta `WEB_PORT` dell'host, nel profilo `full` |
 
 - **Client AWS:** `endpoint` e `forcePathStyle` arrivano dalle variabili d'ambiente.
 - **`pnpm local:up`:** avvia `valkey`, `dynamodb` e `s3`, poi crea tabelle (con GSI e TTL), bucket e seed. I dati di `dynamodb` e `s3` restano nei volumi.
@@ -454,6 +456,8 @@ Variabili GitHub: `AWS_REGION`, `AWS_ROLE_ARN`.
 - **`pnpm local:destroy`:** rimuove container e volumi.
 - **`pnpm local:reset`:** `local:destroy` seguito da `local:up`.
 - **`pnpm dev`:** avvia `web` e `api` sull'host. Il profilo compose `full` avvia tutto dalle immagini Docker.
+- **Profilo `full`:** dopo `pnpm local:up`, `docker compose --env-file .env.local --profile full up -d --build`. Usa tabelle, bucket, chiavi Stripe, `SESSION_SECRET`, `WEB_PORT` e `MEDIA_BASE_URL` di `.env.local`; gli endpoint di Valkey, DynamoDB e RustFS sono quelli della rete compose. È un'alternativa a `pnpm dev`, perché usa la stessa porta `WEB_PORT`.
+- **Immagini:** la build si lancia dalla radice del repository, per esempio `docker build -f apps/api/Dockerfile --build-arg APP_VERSION=v1.0.0 .`. In `web` gli asset statici stanno in `/repo/apps/web/build/client`.
 - **Stripe in locale:** `STRIPE_SECRET_KEY` (chiave di test `sk_test_...`) sta in `.env.local`. `docker compose --env-file .env.local --profile stripe up -d stripe` inoltra i webhook a `web`; `docker compose --env-file .env.local --profile stripe run --rm stripe listen --print-secret` stampa il `whsec_...` da mettere in `STRIPE_WEBHOOK_SECRET`.
 - **Test:** usano `stripe/stripe-mock`, quindi non servono chiavi Stripe.
 
