@@ -418,7 +418,7 @@ h2 {
 }
 .hero h1 {
   font-weight: 900;
-  font-size: clamp(68px, 6.3vw, 101px);
+  font-size: clamp(60px, 6vw, 96px);
   line-height: 1.03;
   letter-spacing: -4px;
   margin: 10px 0 32px;
@@ -455,13 +455,13 @@ h2 {
 .hero-flight {
   position: absolute;
   right: 12px;
-  top: 12px;
-  width: 55%;
+  top: 20px;
+  width: 48%;
 }
 .hero-airplane {
   width: 100%;
-  height: clamp(300px, 25vw, 380px);
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   object-position: center;
   transform-origin: 65% 50%;
 }
@@ -506,12 +506,13 @@ h2 {
 }
 .value-props {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border-block: 5px double var(--rule);
   padding-block: 12px;
 }
 .value-props > div {
   display: flex;
+  min-width: 0;
   justify-content: center;
   align-items: center;
   gap: 16px;
@@ -521,13 +522,13 @@ h2 {
   border-left: 1px solid var(--rule-soft);
 }
 .value-props img {
-  width: 140px;
+  width: clamp(90px, 9vw, 140px);
   height: 90px;
   flex-shrink: 0;
   object-fit: contain;
 }
 .value-props > :where(div:first-child) img {
-  width: 180px;
+  width: clamp(110px, 11vw, 180px);
 }
 .value-props h2 {
   color: var(--forest);
@@ -900,11 +901,11 @@ h2 {
   color: var(--primary);
 }
 .product-card.product-card-row {
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(min-content, 1fr);
   gap: var(--space-4);
 }
 .product-card-row .product-media {
-  flex: 0 0 50%;
   align-self: flex-start;
 }
 .product-card-row .product-card-body {
@@ -2202,8 +2203,11 @@ h2 {
   .featured-grid {
     grid-template-columns: 1fr;
   }
+  .product-card.product-card-row {
+    grid-template-columns: minmax(0, 2fr) minmax(min-content, 3fr);
+  }
   .product-card-row .product-media {
-    flex-basis: 40%;
+    width: 100%;
   }
   .footer-main {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2227,6 +2231,8 @@ h2 {
     font-size: 14px;
   }
   .value-props > div {
+    flex-direction: column;
+    text-align: center;
     gap: 10px;
     padding-inline: 10px;
   }
@@ -2247,15 +2253,15 @@ h2 {
 
 @media (min-width: 701px) and (max-width: 1000px) {
   .hero {
-    min-height: 460px;
+    min-height: 540px;
   }
   .hero h1 {
     font-size: clamp(56px, 7vw, 70px);
     letter-spacing: -3px;
   }
   .hero-flight {
-    top: 85px;
-    width: 76%;
+    top: 240px;
+    width: 62%;
   }
   .hero-landscape {
     width: min(94%, 912px);
@@ -2282,6 +2288,7 @@ h2 {
     padding-top: var(--space-8);
   }
   .product-card.product-card-row {
+    display: flex;
     flex-direction: column;
     gap: 0;
   }
@@ -2331,7 +2338,7 @@ h2 {
     border-block: 0;
   }
   .hero {
-    min-height: 510px;
+    min-height: calc(390px + (100vw - 56px) / 2);
   }
   .hero-content {
     padding-block: 24px 24px;
@@ -2348,7 +2355,7 @@ h2 {
   }
   .hero-flight {
     top: auto;
-    bottom: 115px;
+    bottom: 40px;
     right: 10px;
     width: calc(100% - 20px);
   }
@@ -2377,6 +2384,8 @@ h2 {
     padding-block: 5px;
   }
   .value-props > div {
+    flex-direction: row;
+    text-align: left;
     justify-content: flex-start;
     padding: 12px;
     gap: 20px;
