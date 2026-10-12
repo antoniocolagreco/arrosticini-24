@@ -1,9 +1,10 @@
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, execFile, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { createServer, type Server } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { catalogTableDefinition, DynamoDbProductRepository, Product } from "@arrosticini/catalog";
 import {
   DynamoDbUserRepository,
@@ -34,6 +35,32 @@ import { createCookie } from "react-router";
 import Stripe from "stripe";
 
 const root: string = fileURLToPath(new URL("../../", import.meta.url));
+const execute: typeof execFile.__promisify__ = promisify(execFile);
+
+async function compose(project: string, env: NodeJS.ProcessEnv, args: string[]): Promise<void> {
+  try {
+    await execute(
+      "docker",
+      [
+        "compose",
+        "--project-name",
+        project,
+        "--env-file",
+        "/dev/null",
+        "-f",
+        "docker-compose.yml",
+        "-f",
+        "e2e/docker-compose.yml",
+        "--profile",
+        "full",
+        ...args,
+      ],
+      { cwd: root, env },
+    );
+  } catch {
+    throw new Error(`E2E Docker Compose ${args[0]} failed for ${project}`);
+  }
+}
 
 async function freePort(): Promise<number> {
   const server: Server = createServer();
@@ -133,6 +160,10 @@ export async function withStack(
   const valkey: Valkey = new Valkey(valkeyUrl, { lazyConnect: true });
   const createdTables: string[] = [];
   const children: ChildProcess[] = [];
+  const docker: boolean = process.env.E2E_RUNTIME === "docker";
+  const project: string = `e2e-${suffix}`;
+  let dockerStarted: boolean = false;
+  let runtimeEnv: NodeJS.ProcessEnv = process.env;
   const sessionIds: Set<string> = new Set();
   let bucketCreated: boolean = false;
   try {
@@ -231,14 +262,30 @@ export async function withStack(
       SESSION_SECRET: secret,
       MEDIA_BASE_URL: `${s3Endpoint}/${bucket}`,
     };
-    children.push(await startProcess(["apps/api/dist/server.js"], env, apiPort));
-    children.push(
-      await startProcess(
-        ["--import", import.meta.resolve("tsx"), "apps/web/server.ts"],
-        env,
-        webPort,
-      ),
-    );
+    runtimeEnv = env;
+    if (docker) {
+      dockerStarted = true;
+      await compose(project, env, [
+        "up",
+        "-d",
+        "--no-deps",
+        "--no-build",
+        "--wait",
+        "--wait-timeout",
+        "60",
+        "api",
+        "web",
+      ]);
+    } else {
+      children.push(await startProcess(["apps/api/dist/server.js"], env, apiPort));
+      children.push(
+        await startProcess(
+          ["--import", import.meta.resolve("tsx"), "apps/web/server.ts"],
+          env,
+          webPort,
+        ),
+      );
+    }
     const stack: TestStack = {
       origin,
       admin,
@@ -278,6 +325,7 @@ export async function withStack(
     };
     await use(stack);
   } finally {
+    if (dockerStarted) await compose(project, runtimeEnv, ["down", "--volumes", "--timeout", "5"]);
     for (const child of children.reverse()) await stopProcess(child);
     const keys: Set<string> = new Set();
     for (const id of sessionIds) {
