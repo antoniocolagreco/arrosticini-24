@@ -1,6 +1,6 @@
 # Storefront end-to-end tests
 
-Playwright runs the actual production API and web application against the shared local DynamoDB, Valkey and RustFS services. Each worker creates UUID-suffixed tables, a dedicated test bucket with public image reads, its own admin account and isolated API/web processes on allocated ports. It removes only its own tables, bucket, session/cart keys and Stripe test customers afterwards. It does not reset or seed the shared shop.
+Playwright runs the actual production API and web application against the shared local DynamoDB, Valkey and RustFS services. The host runtime starts both compiled JavaScript entry points with Node, including `apps/web/build/runtime/server.js`. Each worker creates UUID-suffixed tables, a dedicated test bucket with public image reads, its own admin account and isolated API/web processes on allocated ports. It removes only its own tables, bucket, session/cart keys and Stripe test customers afterwards. It does not reset or seed the shared shop.
 
 Build and run from the repository root:
 
@@ -21,6 +21,6 @@ docker compose --env-file .env.local --profile full build api web
 E2E_RUNTIME=docker pnpm --filter @arrosticini/e2e test:e2e
 ```
 
-The Docker fixture uses the root Compose `full` services with `e2e/docker-compose.yml`, in a UUID-suffixed project. It starts only API and web, publishes web on an allocated port and removes its containers, network and unused project volumes afterwards. The shared infrastructure stays running. Images must be built again after application changes. Containers reach the shared host services through `host.docker.internal`; `E2E_DYNAMODB_CONTAINER_ENDPOINT`, `E2E_S3_CONTAINER_ENDPOINT` and `E2E_VALKEY_CONTAINER_URL` override those addresses.
+The Docker fixture uses the root Compose `full` services with `e2e/docker-compose.yml`, in a UUID-suffixed project. It starts only API and web, publishes web on an allocated port and removes its containers, network and unused project volumes afterwards. The shared infrastructure stays running. Images must be built again after application changes; `E2E_WEB_IMAGE` optionally selects another web image. Containers reach the shared host services through `host.docker.internal`; `E2E_DYNAMODB_CONTAINER_ENDPOINT`, `E2E_S3_CONTAINER_ENDPOINT` and `E2E_VALKEY_CONTAINER_URL` override those addresses.
 
 `E2E_DYNAMODB_ENDPOINT`, `E2E_S3_ENDPOINT` and `E2E_VALKEY_URL` override local service URLs used by fixtures and the host runtime. `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` optionally selects an installed Chromium. No CI workflow is changed; invoke this suite separately from unit tests.

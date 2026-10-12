@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "react-router build",
+    "build": "react-router build && tsc -p tsconfig.build.json",
     "dev": "tsx watch --env-file-if-exists=../../.env.local server.ts",
-    "start": "NODE_ENV=production tsx server.ts",
+    "start": "NODE_ENV=production node build/runtime/server.js",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "biome check .",
     "test": "vitest run"

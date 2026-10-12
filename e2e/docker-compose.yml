@@ -8,7 +8,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
   web:
-    image: arrosticini-web
+    image: ${E2E_WEB_IMAGE:-arrosticini-web}
     environment:
       VALKEY_URL: ${E2E_VALKEY_CONTAINER_URL:-redis://host.docker.internal:6379}
     extra_hosts:
