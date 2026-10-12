@@ -2225,6 +2225,7 @@ h2 {
   }
   .site-header {
     gap: 20px;
+    flex-wrap: wrap;
   }
   .language-link > span,
   .language-chevron {
@@ -2233,6 +2234,9 @@ h2 {
   .main-nav {
     gap: 20px;
     font-size: 14px;
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
   .value-props > div {
     flex-direction: column;
