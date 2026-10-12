@@ -278,13 +278,7 @@ export async function withStack(
       ]);
     } else {
       children.push(await startProcess(["apps/api/dist/server.js"], env, apiPort));
-      children.push(
-        await startProcess(
-          ["--import", import.meta.resolve("tsx"), "apps/web/server.ts"],
-          env,
-          webPort,
-        ),
-      );
+      children.push(await startProcess(["apps/web/build/runtime/server.js"], env, webPort));
     }
     const stack: TestStack = {
       origin,

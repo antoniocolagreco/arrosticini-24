@@ -22,7 +22,9 @@ import { createStressStatus } from "./server/stress-status.js";
 const config: Config = loadConfig(process.env);
 const lifecycle: Lifecycle = new Lifecycle();
 const app = createApp(logger, lifecycle);
-const directory: string = path.dirname(fileURLToPath(import.meta.url));
+const directory: string = fileURLToPath(
+  new URL(import.meta.url.endsWith(".ts") ? "./" : "../../", import.meta.url),
+);
 exitOnProcessErrors(logger);
 
 const cpu: CpuSampler = new CpuSampler(createCpuReader());
