@@ -336,7 +336,7 @@ Regole:
   - `browse`: pagine SSR e ricerca, che caricano `web`;
   - `login-storm`: scrypt, che carica `api`.
 - **Stress manuale:** `aws ecs execute-command ... "node bin/grill.js --seconds 120"`. In locale: `docker compose exec`.
-- **Container che muore:** `aws ecs execute-command ... "kill -9 1"`.
+- **Container che muore:** `aws ecs execute-command ... "pkill -9 node"`. `kill -9 1` non funziona: Linux ignora il SIGKILL mandato al processo 1 dall'interno del container.
 - **Pannello `/:lang/stress`:**
   - il browser chiama `/stress/status` ogni 500 ms;
   - `web` risponde con i dati del proprio task e con `/internal/whoami` di un task `api`;
@@ -348,6 +348,7 @@ Regole:
 - **Come si misura:** `packages/ops` legge ogni secondo i contatori cgroup del container (v2, poi v1) e li divide per il limite di CPU del task, quindi conta anche `grill.js`, che gira in un altro processo. Fuori da un container usa la CPU del processo su un core. Id del task e AZ arrivano dall'endpoint di metadata di ECS; in locale sono il nome dell'host e `local`.
 - **k6:** `k6 run -e BASE_URL=<origine> load/browse.js` e `k6 run -e BASE_URL=<origine> -e EMAIL=<account esistente> load/login-storm.js`, con `VUS` e `DURATION` opzionali. `login-storm` usa una password sbagliata: scrypt gira comunque e non nascono sessioni.
 - **ECS Exec richiede:** `enableExecuteCommand` sui servizi, permessi SSM nel task role, Session Manager plugin sul portatile.
+- **Init nei task:** `initProcessEnabled` nei container di `web` e `api`. Il processo 1 diventa l'init di ECS e node un suo figlio, così `pkill -9 node` fa morire il container.
 
 ## Comportamenti operativi
 
@@ -530,7 +531,7 @@ Strumenti: Vitest in tutti i package e in `web`, Playwright per i test end-to-en
 
 1. **Rolling update:** release v2 pubblicata con k6 `browse` attivo. Zero 5xx; nel pannello convivono pecore v1 e v2 fino al passaggio completo.
 2. **Scaling:** con k6 `login-storm` la CPU di `api` supera l'80% e compaiono nuove pecore.
-3. **HA:** `kill -9 1` su un task. ECS avvia un nuovo task; l'utente resta loggato e il carrello resta intatto.
+3. **HA:** `pkill -9 node` su un task. ECS avvia un nuovo task; l'utente resta loggato e il carrello resta intatto.
 4. **Valkey:** `valkey-cli` mostra le chiavi `sess:*` e `cart:*`.
 5. **CDN:** asset e immagini rispondono con `x-cache: Hit from cloudfront`.
 6. **Pagamento:** ordine pagato con carta di test, stato `PAID` nella pagina utente e in quella admin.
