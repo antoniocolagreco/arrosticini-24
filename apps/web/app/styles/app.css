@@ -1311,8 +1311,10 @@ h2 {
   font-weight: 600;
 }
 .account-nav-link:disabled {
-  color: var(--muted-foreground);
   cursor: progress;
+}
+.account-nav-link:disabled:not([aria-busy="true"]) {
+  color: var(--muted-foreground);
 }
 .account-nav form {
   margin-top: var(--space-3);
@@ -1459,8 +1461,8 @@ h2 {
   color: var(--primary);
   background: var(--destructive-soft);
 }
-.tile-link:disabled,
-.icon-action:disabled {
+.tile-link:disabled:not([aria-busy="true"]),
+.icon-action:disabled:not([aria-busy="true"]) {
   color: var(--muted-foreground);
   cursor: not-allowed;
 }
@@ -1506,7 +1508,7 @@ h2 {
   background: var(--card);
   border-color: var(--foreground);
 }
-.tile-add:disabled {
+.tile-add:disabled:not([aria-busy="true"]) {
   color: var(--muted-foreground);
   border-color: var(--border);
   cursor: not-allowed;
@@ -2225,6 +2227,7 @@ h2 {
   }
   .site-header {
     gap: 20px;
+    flex-wrap: wrap;
   }
   .language-link > span,
   .language-chevron {
@@ -2233,6 +2236,9 @@ h2 {
   .main-nav {
     gap: 20px;
     font-size: 14px;
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
   .value-props > div {
     flex-direction: column;

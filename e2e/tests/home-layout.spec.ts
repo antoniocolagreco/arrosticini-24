@@ -29,9 +29,7 @@ test("home artwork, value propositions and purchase controls stay within their l
         ) as HTMLImageElement;
         const plane: DOMRect = image.getBoundingClientRect();
         return {
-          overflow:
-            (document.querySelector("#content") as HTMLElement).scrollWidth >
-            (document.querySelector("#content") as HTMLElement).clientWidth,
+          overflow: document.documentElement.scrollWidth > innerWidth,
           clippedPlane:
             plane.left < hero.left ||
             plane.right > hero.right ||

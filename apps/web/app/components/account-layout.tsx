@@ -96,6 +96,7 @@ export function AccountLayout({
               type="submit"
               className="account-nav-link"
               disabled={navigation.state !== "idle"}
+              aria-busy={navigation.state !== "idle"}
             >
               <LogOut className="account-nav-icon" size={20} aria-hidden="true" />
               {t("logout")}
