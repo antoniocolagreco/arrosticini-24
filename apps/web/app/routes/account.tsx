@@ -52,7 +52,8 @@ export default function Account({ loaderData, actionData }: Route.ComponentProps
   return (
     <AccountLayout
       crumbs={[]}
-      title={t("welcome", { name: user.firstName })}
+      titleFirst={t("welcomeFirst")}
+      title={t("welcomeSecond", { name: user.firstName })}
       intro={t("accountIntro")}
     >
       {actionData?.error && <FormAlert message={t(actionData.error)} />}

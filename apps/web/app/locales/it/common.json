@@ -29,10 +29,12 @@
   "footerDemo": "Progetto dimostrativo: nessun acquisto reale.",
   "footerVersion": "Versione {{version}}",
   "breadcrumb": "Percorso di navigazione",
-  "storyTitle": "La nostra storia",
+  "storyTitleFirst": "La nostra",
+  "storyTitleSecond": "storia",
   "storyIntro": "Una tradizione abruzzese, un arrosticino alla volta.",
   "storyBody": "Gli arrosticini sono piccoli spiedini di carne ovina, cotti sulla fornacella e condivisi attorno a una tavola. Arrosticini 24ore parte da questa tradizione per immaginare un negozio che la porta nel mondo.",
-  "deliveryTitle": "Dall’Abruzzo al mondo",
+  "deliveryTitleFirst": "Dall’Abruzzo",
+  "deliveryTitleSecond": "al mondo",
   "deliveryIntro": "La tradizione viaggia. Il gusto arriva a destinazione.",
   "deliveryBody": "Questo negozio è un progetto dimostrativo: gli acquisti e i pagamenti sono di prova e non comportano spedizioni reali. La spedizione refrigerata fa parte dell’esperienza rappresentata dal sito."
 }

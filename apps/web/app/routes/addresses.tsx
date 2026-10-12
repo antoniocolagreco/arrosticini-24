@@ -65,7 +65,8 @@ export default function Addresses({ loaderData, actionData }: Route.ComponentPro
   return (
     <AccountLayout
       crumbs={[{ label: t("addresses") }]}
-      title={t("addressesTitle")}
+      titleFirst={t("addressesTitleFirst")}
+      title={t("addressesTitleSecond")}
       intro={t("addressesIntro", { max: MAX_ADDRESSES_PER_USER })}
     >
       {actionData?.error && <FormAlert message={t(actionData.error)} />}

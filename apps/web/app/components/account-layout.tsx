@@ -14,11 +14,13 @@ import { useTranslation } from "react-i18next";
 import { Form, NavLink, useNavigation, useRouteLoaderData } from "react-router";
 import type { loader } from "../root.js";
 import { Breadcrumb } from "./breadcrumb.js";
+import { PageTitle } from "./page-title.js";
 
 export function AccountLayout({
   crumbs,
   eyebrow,
   title,
+  titleFirst,
   intro,
   actions,
   children,
@@ -26,6 +28,7 @@ export function AccountLayout({
   crumbs: { label: string; to?: string }[];
   eyebrow?: string;
   title: ReactNode;
+  titleFirst?: ReactNode;
   intro?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
@@ -55,7 +58,7 @@ export function AccountLayout({
   const heading: ReactNode = (
     <div className="catalog-heading">
       <p className="eyebrow">{eyebrow ?? t("eyebrow")}</p>
-      <h1>{title}</h1>
+      {titleFirst ? <PageTitle first={titleFirst} second={title} /> : <h1>{title}</h1>}
       {intro && <div className="catalog-intro">{intro}</div>}
     </div>
   );

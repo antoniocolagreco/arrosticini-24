@@ -29,7 +29,8 @@ export default function PaymentMethods({ loaderData, actionData }: Route.Compone
   return (
     <AccountLayout
       crumbs={[{ label: t("paymentMethods") }]}
-      title={t("paymentMethodsTitle")}
+      titleFirst={t("paymentMethodsTitleFirst")}
+      title={t("paymentMethodsTitleSecond")}
       intro={t("paymentMethodsIntro")}
     >
       {actionData?.error && <FormAlert message={t(actionData.error)} />}
