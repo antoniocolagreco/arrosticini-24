@@ -10,7 +10,9 @@ FROM base AS build
 COPY --from=prune /repo/out/json/ .
 RUN pnpm install --frozen-lockfile
 COPY --from=prune /repo/out/full/ .
-RUN pnpm turbo run build --filter=@arrosticini/web
+RUN pnpm turbo run build --filter=@arrosticini/web \
+  && rm -rf node_modules */*/node_modules \
+  && pnpm install --frozen-lockfile --offline --prod
 
 FROM node:24-alpine
 ARG APP_VERSION=dev
@@ -19,4 +21,4 @@ COPY --from=build /repo /repo
 WORKDIR /repo/apps/web
 USER node
 EXPOSE 3100
-CMD ["node", "--import", "tsx", "server.ts"]
+CMD ["node", "build/runtime/server.js"]
