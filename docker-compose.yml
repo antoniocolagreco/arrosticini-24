@@ -35,11 +35,72 @@ services:
   stripe:
     image: stripe/stripe-cli:v1.51.0
     profiles: ["stripe"]
-    command: ["listen", "--forward-to", "host.docker.internal:3100/webhooks/stripe"]
+    command:
+      - listen
+      - --events
+      - checkout.session.completed,checkout.session.expired
+      - --forward-to
+      - host.docker.internal:${WEB_PORT:-3100}/webhooks/stripe
     environment:
       STRIPE_API_KEY: ${STRIPE_SECRET_KEY:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    profiles: ["full"]
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      AWS_REGION: local
+      AWS_ACCESS_KEY_ID: rustfsadmin
+      AWS_SECRET_ACCESS_KEY: rustfsadmin
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      S3_ENDPOINT: http://s3:9000
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-media}
+      CATALOG_TABLE: ${CATALOG_TABLE:-catalog}
+      IDENTITY_TABLE: ${IDENTITY_TABLE:-identity}
+      ORDERING_TABLE: ${ORDERING_TABLE:-ordering}
+      PAYMENTS_TABLE: ${PAYMENTS_TABLE:-payments}
+      VALKEY_URL: redis://valkey:6379
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    depends_on:
+      valkey:
+        condition: service_started
+      dynamodb:
+        condition: service_healthy
+      s3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:4000/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    profiles: ["full"]
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      API_URL: http://api:4000
+      VALKEY_URL: redis://valkey:6379
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      PUBLIC_ORIGIN: http://localhost:${WEB_PORT:-3100}
+      MEDIA_BASE_URL: ${MEDIA_BASE_URL:-http://localhost:9100/media}
+    ports:
+      - "${WEB_PORT:-3100}:3100"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3100/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
 volumes:
   s3-data:
