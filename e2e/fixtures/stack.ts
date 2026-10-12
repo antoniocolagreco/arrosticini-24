@@ -325,7 +325,7 @@ export async function withStack(
     };
     await use(stack);
   } finally {
-    if (dockerStarted) await compose(project, runtimeEnv, ["down", "--timeout", "5"]);
+    if (dockerStarted) await compose(project, runtimeEnv, ["down", "--volumes", "--timeout", "5"]);
     for (const child of children.reverse()) await stopProcess(child);
     const keys: Set<string> = new Set();
     for (const id of sessionIds) {

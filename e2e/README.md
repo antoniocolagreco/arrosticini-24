@@ -21,6 +21,6 @@ docker compose --env-file .env.local --profile full build api web
 E2E_RUNTIME=docker pnpm --filter @arrosticini/e2e test:e2e
 ```
 
-The Docker fixture uses the root Compose `full` services with `e2e/docker-compose.yml`, in a UUID-suffixed project. It starts only API and web, publishes web on an allocated port and removes its containers and network afterwards. The shared infrastructure stays running. Images must be built again after application changes. Containers reach the shared host services through `host.docker.internal`; `E2E_DYNAMODB_CONTAINER_ENDPOINT`, `E2E_S3_CONTAINER_ENDPOINT` and `E2E_VALKEY_CONTAINER_URL` override those addresses.
+The Docker fixture uses the root Compose `full` services with `e2e/docker-compose.yml`, in a UUID-suffixed project. It starts only API and web, publishes web on an allocated port and removes its containers, network and unused project volumes afterwards. The shared infrastructure stays running. Images must be built again after application changes. Containers reach the shared host services through `host.docker.internal`; `E2E_DYNAMODB_CONTAINER_ENDPOINT`, `E2E_S3_CONTAINER_ENDPOINT` and `E2E_VALKEY_CONTAINER_URL` override those addresses.
 
 `E2E_DYNAMODB_ENDPOINT`, `E2E_S3_ENDPOINT` and `E2E_VALKEY_URL` override local service URLs used by fixtures and the host runtime. `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` optionally selects an installed Chromium. No CI workflow is changed; invoke this suite separately from unit tests.
