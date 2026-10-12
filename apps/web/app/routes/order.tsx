@@ -79,7 +79,8 @@ export default function Order({ loaderData }: Route.ComponentProps) {
         { label: t("orderReference", { id: order.id }) },
       ]}
       eyebrow={t("orderReference", { id: order.id })}
-      title={t("orderTitle", {
+      titleFirst={t("orderTitleFirst")}
+      title={t("orderTitleSecond", {
         date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
           new Date(order.createdAt),
         ),

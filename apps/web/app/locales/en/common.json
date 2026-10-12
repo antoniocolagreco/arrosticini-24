@@ -29,10 +29,12 @@
   "footerDemo": "Demo project: no real purchases.",
   "footerVersion": "Version {{version}}",
   "breadcrumb": "Breadcrumb",
-  "storyTitle": "Our story",
+  "storyTitleFirst": "Our",
+  "storyTitleSecond": "story",
   "storyIntro": "An Abruzzo tradition, one skewer at a time.",
   "storyBody": "Arrosticini are small skewers of sheep meat, cooked over a narrow charcoal grill called a fornacella and shared around a table. Arrosticini 24ore starts from this tradition to imagine a shop that brings it to the world.",
-  "deliveryTitle": "From Abruzzo to the world",
+  "deliveryTitleFirst": "From Abruzzo",
+  "deliveryTitleSecond": "to the world",
   "deliveryIntro": "Tradition travels. Flavour reaches its destination.",
   "deliveryBody": "This shop is a demo project: purchases and payments are for testing and do not involve real deliveries. Refrigerated shipping is part of the experience represented by the site."
 }

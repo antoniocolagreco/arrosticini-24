@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Breadcrumb } from "../components/breadcrumb.js";
+import { PageTitle } from "../components/page-title.js";
 
 export default function Delivery() {
   const { t } = useTranslation("common");
@@ -9,7 +10,7 @@ export default function Delivery() {
       <article className="static-page shell">
         <div>
           <p className="eyebrow">Arrosticini 24ore</p>
-          <h1>{t("deliveryTitle")}</h1>
+          <PageTitle first={t("deliveryTitleFirst")} second={t("deliveryTitleSecond")} />
           <p className="lead">{t("deliveryIntro")}</p>
           <p>{t("deliveryBody")}</p>
         </div>

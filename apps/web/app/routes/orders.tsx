@@ -23,7 +23,8 @@ export default function Orders({ loaderData }: Route.ComponentProps) {
   return (
     <AccountLayout
       crumbs={[{ label: t("orders") }]}
-      title={t("ordersTitle")}
+      titleFirst={t("ordersTitleFirst")}
+      title={t("ordersTitleSecond")}
       intro={t("ordersIntro")}
     >
       {loaderData.items.length ? (

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Breadcrumb } from "../components/breadcrumb.js";
+import { PageTitle } from "../components/page-title.js";
 
 export default function Story() {
   const { t } = useTranslation("common");
@@ -9,7 +10,7 @@ export default function Story() {
       <article className="static-page shell">
         <div>
           <p className="eyebrow">Abruzzo</p>
-          <h1>{t("storyTitle")}</h1>
+          <PageTitle first={t("storyTitleFirst")} second={t("storyTitleSecond")} />
           <p className="lead">{t("storyIntro")}</p>
           <p>{t("storyBody")}</p>
         </div>
