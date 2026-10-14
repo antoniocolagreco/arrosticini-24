@@ -17,7 +17,9 @@
     "local:stop": "docker compose stop",
     "local:destroy": "docker compose down -v",
     "local:reset": "pnpm local:destroy && pnpm local:up",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "openapi:generate": "npx -y @scalar/cli@2.10.0 document join packages/contracts/openapi/*.yaml -o packages/contracts/dist/openapi.yaml",
+    "openapi:view": "npx -y @scalar/cli@2.10.0 document serve packages/contracts/dist/openapi.yaml"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
