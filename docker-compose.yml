@@ -78,6 +78,8 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+    cpus: "0.25"
+    mem_limit: 512m
 
   web:
     build:
@@ -101,6 +103,8 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+    cpus: "0.25"
+    mem_limit: 512m
 
 volumes:
   s3-data:
