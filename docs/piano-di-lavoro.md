@@ -418,14 +418,14 @@ Il codice è in `packages/ops`, dalla fase 0.
 ### Branch
 
 - Feature branch da `dev`, PR verso `dev`, squash merge. Regole in `AGENTS.md`.
-- Release: PR da `dev` a `master` con merge commit, poi GitHub Release `vX.Y.Z` su `master`.
-- Nessun push diretto su `dev` o `master`.
+- Release: PR da `dev` a `prod` con merge commit, poi GitHub Release `vX.Y.Z` su `prod`.
+- Nessun push diretto su `dev` o `prod`.
 
 ### Workflow
 
 | File | Trigger | Cosa fa |
 |---|---|---|
-| `ci.yml` | PR verso `dev` e `master`, push su `dev` | `turbo run lint typecheck test build`, `turbo boundaries`, controllo delle chiavi i18n, spec OpenAPI aggiornate, `oasdiff breaking` |
+| `ci.yml` | PR verso `dev` e `prod`, push su `dev` | `turbo run lint typecheck test build`, `turbo boundaries`, controllo delle chiavi i18n, spec OpenAPI aggiornate, `oasdiff breaking` |
 | `release.yml` | release pubblicata con tag `vX.Y.Z` | i passi qui sotto |
 
 Passi di `release.yml`, su runner `ubuntu-24.04`:
