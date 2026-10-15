@@ -1,5 +1,9 @@
 # Arrosticini 24ore
 
+<p align="center">
+  <img src="docs/images/sheep.webp" alt="Arrosticini 24ore sheep" width="360">
+</p>
+
 A full-stack e-commerce application built to demonstrate high availability on AWS: zero-downtime deployments, horizontal autoscaling and self-healing containers, shown live while real traffic keeps flowing.
 
 The shop sells arrosticini (Abruzzo's lamb skewers) worldwide, in Italian and English, with real Stripe test-mode payments, customer accounts and a full admin back office.
