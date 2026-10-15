@@ -7,7 +7,8 @@ Software dimostrativo per un talk: un e-commerce globale di arrosticini su cui m
 1. rolling update senza downtime;
 2. scaling orizzontale quando la CPU supera l'80%;
 3. high availability quando un container muore;
-4. sessioni su Valkey e CDN con CloudFront.
+4. sessioni su Valkey e CDN con CloudFront;
+5. protezione con WAF e Shield, mostrata nella configurazione e senza attacchi dal vivo.
 
 Multilingua IT/EN e pagamento Stripe in modalità test sono inclusi per sperimentazione.
 
@@ -28,13 +29,14 @@ Riferimenti visivi: `docs/mock.png` (home) e `docs/images/` (immagini del sito e
 - **Immagini Docker:** `linux/amd64` su Alpine.
 - **Sviluppo locale:** docker compose con DynamoDB Local, Valkey, RustFS (S3 compatibile) e Stripe CLI.
 - **Infrastruttura:** CDK in TypeScript.
+- **Protezione:** AWS WAF sulla distribuzione CloudFront, Shield Standard incluso in CloudFront.
 - **CI/CD:** GitHub Actions. Ogni release costruisce le immagini, le pubblica su ECR e avvia il rolling update.
 
 ## Architettura
 
 ```
                               ┌─ /assets/*  ──► S3 "static" (build JS/CSS)
-Browser ──► CloudFront ───────┼─ /images/*  ──► S3 "media"  (immagini prodotto)
+Browser ──► CloudFront + WAF ─┼─ /images/*  ──► S3 "media"  (immagini prodotto)
                               └─ default    ──► ALB ──► web (Fargate, ≥2 task, 2 AZ)
                                                          ├──► Valkey (sessioni)
                                                          └──► api (Fargate, ≥2 task, 2 AZ, rete privata)
@@ -117,6 +119,12 @@ Stati dell'ordine: `PENDING_PAYMENT` → `PAID` oppure `PENDING_PAYMENT` → `CA
 - **Admin senza acquisti:** l'admin gestisce catalogo, ordini e utenti. `web` gli nasconde carrello, checkout, ordini propri, indirizzi e carte; `api` gli rifiuta con `FORBIDDEN` ordine, merge del carrello e salvataggio di una carta.
 - **Utente sospeso:** il login risponde `ACCOUNT_SUSPENDED` dopo una password corretta. Per ogni richiesta con `x-actor`, `api` verifica che l'utente esista e sia attivo, altrimenti risponde 401 e `web` chiude la sessione. Gli admin non si sospendono.
 - **Password:** `crypto.scrypt` nativo di Node, salt casuale per utente, confronto con `timingSafeEqual`.
+- **WAF:** web ACL con scope `CLOUDFRONT` associato alla distribuzione, con due regole:
+  - rate-based per IP, con soglia sopra il carico che k6 genera dal portatile nelle demo di scaling;
+  - `AWSManagedRulesSQLiRuleSet`.
+- **Niente `AWSManagedRulesCommonRuleSet`:** blocca i body sopra 8 KB e romperebbe l'upload delle immagini dall'admin.
+- **Shield Standard:** attivo di default su CloudFront, protegge dagli attacchi di rete (livelli 3 e 4).
+- **Nessun attacco dal vivo:** le simulazioni DDoS su AWS richiedono un partner approvato, e un flood dalla rete aziendale fa scattare la sicurezza interna.
 
 ## Segreti
 
@@ -399,9 +407,11 @@ Il codice è in `packages/ops`, dalla fase 0.
 | Stack | Contenuto | Durata |
 |---|---|---|
 | `foundation` | 2 repository ECR (tag immutabili, ultime 20 immagini), provider OIDC di GitHub, ruolo IAM della CI | permanente |
+| `waf` | web ACL di CloudFront, in `us-east-1` | creato con `up`, distrutto con `down` |
 | `app` | VPC, NAT, ALB, ECS, Valkey, DynamoDB, bucket S3, CloudFront | creato con `up`, distrutto con `down` |
 
-- `cdk bootstrap` una volta per account e regione.
+- `cdk bootstrap` una volta per account e regione, compresa `us-east-1`.
+- `waf` sta in `us-east-1` perché i web ACL di CloudFront si creano solo lì. `app` ne usa l'ARN con `crossRegionReferences: true`. Se `app` sta già in `us-east-1`, il web ACL può stare in `app`.
 - `app` riceve il tag delle immagini come contesto: `cdk deploy app -c imageTag=v1.3.0`.
 - Fargate con `runtimePlatform` `LINUX` / `X86_64`.
 
@@ -512,9 +522,9 @@ La divisione tra i due agenti è in `docs/battle-plan.md`.
 | 6 | Admin catalogo | creazione e modifica prodotti IT/EN, upload immagini, archiviazione | prodotto creato visibile in lista con la sua immagine |
 | 7 | Stress | `whoami`, `/stress/status`, pannello pecore, `grill.js`, k6 | con 2 `web` e 2 `api` in locale compaiono 4 pecore |
 | 8 | Container | Dockerfile multi-stage `node:24-alpine`, `linux/amd64`, `turbo prune --docker` | profilo `full` funzionante |
-| 9 | Infra CDK | stack `foundation` e `app` (VPC su 2 AZ, ALB, 2 servizi Fargate con ECS Exec, Service Connect, DynamoDB, ElastiCache Serverless Valkey, 2 bucket S3, CloudFront con OAC, NAT Gateway, parametri da Parameter Store, autoscaling all'80% di CPU) | sito raggiungibile da `*.cloudfront.net` |
+| 9 | Infra CDK | stack `foundation` e `app` (VPC su 2 AZ, ALB, 2 servizi Fargate con ECS Exec, Service Connect, DynamoDB, ElastiCache Serverless Valkey, 2 bucket S3, CloudFront con OAC, stack `waf`, NAT Gateway, parametri da Parameter Store, autoscaling all'80% di CPU) | sito raggiungibile da `*.cloudfront.net` |
 | 10 | CI/CD | `ci.yml`, `release.yml` | una release aggiorna i servizi senza 5xx sotto k6 |
-| 11 | Script e runbook | **`up`:** `cdk deploy foundation`, `cdk deploy app` con il tag dell'ultima release, registrazione del webhook Stripe, `/arrosticini/stripe-webhook-secret` su Parameter Store, nuovo deployment di `api`, upload degli asset, seed (prodotti, immagini, admin). **`down`:** cancellazione del webhook, `cdk destroy app`. Runbook del talk | `up` da account vuoto produce un sito con pagamento funzionante; `down` rimuove lo stack `app` |
+| 11 | Script e runbook | **`up`:** `cdk deploy foundation`, `cdk deploy app` con il tag dell'ultima release, registrazione del webhook Stripe, `/arrosticini/stripe-webhook-secret` su Parameter Store, nuovo deployment di `api`, upload degli asset, seed (prodotti, immagini, admin). **`down`:** cancellazione del webhook, `cdk destroy app`, poi `cdk destroy waf`. Runbook del talk | `up` da account vuoto produce un sito con pagamento funzionante; `down` rimuove gli stack `app` e `waf` |
 
 ## Test
 
@@ -535,10 +545,12 @@ Strumenti: Vitest in tutti i package e in `web`, Playwright per i test end-to-en
 4. **Valkey:** `valkey-cli` mostra le chiavi `sess:*` e `cart:*`.
 5. **CDN:** asset e immagini rispondono con `x-cache: Hit from cloudfront`.
 6. **Pagamento:** ordine pagato con carta di test, stato `PAID` nella pagina utente e in quella admin.
+7. **WAF:** il web ACL è associato alla distribuzione e le metriche mostrano le richieste valutate; k6 delle demo, upload delle immagini e webhook Stripe non vengono bloccati.
 
 ## Punti aperti
 
 - Regione AWS.
 - Policy di scaling: target tracking all'80% oppure step scaling.
 - NAT Gateway: uno per AZ oppure uno solo.
+- Soglia e finestra della regola rate-based di WAF.
 - Font, da scegliere confrontandoli con il mock.
