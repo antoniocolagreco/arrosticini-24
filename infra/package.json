@@ -1,0 +1,24 @@
+{
+  "name": "@arrosticini/infra",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "cdk": "cdk",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "bootstrap": "cdk bootstrap --region eu-south-1",
+    "foundation:deploy": "cdk deploy arrosticini-foundation"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "catalog:",
+    "constructs": "catalog:"
+  },
+  "devDependencies": {
+    "@arrosticini/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "aws-cdk": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}
