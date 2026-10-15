@@ -26,7 +26,7 @@ Se ChatGPT ha bisogno di qualcosa fuori da `apps/web` (un campo nel contratto, u
 ## Git
 
 - Feature branch da `dev` e PR verso `dev`, con le regole di `AGENTS.md`. Antonio fa la review e lo squash merge.
-- Le release passano da una PR `dev` → `master` e dalla pubblicazione della GitHub Release: le gestisce Antonio.
+- Le release passano da una PR `dev` → `prod` e dalla pubblicazione della GitHub Release: le gestisce Antonio.
 - Il workspace `/home/ac/Projects/arrosticini-24-workspace/` ha una cartella (worktree) per ciascuno. Ognuno lavora solo dalla propria cartella e lì crea e cambia i branch che gli servono:
   - Antonio: `master`
   - Claude: `backend`
