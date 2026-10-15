@@ -1,0 +1,70 @@
+/* Arrosticini 24ore: CSS variables generated from tokens.json */
+:root {
+  --background: #faf5e9;
+  --paper-noise: #85673d;
+  --card: #fdf9f0;
+  --secondary: #eae6d5;
+  --skeleton: var(--secondary);
+  --foreground: #321b12;
+  --muted-foreground: #6f6251;
+  --primary: #a52b1c;
+  --primary-hover: #8a2217;
+  --primary-foreground: #fff9eb;
+  --forest: #253d26;
+  --forest-foreground: var(--primary-foreground);
+  --border: #c9b793;
+  --input: #8f7f5f;
+  --ring: var(--forest);
+  --rule: #70744c;
+  --rule-soft: #969173;
+  --destructive: var(--primary);
+  --destructive-soft: #f6ddd3;
+  --success-soft: #e2ead4;
+  --warning: #6b4200;
+  --warning-soft: #f5e2b0;
+  --warning-border: #a8791c;
+  --ghost: #8d877b;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --gutter-sm: 18px;
+  --gutter: 32px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+  --shadow-cta: 0 8px 24px #74251a18;
+  --shadow-cta-hover: 0 12px 28px #74251a2e;
+  --shadow-pop: 0 6px 20px #321b1224;
+  --content-max: 1536px;
+  --control-h: 44px;
+  --control-h-lg: 62px;
+  --hero-h-min: 440px;
+  --hero-h-max: 540px;
+  --bp-min: 320px;
+  --bp-sm: 700px;
+  --bp-lg: 1000px;
+  --bp-max: 1536px;
+  --grid-gap: 24px;
+  --grid-cols-sm: 1;
+  --grid-cols-md: 2;
+  --grid-cols-lg: 4;
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-cart: 400ms;
+  --duration-sway: 6s;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --font-display: "Roboto Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-hand: "Caveat", "Segoe Print", cursive;
+}
+@font-face { font-family: "Roboto Serif"; src: url("fonts/RobotoSerif-latin-wdth-wght.woff2") format("woff2"); font-weight: 100 900; font-style: normal; }
+@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-latin-wght.woff2") format("woff2"); font-weight: 100 1000; font-style: normal; }
+@font-face { font-family: "Caveat"; src: url("fonts/Caveat-latin-wght.woff2") format("woff2"); font-weight: 400 700; font-style: normal; }

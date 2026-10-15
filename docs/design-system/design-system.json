@@ -1,0 +1,114 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-08T21:47:33Z"
+  },
+  "title": "Arrosticini 24ore",
+  "namespace": "A24",
+  "libraries": [],
+  "sections": {},
+  "groups": [
+    "Reference",
+    "Stand-ins"
+  ],
+  "assetGroups": {
+    "Reference": {
+      "name": "Reference",
+      "tile": "l",
+      "order": [
+        "home-mock.png",
+        "product-list-mock.png"
+      ],
+      "files": {
+        "home-mock.png": {
+          "name": "home-mock.png",
+          "blob": "d9924fec418b0c9edaee9f4d9ba246cf",
+          "size": 2891338,
+          "type": "image/png"
+        },
+        "product-list-mock.png": {
+          "name": "product-list-mock.png",
+          "blob": "ed5be7db8a03b9946fafd98509493d86",
+          "size": 2466103,
+          "type": "image/png"
+        }
+      }
+    },
+    "Stand-ins": {
+      "name": "Stand-ins",
+      "tile": "m",
+      "order": [
+        "sheep-standin.webp",
+        "town-standin.webp",
+        "product-plate-standin.webp",
+        "product-handmade-standin.webp",
+        "product-box-standin.webp",
+        "product-grill-standin.webp",
+        "product-charcoal-standin.webp",
+        "product-wine-standin.webp"
+      ],
+      "files": {
+        "sheep-standin.webp": {
+          "name": "sheep-standin.webp",
+          "blob": "71ecce04fc7882428f9a09a41bfba465",
+          "size": 49334,
+          "type": "image/webp"
+        },
+        "town-standin.webp": {
+          "name": "town-standin.webp",
+          "blob": "3ab58c135b8d7ea7ffaa62c6f6058ca6",
+          "size": 28888,
+          "type": "image/webp"
+        },
+        "product-plate-standin.webp": {
+          "name": "product-plate-standin.webp",
+          "blob": "42d678ea652038d2c7aa9d8c7722a5a6",
+          "size": 25510,
+          "type": "image/webp"
+        },
+        "product-handmade-standin.webp": {
+          "name": "product-handmade-standin.webp",
+          "blob": "5ff6f276baae23513757285eda9feb04",
+          "size": 26324,
+          "type": "image/webp"
+        },
+        "product-box-standin.webp": {
+          "name": "product-box-standin.webp",
+          "blob": "d2fc6f955ccf762bf3247a11d726c725",
+          "size": 24958,
+          "type": "image/webp"
+        },
+        "product-grill-standin.webp": {
+          "name": "product-grill-standin.webp",
+          "blob": "b5bf6dc3132391ec850ddf1a7554b724",
+          "size": 6818,
+          "type": "image/webp"
+        },
+        "product-charcoal-standin.webp": {
+          "name": "product-charcoal-standin.webp",
+          "blob": "a0eae39cb122b8b65b772b275ac886bf",
+          "size": 15258,
+          "type": "image/webp"
+        },
+        "product-wine-standin.webp": {
+          "name": "product-wine-standin.webp",
+          "blob": "1e13a8b176f4d7f64ed80ebe166dbb4e",
+          "size": 7404,
+          "type": "image/webp"
+        }
+      }
+    }
+  },
+  "blobs": {},
+  "docs": {
+    "sections": []
+  },
+  "lastChange": {
+    "by": "Antonio",
+    "at": "2026-10-08T21:47:33Z",
+    "via": "Claude",
+    "note": "First version from the design brief and the two mocks."
+  }
+}

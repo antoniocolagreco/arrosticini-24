@@ -1,0 +1,33 @@
+<!-- @dsCard group="Commerce" height=620 -->
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><title>CartRow</title></head>
+<body>
+<div class="a24-demo">
+  <ul class="a24-cart" style="list-style:none;margin:0;padding:0">
+    <li class="a24-cart-row"><img src="/_blob/42d678ea652038d2c7aa9d8c7722a5a6" alt=""><div><h3>Arrosticini 75 pezzi</h3><p>75 arrosticini · € 37,50 l'uno</p></div><div class="a24-qty" role="group" aria-label="Quantità"><button type="button" aria-label="Diminuisci"><i data-lucide="minus" aria-hidden="true"></i></button><output aria-live="polite">2</output><button type="button" aria-label="Aumenta"><i data-lucide="plus" aria-hidden="true"></i></button></div><span class="a24-price a24-price--sm">€ 75,00</span><button class="a24-btn a24-btn--icon a24-btn--ghost" type="button" aria-label="Rimuovi Arrosticini 75 pezzi"><i data-lucide="trash-2" aria-hidden="true"></i></button></li>
+    <li class="a24-cart-row"><img src="/_blob/a0eae39cb122b8b65b772b275ac886bf" alt=""><div><h3>Carbone</h3><p>€ 20,00 l'uno</p></div><div class="a24-qty" role="group" aria-label="Quantità"><button type="button" aria-label="Diminuisci" disabled><i data-lucide="minus" aria-hidden="true"></i></button><output aria-live="polite">1</output><button type="button" aria-label="Aumenta"><i data-lucide="plus" aria-hidden="true"></i></button></div><span class="a24-price a24-price--sm">€ 20,00</span><button class="a24-btn a24-btn--icon a24-btn--ghost" type="button" aria-label="Rimuovi Carbone"><i data-lucide="trash-2" aria-hidden="true"></i></button></li>
+    <li class="a24-cart-row" aria-busy="true"><img src="/_blob/1e13a8b176f4d7f64ed80ebe166dbb4e" alt=""><div><h3>Vino locale</h3><p>€ 5,00 l'uno</p></div><div class="a24-qty" role="group" aria-label="Quantità"><button type="button" aria-label="Diminuisci"><i data-lucide="minus" aria-hidden="true"></i></button><output aria-live="polite">3</output><button type="button" aria-label="Aumenta"><i data-lucide="plus" aria-hidden="true"></i></button></div><span class="a24-price a24-price--sm">€ 15,00</span><button class="a24-btn a24-btn--icon a24-btn--ghost" type="button" aria-label="Rimuovi Vino locale"><i data-lucide="trash-2" aria-hidden="true"></i></button></li>
+  </ul>
+  <div><p class="a24-demo-cap" style="margin-bottom:8px">Under 600px of column</p>
+  <ul class="a24-cart a24-frame a24-frame--mobile" style="list-style:none;margin:0;padding:0 18px">
+    <li class="a24-cart-row"><img src="/_blob/42d678ea652038d2c7aa9d8c7722a5a6" alt=""><div><h3>Arrosticini 75 pezzi</h3><p>75 arrosticini · € 37,50 l'uno</p></div><div class="a24-qty" role="group" aria-label="Quantità"><button type="button" aria-label="Diminuisci"><i data-lucide="minus" aria-hidden="true"></i></button><output aria-live="polite">2</output><button type="button" aria-label="Aumenta"><i data-lucide="plus" aria-hidden="true"></i></button></div><span class="a24-price a24-price--sm">€ 75,00</span><button class="a24-btn a24-btn--icon a24-btn--ghost" type="button" aria-label="Rimuovi Arrosticini 75 pezzi"><i data-lucide="trash-2" aria-hidden="true"></i></button></li>
+  </ul></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+<script>document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-add]'); if (!b || b.classList.contains('is-added')) return;
+  var label = b.querySelector('span'), old = label.textContent;
+  b.classList.add('is-added'); label.textContent = 'Aggiunto';
+  var c = document.querySelector('.a24-cart-count');
+  if (c) { c.textContent = '(' + (parseInt(c.textContent.replace(/\D/g, ''), 10) + 1) + ')'; c.classList.remove('is-bump'); void c.offsetWidth; c.classList.add('is-bump'); }
+  setTimeout(function () { b.classList.remove('is-added'); label.textContent = old; }, 1200);
+});
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('.a24-qty button'); if (!b) return;
+  var q = b.closest('.a24-qty'), o = q.querySelector('output'), n = parseInt(o.textContent, 10) + (b === q.lastElementChild ? 1 : -1);
+  o.textContent = Math.max(1, n); q.firstElementChild.disabled = n <= 1;
+});</script>
+</body>
+</html>

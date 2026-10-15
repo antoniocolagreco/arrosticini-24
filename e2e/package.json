@@ -1,0 +1,29 @@
+{
+  "name": "@arrosticini/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@arrosticini/catalog": "workspace:*",
+    "@arrosticini/identity": "workspace:*",
+    "@arrosticini/kernel": "workspace:*",
+    "@arrosticini/ordering": "workspace:*",
+    "@arrosticini/payments": "workspace:*",
+    "@arrosticini/tsconfig": "workspace:*",
+    "@aws-sdk/client-dynamodb": "catalog:",
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/lib-dynamodb": "catalog:",
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "iovalkey": "catalog:",
+    "react-router": "catalog:",
+    "stripe": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

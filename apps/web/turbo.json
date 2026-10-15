@@ -1,0 +1,8 @@
+{
+  "extends": ["//"],
+  "tags": ["app"],
+  "tasks": {
+    "build": { "outputs": ["build/**"] },
+    "typecheck": { "cache": false }
+  }
+}

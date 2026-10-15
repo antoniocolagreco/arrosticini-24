@@ -1,0 +1,26 @@
+<!-- @dsCard group="Stress panel" height=460 -->
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><title>SheepTile</title></head>
+<body>
+<div class="a24-demo">
+  <div class="a24-flock">
+    <div class="a24-flock-row"><h3><i data-lucide="server" aria-hidden="true"></i>Web</h3><ul class="a24-flock-tiles" style="list-style:none;margin:0;padding:0">
+      <li class="a24-sheep" data-state="calm" aria-label="Container 3f9a2c1: tranquilla, CPU 23%"><img src="/_blob/71ecce04fc7882428f9a09a41bfba465" alt=""><span class="a24-sheep-cpu"><i data-lucide="cpu" aria-hidden="true"></i>23%</span><span class="a24-sheep-bar"><i style="width:23%"></i></span><p class="a24-sheep-meta">v1.4.2 · eu-south-1a<br>3f9a2c1</p></li><li class="a24-sheep" data-state="calm" aria-label="Container 7be0d44: tranquilla, CPU 41%"><img src="/_blob/71ecce04fc7882428f9a09a41bfba465" alt=""><span class="a24-sheep-cpu"><i data-lucide="cpu" aria-hidden="true"></i>41%</span><span class="a24-sheep-bar"><i style="width:41%"></i></span><p class="a24-sheep-meta">v1.4.2 · eu-south-1b<br>7be0d44</p></li><li class="a24-sheep" data-state="overdrive" aria-label="Container c21f8a0: in overdrive, CPU 92%"><img src="/_blob/71ecce04fc7882428f9a09a41bfba465" alt=""><span class="a24-sheep-cpu"><i data-lucide="cpu" aria-hidden="true"></i>92%</span><span class="a24-sheep-bar"><i style="width:92%"></i></span><p class="a24-sheep-meta">v1.4.2 · eu-south-1a<br>c21f8a0</p></li><li class="a24-sheep" data-state="ghost" aria-label="Container 0d5e7b9: non risponde"><img src="/_blob/71ecce04fc7882428f9a09a41bfba465" alt=""><span class="a24-sheep-cpu"><i data-lucide="cpu" aria-hidden="true"></i>non risponde</span><span class="a24-sheep-bar"><i style="width:0%"></i></span><p class="a24-sheep-meta">v1.4.1 · eu-south-1c<br>0d5e7b9</p></li>
+    </ul></div>
+    <div class="a24-flock-row"><h3><i data-lucide="server" aria-hidden="true"></i>Api</h3><ul class="a24-flock-tiles" style="list-style:none;margin:0;padding:0">
+      <li class="a24-sheep" data-state="calm" aria-label="Container a94c3e2: tranquilla, CPU 58%"><img src="/_blob/71ecce04fc7882428f9a09a41bfba465" alt=""><span class="a24-sheep-cpu"><i data-lucide="cpu" aria-hidden="true"></i>58%</span><span class="a24-sheep-bar"><i style="width:58%"></i></span><p class="a24-sheep-meta">v1.4.2 · eu-south-1a<br>a94c3e2</p></li><li class="a24-sheep" data-state="overdrive" aria-label="Container 51d7f06: in overdrive, CPU 87%"><img src="/_blob/71ecce04fc7882428f9a09a41bfba465" alt=""><span class="a24-sheep-cpu"><i data-lucide="cpu" aria-hidden="true"></i>87%</span><span class="a24-sheep-bar"><i style="width:87%"></i></span><p class="a24-sheep-meta">v1.4.2 · eu-south-1b<br>51d7f06</p></li><li class="a24-sheep" data-state="calm" aria-label="Container e8b20c5: tranquilla, CPU 12%"><img src="/_blob/71ecce04fc7882428f9a09a41bfba465" alt=""><span class="a24-sheep-cpu"><i data-lucide="cpu" aria-hidden="true"></i>12%</span><span class="a24-sheep-bar"><i style="width:12%"></i></span><p class="a24-sheep-meta">v1.4.2 · eu-south-1c<br>e8b20c5</p></li>
+    </ul></div>
+  </div>
+  <p class="a24-hint">Click a tile to step it through calm, overdrive and ghost.</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+<script>document.addEventListener('click', function (e) {
+  var s = e.target.closest('.a24-sheep'); if (!s) return;
+  var next = { calm: 'overdrive', overdrive: 'ghost', ghost: 'calm' }[s.dataset.state], cpu = { calm: 34, overdrive: 93, ghost: 0 }[next];
+  s.dataset.state = next; s.querySelector('.a24-sheep-bar i').style.width = cpu + '%';
+  s.querySelector('.a24-sheep-cpu').lastChild.textContent = next === 'ghost' ? 'non risponde' : cpu + '%';
+});</script>
+</body>
+</html>

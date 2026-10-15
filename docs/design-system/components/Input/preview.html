@@ -1,0 +1,22 @@
+<!-- @dsCard group="Forms" height=430 -->
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><title>Input</title></head>
+<body>
+<div class="a24-demo">
+  <div class="a24-demo-grid">
+    <div class="a24-state"><small>Default</small><div class="a24-field"><label class="a24-label" for="f1">Nome e cognome</label><input class="a24-input" id="f1" placeholder="Mario Rossi"></div></div>
+    <div class="a24-state"><small>Hover</small><div class="a24-field"><label class="a24-label" for="f2">Città</label><input class="a24-input is-hover" id="f2" value="Chieti"></div></div>
+    <div class="a24-state"><small>Focus</small><div class="a24-field"><label class="a24-label" for="f3">CAP</label><input class="a24-input is-focus" id="f3" value="66100" style="border-color:var(--forest)"><p class="a24-hint">Cinque cifre.</p></div></div>
+    <div class="a24-state"><small>Error</small><div class="a24-field"><label class="a24-label" for="f4">Email</label><input class="a24-input" id="f4" value="mario@" aria-invalid="true" aria-describedby="f4-err"><p class="a24-error" id="f4-err"><i data-lucide="circle-alert" aria-hidden="true"></i><span>Manca il dominio: prova con nome@esempio.it</span></p></div></div>
+    <div class="a24-state"><small>Disabled</small><div class="a24-field"><label class="a24-label" for="f5">Email</label><input class="a24-input" id="f5" value="mario.rossi@esempio.it" disabled><p class="a24-hint">Per cambiarla scrivi al supporto.</p></div></div>
+    <div class="a24-state"><small>Select</small><div class="a24-field"><label class="a24-label" for="f6">Paese</label><span class="a24-select"><select id="f6"><option>Italia</option><option>Germania</option><option>Irlanda</option><option>Stati Uniti</option></select><i data-lucide="chevron-down" aria-hidden="true"></i></span></div></div>
+    <div class="a24-state"><small>Select · error</small><div class="a24-field"><label class="a24-label" for="f7">Paese</label><span class="a24-select"><select id="f7" aria-invalid="true" aria-describedby="f7-err"><option>Italia</option><option>Germania</option><option>Irlanda</option><option>Stati Uniti</option></select><i data-lucide="chevron-down" aria-hidden="true"></i></span><p class="a24-error" id="f7-err"><i data-lucide="circle-alert" aria-hidden="true"></i><span>Scegli un paese di spedizione.</span></p></div></div>
+    <div class="a24-state"><small>Textarea</small><div class="a24-field"><label class="a24-label" for="f8">Descrizione (EN)</label><textarea class="a24-input" id="f8">Hand-cut sheep skewers from Abruzzo.</textarea></div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+
+</body>
+</html>

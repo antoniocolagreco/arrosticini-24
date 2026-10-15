@@ -7,7 +7,7 @@ Valgono per Claude Code e per ChatGPT (Codex CLI).
 
 ## Branch
 
-Ogni branch nasce da `github/dev`. Mai push su `dev` o `master`.
+Ogni branch nasce da `github/dev`. Mai push su `dev` o `prod`.
 
 **Formato:** `<tipo>/<scope>_<descrizione>`
 
@@ -35,7 +35,7 @@ Se la modifica tocca più scope, si usa quello principale.
 - **Titolo:** identico al messaggio di commit, nel formato `<tipo>(<scope>): <descrizione>`.
 - **Label:** l'agente autore, `claude` o `gpt`.
 - **Merge:** squash su `dev`, fatto da Antonio. Gli agenti non fanno merge.
-- **Release:** a fare la PR da `dev` a `master` (con merge commit) e a pubblicare la GitHub Release `vX.Y.Z` è Antonio.
+- **Release:** a fare la PR da `dev` a `prod` (con merge commit) e a pubblicare la GitHub Release `vX.Y.Z` è Antonio.
 - **Lingua:** tutto ciò che sta su GitHub è in inglese.
 
 **Template della descrizione**, da usare così com'è:

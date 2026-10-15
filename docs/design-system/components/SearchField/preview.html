@@ -1,0 +1,18 @@
+<!-- @dsCard group="Forms" height=230 -->
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><title>SearchField</title></head>
+<body>
+<div class="a24-demo">
+  <div class="a24-demo-grid" style="grid-template-columns:repeat(auto-fit,minmax(380px,1fr))">
+    <div class="a24-state"><small>Empty</small><label class="a24-search"><i data-lucide="search" aria-hidden="true"></i><input class="a24-input" type="search" placeholder="Cerca arrosticini, carbone, vino…" aria-label="Cerca prodotti"></label></div>
+    <div class="a24-state"><small>Focus · with text</small><label class="a24-search"><i data-lucide="search" aria-hidden="true"></i><input class="a24-input is-focus" type="text" value="fornacella" aria-label="Cerca prodotti" style="border-color:var(--forest)"><button class="a24-btn a24-btn--icon" type="button" aria-label="Cancella ricerca"><i data-lucide="x" aria-hidden="true"></i></button></label></div>
+    <div class="a24-state"><small>Loading</small><label class="a24-search" aria-busy="true"><i data-lucide="search" aria-hidden="true"></i><input class="a24-input" type="text" value="vino" aria-label="Cerca prodotti"></label></div>
+    <div class="a24-state"><small>Disabled</small><label class="a24-search"><i data-lucide="search" aria-hidden="true"></i><input class="a24-input" type="text" placeholder="Cerca arrosticini, carbone, vino…" aria-label="Cerca prodotti" disabled></label></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+
+</body>
+</html>

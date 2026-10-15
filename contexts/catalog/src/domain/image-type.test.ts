@@ -1,0 +1,23 @@
+import { describe, expect, it } from "vitest";
+import { detectImageType } from "./image-type.js";
+
+describe("detectImageType", () => {
+  it.each([
+    ["image/jpeg", [0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]],
+    ["image/png", [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]],
+    ["image/webp", [0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]],
+  ])("recognizes %s from its first bytes", (type, bytes) => {
+    expect(detectImageType(new Uint8Array(bytes))).toBe(type);
+  });
+
+  it.each([
+    ["text", [0x3c, 0x73, 0x76, 0x67]],
+    [
+      "a RIFF file that is not WebP",
+      [0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45],
+    ],
+    ["an empty file", []],
+  ])("rejects %s", (_case, bytes) => {
+    expect(detectImageType(new Uint8Array(bytes))).toBeUndefined();
+  });
+});

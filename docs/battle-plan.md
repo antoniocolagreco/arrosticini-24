@@ -19,12 +19,14 @@ Le dipendenze vanno in un senso solo: `web` usa ciò che Claude ha già portato 
 
 Gli agenti lavorano solo in locale e non toccano i path di Antonio.
 
+Eccezione decisa da Antonio: l'area admin (gestione utenti, gestione ordini, admin senza acquisti) la fa Claude anche dentro `apps/web`. ChatGPT intanto prosegue dalla riga 7 e, prima di modificare le stesse pagine, fa rebase sulle PR di Claude già su `dev`.
+
 Se ChatGPT ha bisogno di qualcosa fuori da `apps/web` (un campo nel contratto, una variabile d'ambiente, una dipendenza nel catalog di pnpm), lo chiede in `docs/agents/gpt.md`.
 
 ## Git
 
 - Feature branch da `dev` e PR verso `dev`, con le regole di `AGENTS.md`. Antonio fa la review e lo squash merge.
-- Le release passano da una PR `dev` → `master` e dalla pubblicazione della GitHub Release: le gestisce Antonio.
+- Le release passano da una PR `dev` → `prod` e dalla pubblicazione della GitHub Release: le gestisce Antonio.
 - Il workspace `/home/ac/Projects/arrosticini-24-workspace/` ha una cartella (worktree) per ciascuno. Ognuno lavora solo dalla propria cartella e lì crea e cambia i branch che gli servono:
   - Antonio: `master`
   - Claude: `backend`
@@ -42,6 +44,7 @@ Claude procede in ordine. Ogni riga sblocca il lavoro di ChatGPT sulla stessa ri
 | 4 | Contratti Shopping e Ordering, poi implementazione | contratti | carrello, checkout, pagine ordini |
 | 5 | Contratto Payments, poi Stripe, webhook e carte salvate; Catalog admin con upload su S3 | contratti | pagina di esito del pagamento, carte salvate, inoltro del webhook, area admin |
 | 6 | resto di `packages/ops` (metadata del task, CPU), `/internal/whoami`, `grill.js`, k6 | ops | pannello pecore `/stress` |
+| 6b | area admin: utenti (scheda e sospensione), ordini (indirizzo, stato, spedizione), admin senza acquisti; backend e pagine `web` | area admin | nessuno: fa tutto Claude |
 | 7 | Dockerfile e profilo compose `full` | Docker | test Playwright end-to-end |
 | 8 | runbook del talk | — | rifinitura della UI |
 

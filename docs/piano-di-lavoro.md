@@ -7,7 +7,8 @@ Software dimostrativo per un talk: un e-commerce globale di arrosticini su cui m
 1. rolling update senza downtime;
 2. scaling orizzontale quando la CPU supera l'80%;
 3. high availability quando un container muore;
-4. sessioni su Valkey e CDN con CloudFront.
+4. sessioni su Valkey e CDN con CloudFront;
+5. protezione con WAF e Shield, mostrata nella configurazione e senza attacchi dal vivo.
 
 Multilingua IT/EN e pagamento Stripe in modalità test sono inclusi per sperimentazione.
 
@@ -21,20 +22,21 @@ Riferimenti visivi: `docs/mock.png` (home) e `docs/images/` (immagini del sito e
 - **api:** Express 5, Zod 4, AWS SDK v3 su Fargate. Non raggiungibile dalla rete pubblica.
 - **Contratto web↔api:** oRPC contract-first in `packages/contracts`.
 - **Persistenza:** DynamoDB (una tabella per bounded context), Valkey (sessioni e carrelli), S3 (asset della build e immagini dei prodotti).
-- **Autenticazione:** username e password, sessione su Valkey, cookie HttpOnly.
+- **Autenticazione:** email e password, sessione su Valkey, cookie HttpOnly. In registrazione si chiedono anche nome e cognome; il telefono sta su ogni indirizzo di spedizione, perché il corriere chiama chi riceve.
 - **Pagamenti:** Stripe Checkout ospitato, modalità test.
 - **Multilingua:** IT ed EN, lingua nel prefisso dell'URL (`/it/...`, `/en/...`).
 - **Segreti:** AWS Systems Manager Parameter Store.
 - **Immagini Docker:** `linux/amd64` su Alpine.
 - **Sviluppo locale:** docker compose con DynamoDB Local, Valkey, RustFS (S3 compatibile) e Stripe CLI.
 - **Infrastruttura:** CDK in TypeScript.
+- **Protezione:** AWS WAF sulla distribuzione CloudFront, Shield Standard incluso in CloudFront.
 - **CI/CD:** GitHub Actions. Ogni release costruisce le immagini, le pubblica su ECR e avvia il rolling update.
 
 ## Architettura
 
 ```
                               ┌─ /assets/*  ──► S3 "static" (build JS/CSS)
-Browser ──► CloudFront ───────┼─ /images/*  ──► S3 "media"  (immagini prodotto)
+Browser ──► CloudFront + WAF ─┼─ /images/*  ──► S3 "media"  (immagini prodotto)
                               └─ default    ──► ALB ──► web (Fargate, ≥2 task, 2 AZ)
                                                          ├──► Valkey (sessioni)
                                                          └──► api (Fargate, ≥2 task, 2 AZ, rete privata)
@@ -63,7 +65,7 @@ Stripe ──► webhook ──► CloudFront ──► web /webhooks/stripe ─
 | Contesto | Responsabilità | Aggregati | Persistenza |
 |---|---|---|---|
 | Catalog | prodotti, testi IT/EN, prezzo, immagini, stato, ricerca | `Product` | tabella `catalog`, S3 `media` |
-| Identity | account, credenziali, ruolo (customer/admin), profilo, lingua preferita, indirizzi | `User` (con `Address`) | tabella `identity` |
+| Identity | account, credenziali, ruolo (customer/admin), stato (attivo/sospeso), profilo, lingua preferita, indirizzi | `User` (con `Address`) | tabella `identity` |
 | Shopping | carrello di anonimi e loggati, merge al login | `Cart` | Valkey `cart:*` |
 | Ordering | ordine con copia di righe, prezzi e indirizzo; stati | `Order` | tabella `ordering` |
 | Payments | Checkout Session, stato del pagamento, cliente Stripe, carte salvate, idempotenza dei webhook | `Payment`, `PaymentCustomer` | tabella `payments` |
@@ -91,11 +93,11 @@ contexts/ordering/src/
 
 ### Checkout e pagamento
 
-1. Il browser fa `POST /it/checkout` su `web`, che chiama `POST /ordering/orders` con `cartId` e `addressId`.
+1. Il browser fa `POST /it/checkout` su `web`, che chiama `POST /ordering/orders` con `cartId`, `addressId`, `locale` e `ordersUrl` (URL assoluto delle pagine ordine, per esempio `<PUBLIC_ORIGIN>/it/orders`).
 2. Ordering (`PlaceOrder`) legge carrello (`CartReader` → Shopping), prezzi (`CatalogPricing` → Catalog) e indirizzo (`CustomerDirectory` → Identity). Poi crea l'`Order` in `PENDING_PAYMENT`, con la copia di nome, prezzo unitario e indirizzo.
-3. Ordering chiama `PaymentInitiator` (→ Payments), che crea la Checkout Session con `orderId` nei metadata, lingua e cliente Stripe dell'utente, e restituisce l'URL di pagamento.
+3. Ordering chiama `PaymentInitiator` (→ Payments), che crea la Checkout Session con `orderId` nei metadata, lingua e cliente Stripe dell'utente, e restituisce l'URL di pagamento. La sessione scade dopo 30 minuti, il minimo ammesso da Stripe.
 4. `web` reindirizza il browser su Stripe (303). Carta di test: `4242 4242 4242 4242`.
-5. Stripe riporta il browser su `/it/orders/<id>` e invia il webhook `checkout.session.completed`.
+5. Stripe riporta il browser su `<ordersUrl>/<id>`, sia dopo il pagamento sia se l'utente torna indietro, e invia il webhook `checkout.session.completed`.
 6. Payments verifica la firma, scarta gli eventi già visti, segna il `Payment` come `SUCCEEDED` e pubblica `PaymentSucceeded`.
 7. Ordering porta l'ordine a `PAID`, Shopping svuota il carrello.
 8. La pagina dell'ordine interroga lo stato finché non diventa `PAID`.
@@ -103,14 +105,26 @@ contexts/ordering/src/
 
 Il bus esegue gli handler in modo sincrono, e `api` risponde 2xx a Stripe solo quando tutti gli handler sono terminati. Se il container muore a metà, Stripe ripete il webhook e gli handler idempotenti lo riapplicano.
 
-Stati dell'ordine: `PENDING_PAYMENT` → `PAID` oppure `PENDING_PAYMENT` → `CANCELLED`. L'aggregato `Order` vieta ogni altra transizione.
+Stati dell'ordine: `PENDING_PAYMENT` → `PAID` oppure `PENDING_PAYMENT` → `CANCELLED`, poi a mano dall'admin `PAID` → `SHIPPED` → `DELIVERED` oppure `SHIPPED` → `LOST`. L'aggregato `Order` vieta ogni altra transizione.
+
+- **Spedizione:** `SHIPPED` richiede il corriere; numero di tracking e link di tracking (`https`) sono facoltativi, perché il corriere spesso li comunica dopo. I dati di spedizione restano modificabili anche dopo `DELIVERED` o `LOST`.
+- **Indirizzo:** l'admin lo modifica finché l'ordine è `PENDING_PAYMENT` o `PAID`.
+- **Webhook ripetuto:** un pagamento confermato su un ordine già `PAID`, `SHIPPED`, `DELIVERED` o `LOST` non ha effetti.
 
 ## Sicurezza
 
 - **Login:** `web` verifica le credenziali con `POST /identity/credentials/verify` e salva in sessione `userId`, `role` e `locale`.
 - **Identità verso api:** `web` invia `userId` e `role` nell'header `x-actor`. `api` si fida dell'header perché il suo security group accetta traffico solo da `web`.
 - **Ruolo admin:** controllato sia dal middleware di `web` sia dagli use case di `api`.
+- **Admin senza acquisti:** l'admin gestisce catalogo, ordini e utenti. `web` gli nasconde carrello, checkout, ordini propri, indirizzi e carte; `api` gli rifiuta con `FORBIDDEN` ordine, merge del carrello e salvataggio di una carta.
+- **Utente sospeso:** il login risponde `ACCOUNT_SUSPENDED` dopo una password corretta. Per ogni richiesta con `x-actor`, `api` verifica che l'utente esista e sia attivo, altrimenti risponde 401 e `web` chiude la sessione. Gli admin non si sospendono.
 - **Password:** `crypto.scrypt` nativo di Node, salt casuale per utente, confronto con `timingSafeEqual`.
+- **WAF:** web ACL con scope `CLOUDFRONT` associato alla distribuzione, con due regole:
+  - rate-based per IP, con soglia sopra il carico che k6 genera dal portatile nelle demo di scaling;
+  - `AWSManagedRulesSQLiRuleSet`.
+- **Niente `AWSManagedRulesCommonRuleSet`:** blocca i body sopra 8 KB e romperebbe l'upload delle immagini dall'admin.
+- **Shield Standard:** attivo di default su CloudFront, protegge dagli attacchi di rete (livelli 3 e 4).
+- **Nessun attacco dal vivo:** le simulazioni DDoS su AWS richiedono un partner approvato, e un flood dalla rete aziendale fa scattare la sicurezza interna.
 
 ## Segreti
 
@@ -183,11 +197,13 @@ Prezzi in centesimi interi con valuta `EUR` (value object `Money`). Testi locali
 
 | Item | PK | SK | Attributi |
 |---|---|---|---|
-| Utente | `USER#<userId>` | `PROFILE` | username, passwordHash, salt, role, displayName, email, preferredLocale, createdAt |
-| Indice username | `USERNAME#<username>` | `LOOKUP` | userId |
+| Utente | `USER#<userId>` | `PROFILE` | email, passwordHash, salt, role, firstName, lastName, preferredLocale, createdAt |
+| Indice email | `EMAIL#<email>` | `LOOKUP` | userId |
 | Indirizzo | `USER#<userId>` | `ADDRESS#<addressId>` | fullName, line1, line2, city, postalCode, country, phone, isDefault |
 
-- La registrazione scrive utente e indice username in una `TransactWriteItems`, con condizione di non esistenza su entrambi.
+- L'email è salvata in minuscolo, senza spazi ai lati.
+- Il telefono dell'indirizzo è obbligatorio; `line2` è l'unico campo facoltativo.
+- La registrazione scrive utente e indice email in una `TransactWriteItems`, con condizione di non esistenza su entrambi.
 - Massimo 5 indirizzi per utente.
 
 ### `ordering`
@@ -227,7 +243,7 @@ Le carte salvate restano su Stripe.
 | `fornacella` | Fornacella / Arrosticini grill | — | 10000 | `p_fornacella.webp` |
 
 - Le immagini dei prodotti stanno in `apps/api/seed/images/`, copiate da `docs/images/p_*.webp`. Il seed le carica nel bucket `media`.
-- L'utente admin si crea dal seed con `ADMIN_USERNAME` e `ADMIN_PASSWORD`.
+- L'utente admin si crea dal seed con `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
 
 ## Contratto web↔api (oRPC)
 
@@ -250,7 +266,7 @@ Dal contratto si ricavano:
 Regole:
 - Un contratto per bounded context, tutti composti nel composition root.
 - Path REST con prefisso per contesto.
-- Errori dichiarati nel contratto, con codici stabili (`USERNAME_TAKEN`, `INVALID_CREDENTIALS`, `PRODUCT_NOT_FOUND`, `ORDER_INVALID_TRANSITION`, ...).
+- Errori dichiarati nel contratto, con codici stabili (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `PRODUCT_NOT_FOUND`, `ORDER_INVALID_TRANSITION`, ...).
 - Un middleware oRPC legge `x-actor` e lo mette nel contesto della procedura. I middleware `authed` e `admin` proteggono le procedure riservate.
 - **In CI:** la spec rigenerata deve coincidere con quella committata, e `oasdiff breaking` la confronta con quella dell'ultima release.
 - **Fuori dal contratto, come route Express:** il webhook Stripe (serve il corpo grezzo) e `/healthz`.
@@ -266,10 +282,11 @@ Regole:
 | Identity | `POST /identity/users` · `POST /identity/credentials/verify` | pubblico |
 | Identity | `GET` e `PATCH /identity/me` · `POST /identity/me/password` | utente |
 | Identity | `GET` e `POST /identity/me/addresses` · `PATCH` e `DELETE /identity/me/addresses/{id}` | utente |
+| Identity | `GET /identity/admin/users` · `GET` e `PATCH /identity/admin/users/{id}` | admin |
 | Shopping | `POST /shopping/carts` · `GET /shopping/carts/{id}` | pubblico |
 | Shopping | `PUT /shopping/carts/{id}/lines/{slug}` (quantità 0 rimuove) · `POST /shopping/carts/{id}/merge` | pubblico / utente |
 | Ordering | `POST /ordering/orders` · `GET /ordering/orders` · `GET /ordering/orders/{id}` | utente |
-| Ordering | `GET /ordering/admin/orders` | admin |
+| Ordering | `GET /ordering/admin/orders?userId=` · `PATCH /ordering/admin/orders/{id}` | admin |
 | Payments | `GET /payments/methods` · `POST /payments/methods/setup-session` · `DELETE /payments/methods/{id}` | utente |
 | Payments | `POST /payments/webhooks/stripe` | solo da web |
 | Ops | `GET /internal/whoami` | solo da web |
@@ -297,7 +314,8 @@ Regole:
 | `/:lang/account/password` | cambio password | utente |
 | `/:lang/login` · `/:lang/register` · `/logout` | autenticazione | pubblico |
 | `/:lang/admin/products` · `/:lang/admin/products/new` · `/:lang/admin/products/:slug` | gestione prodotti e immagini | admin |
-| `/:lang/admin/orders` | tutti gli ordini | admin |
+| `/:lang/admin/orders` · `/:lang/admin/orders/:id` | tutti gli ordini; indirizzo, stato e spedizione | admin |
+| `/:lang/admin/users` · `/:lang/admin/users/:id` | utenti; scheda con indirizzi e ordini, sospensione | admin |
 | `/:lang/stress` | pannello pecore | pubblico |
 | `/stress/status` · `/webhooks/stripe` · `/healthz` | resource route | tecnico |
 | 404 / 500 | ErrorBoundary con la pecora in overdrive | — |
@@ -326,7 +344,7 @@ Regole:
   - `browse`: pagine SSR e ricerca, che caricano `web`;
   - `login-storm`: scrypt, che carica `api`.
 - **Stress manuale:** `aws ecs execute-command ... "node bin/grill.js --seconds 120"`. In locale: `docker compose exec`.
-- **Container che muore:** `aws ecs execute-command ... "kill -9 1"`.
+- **Container che muore:** `aws ecs execute-command ... "pkill -9 node"`. `kill -9 1` non funziona: Linux ignora il SIGKILL mandato al processo 1 dall'interno del container.
 - **Pannello `/:lang/stress`:**
   - il browser chiama `/stress/status` ogni 500 ms;
   - `web` risponde con i dati del proprio task e con `/internal/whoami` di un task `api`;
@@ -335,7 +353,10 @@ Regole:
   - una pecora che non risponde da 5 s diventa fantasma e poi sparisce;
   - una riga per `web` e una per `api`.
 - **CPU:** quella del pannello è istantanea e per task; lo scaling usa la media del servizio su un minuto (CloudWatch).
+- **Come si misura:** `packages/ops` legge ogni secondo i contatori cgroup del container (v2, poi v1) e li divide per il limite di CPU del task, quindi conta anche `grill.js`, che gira in un altro processo. Fuori da un container usa la CPU del processo su un core. Id del task e AZ arrivano dall'endpoint di metadata di ECS; in locale sono il nome dell'host e `local`.
+- **k6:** `k6 run -e BASE_URL=<origine> load/browse.js` e `k6 run -e BASE_URL=<origine> -e EMAIL=<account esistente> load/login-storm.js`, con `VUS` e `DURATION` opzionali. `login-storm` usa una password sbagliata: scrypt gira comunque e non nascono sessioni.
 - **ECS Exec richiede:** `enableExecuteCommand` sui servizi, permessi SSM nel task role, Session Manager plugin sul portatile.
+- **Init nei task:** `initProcessEnabled` nei container di `web` e `api`. Il processo 1 diventa l'init di ECS e node un suo figlio, così `pkill -9 node` fa morire il container.
 
 ## Comportamenti operativi
 
@@ -386,23 +407,25 @@ Il codice è in `packages/ops`, dalla fase 0.
 | Stack | Contenuto | Durata |
 |---|---|---|
 | `foundation` | 2 repository ECR (tag immutabili, ultime 20 immagini), provider OIDC di GitHub, ruolo IAM della CI | permanente |
+| `waf` | web ACL di CloudFront, in `us-east-1` | creato con `up`, distrutto con `down` |
 | `app` | VPC, NAT, ALB, ECS, Valkey, DynamoDB, bucket S3, CloudFront | creato con `up`, distrutto con `down` |
 
-- `cdk bootstrap` una volta per account e regione.
+- `cdk bootstrap` una volta per account e regione, compresa `us-east-1`.
+- `waf` sta in `us-east-1` perché i web ACL di CloudFront si creano solo lì. `app` ne usa l'ARN con `crossRegionReferences: true`. Se `app` sta già in `us-east-1`, il web ACL può stare in `app`.
 - `app` riceve il tag delle immagini come contesto: `cdk deploy app -c imageTag=v1.3.0`.
 - Fargate con `runtimePlatform` `LINUX` / `X86_64`.
 
 ### Branch
 
 - Feature branch da `dev`, PR verso `dev`, squash merge. Regole in `AGENTS.md`.
-- Release: PR da `dev` a `master` con merge commit, poi GitHub Release `vX.Y.Z` su `master`.
-- Nessun push diretto su `dev` o `master`.
+- Release: PR da `dev` a `prod` con merge commit, poi GitHub Release `vX.Y.Z` su `prod`.
+- Nessun push diretto su `dev` o `prod`.
 
 ### Workflow
 
 | File | Trigger | Cosa fa |
 |---|---|---|
-| `ci.yml` | PR verso `dev` e `master`, push su `dev` | `turbo run lint typecheck test build`, `turbo boundaries`, controllo delle chiavi i18n, spec OpenAPI aggiornate, `oasdiff breaking` |
+| `ci.yml` | PR verso `dev` e `prod`, push su `dev` | `turbo run lint typecheck test build`, `turbo boundaries`, controllo delle chiavi i18n, spec OpenAPI aggiornate, `oasdiff breaking` |
 | `release.yml` | release pubblicata con tag `vX.Y.Z` | i passi qui sotto |
 
 Passi di `release.yml`, su runner `ubuntu-24.04`:
@@ -434,11 +457,20 @@ Variabili GitHub: `AWS_REGION`, `AWS_ROLE_ARN`.
 | `valkey` | `valkey/valkey` (stessa major di ElastiCache) | sessioni e carrelli |
 | `dynamodb` | `amazon/dynamodb-local` | tabelle `catalog`, `identity`, `ordering`, `payments` |
 | `s3` | `rustfs/rustfs` | bucket `media`, lettura anonima |
-| `stripe` | `stripe/stripe-cli` | `listen --forward-to` verso `web` |
+| `stripe` | `stripe/stripe-cli` | `listen` sugli eventi `checkout.session.completed` e `checkout.session.expired`, inoltrati a `web` sulla porta `WEB_PORT` dell'host, nel profilo `stripe` |
+| `api` | `apps/api/Dockerfile` | `api` dall'immagine di produzione, nel profilo `full` |
+| `web` | `apps/web/Dockerfile` | `web` dall'immagine di produzione, pubblicato sulla porta `WEB_PORT` dell'host, nel profilo `full` |
 
 - **Client AWS:** `endpoint` e `forcePathStyle` arrivano dalle variabili d'ambiente.
-- **`pnpm setup:local`:** crea tabelle (con GSI e TTL), bucket e seed.
+- **`pnpm local:up`:** avvia `valkey`, `dynamodb` e `s3`, poi crea tabelle (con GSI e TTL), bucket e seed. I dati di `dynamodb` e `s3` restano nei volumi.
+- **`pnpm local:stop`:** ferma i container e conserva i dati.
+- **`pnpm local:destroy`:** rimuove container e volumi.
+- **`pnpm local:reset`:** `local:destroy` seguito da `local:up`.
 - **`pnpm dev`:** avvia `web` e `api` sull'host. Il profilo compose `full` avvia tutto dalle immagini Docker.
+- **Profilo `full`:** dopo `pnpm local:up`, `docker compose --env-file .env.local --profile full up -d --build`. Usa tabelle, bucket, chiavi Stripe, `SESSION_SECRET`, `WEB_PORT` e `MEDIA_BASE_URL` di `.env.local`; gli endpoint di Valkey, DynamoDB e RustFS sono quelli della rete compose. È un'alternativa a `pnpm dev`, perché usa la stessa porta `WEB_PORT`.
+- **Immagini:** la build si lancia dalla radice del repository, per esempio `docker build -f apps/api/Dockerfile --build-arg APP_VERSION=v1.0.0 .`. In `web` gli asset statici stanno in `/repo/apps/web/build/client`.
+- **Stripe in locale:** `STRIPE_SECRET_KEY` (chiave di test `sk_test_...`) sta in `.env.local`. `docker compose --env-file .env.local --profile stripe up -d stripe` inoltra i webhook a `web`; `docker compose --env-file .env.local --profile stripe run --rm stripe listen --print-secret` stampa il `whsec_...` da mettere in `STRIPE_WEBHOOK_SECRET`.
+- **Test:** usano `stripe/stripe-mock`, quindi non servono chiavi Stripe.
 
 ## Immagini
 
@@ -490,9 +522,9 @@ La divisione tra i due agenti è in `docs/battle-plan.md`.
 | 6 | Admin catalogo | creazione e modifica prodotti IT/EN, upload immagini, archiviazione | prodotto creato visibile in lista con la sua immagine |
 | 7 | Stress | `whoami`, `/stress/status`, pannello pecore, `grill.js`, k6 | con 2 `web` e 2 `api` in locale compaiono 4 pecore |
 | 8 | Container | Dockerfile multi-stage `node:24-alpine`, `linux/amd64`, `turbo prune --docker` | profilo `full` funzionante |
-| 9 | Infra CDK | stack `foundation` e `app` (VPC su 2 AZ, ALB, 2 servizi Fargate con ECS Exec, Service Connect, DynamoDB, ElastiCache Serverless Valkey, 2 bucket S3, CloudFront con OAC, NAT Gateway, parametri da Parameter Store, autoscaling all'80% di CPU) | sito raggiungibile da `*.cloudfront.net` |
+| 9 | Infra CDK | stack `foundation` e `app` (VPC su 2 AZ, ALB, 2 servizi Fargate con ECS Exec, Service Connect, DynamoDB, ElastiCache Serverless Valkey, 2 bucket S3, CloudFront con OAC, stack `waf`, NAT Gateway, parametri da Parameter Store, autoscaling all'80% di CPU) | sito raggiungibile da `*.cloudfront.net` |
 | 10 | CI/CD | `ci.yml`, `release.yml` | una release aggiorna i servizi senza 5xx sotto k6 |
-| 11 | Script e runbook | **`up`:** `cdk deploy foundation`, `cdk deploy app` con il tag dell'ultima release, registrazione del webhook Stripe, `/arrosticini/stripe-webhook-secret` su Parameter Store, nuovo deployment di `api`, upload degli asset, seed (prodotti, immagini, admin). **`down`:** cancellazione del webhook, `cdk destroy app`. Runbook del talk | `up` da account vuoto produce un sito con pagamento funzionante; `down` rimuove lo stack `app` |
+| 11 | Script e runbook | **`up`:** `cdk deploy foundation`, `cdk deploy app` con il tag dell'ultima release, registrazione del webhook Stripe, `/arrosticini/stripe-webhook-secret` su Parameter Store, nuovo deployment di `api`, upload degli asset, seed (prodotti, immagini, admin). **`down`:** cancellazione del webhook, `cdk destroy app`, poi `cdk destroy waf`. Runbook del talk | `up` da account vuoto produce un sito con pagamento funzionante; `down` rimuove gli stack `app` e `waf` |
 
 ## Test
 
@@ -509,14 +541,16 @@ Strumenti: Vitest in tutti i package e in `web`, Playwright per i test end-to-en
 
 1. **Rolling update:** release v2 pubblicata con k6 `browse` attivo. Zero 5xx; nel pannello convivono pecore v1 e v2 fino al passaggio completo.
 2. **Scaling:** con k6 `login-storm` la CPU di `api` supera l'80% e compaiono nuove pecore.
-3. **HA:** `kill -9 1` su un task. ECS avvia un nuovo task; l'utente resta loggato e il carrello resta intatto.
+3. **HA:** `pkill -9 node` su un task. ECS avvia un nuovo task; l'utente resta loggato e il carrello resta intatto.
 4. **Valkey:** `valkey-cli` mostra le chiavi `sess:*` e `cart:*`.
 5. **CDN:** asset e immagini rispondono con `x-cache: Hit from cloudfront`.
 6. **Pagamento:** ordine pagato con carta di test, stato `PAID` nella pagina utente e in quella admin.
+7. **WAF:** il web ACL è associato alla distribuzione e le metriche mostrano le richieste valutate; k6 delle demo, upload delle immagini e webhook Stripe non vengono bloccati.
 
 ## Punti aperti
 
 - Regione AWS.
 - Policy di scaling: target tracking all'80% oppure step scaling.
 - NAT Gateway: uno per AZ oppure uno solo.
+- Soglia e finestra della regola rate-based di WAF.
 - Font, da scegliere confrontandoli con il mock.

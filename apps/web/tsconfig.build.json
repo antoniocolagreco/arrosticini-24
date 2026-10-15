@@ -1,0 +1,10 @@
+{
+  "extends": "@arrosticini/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2024"],
+    "rootDir": ".",
+    "outDir": "build/runtime"
+  },
+  "include": ["server.ts", "server"],
+  "exclude": ["server/**/*.test.ts"]
+}
