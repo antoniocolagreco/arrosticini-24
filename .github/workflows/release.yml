@@ -10,11 +10,17 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: checks
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: aws-actions/configure-aws-credentials@v6
@@ -31,6 +37,7 @@ jobs:
           platforms: linux/amd64
           build-args: APP_VERSION=${{ github.ref_name }}
           tags: ${{ steps.ecr.outputs.registry }}/arrosticini/api:${{ github.ref_name }}
+          provenance: false
           push: true
       - uses: docker/build-push-action@v7
         with:
@@ -39,4 +46,5 @@ jobs:
           platforms: linux/amd64
           build-args: APP_VERSION=${{ github.ref_name }}
           tags: ${{ steps.ecr.outputs.registry }}/arrosticini/web:${{ github.ref_name }}
+          provenance: false
           push: true

@@ -5,6 +5,7 @@ on:
     branches:
       - prod
       - dev
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
