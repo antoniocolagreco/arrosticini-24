@@ -14,7 +14,7 @@ import {
   usersTableDefinition,
 } from "@arrosticini/identity";
 import { Money, newId } from "@arrosticini/kernel";
-import { ordersTableDefinition } from "@arrosticini/ordering";
+import { DynamoDbOrderRepository, Order, ordersTableDefinition } from "@arrosticini/ordering";
 import {
   paymentCustomersTableDefinition,
   paymentsTableDefinition,
@@ -116,9 +116,20 @@ async function stopProcess(child: ChildProcess): Promise<void> {
   }
 }
 
+export interface Customer {
+  id: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface TestStack {
   origin: string;
   admin: { email: string; password: string };
+  createCustomer: (firstName: string, lastName: string) => Promise<Customer>;
+  createPaidOrder: (customer: Customer) => Promise<string>;
+  createProducts: (slugs: string[]) => Promise<void>;
   cookie: ReturnType<typeof createCookie>;
   sessionIds: Set<string>;
   stripe: Stripe | undefined;
@@ -151,7 +162,7 @@ export async function withStack(
   const bucket: string = `e2e-${suffix}`;
   const secret: string = randomUUID();
   const webhookSecret: string = `whsec_${randomUUID()}`;
-  const stripeKey: string | undefined = process.env.STRIPE_SECRET_KEY;
+  const stripeKey: string | undefined = process.env.STRIPE_SECRET_KEY || undefined;
   if (stripeKey && !stripeKey.startsWith("sk_test_"))
     throw new Error("E2E requires a Stripe test-mode secret key");
   const stripe: Stripe | undefined = stripeKey ? new Stripe(stripeKey) : undefined;
@@ -306,9 +317,78 @@ export async function withStack(
       children.push(await startProcess(["apps/api/dist/server.js"], env, apiPort));
       children.push(await startProcess(["apps/web/build/runtime/server.js"], env, webPort));
     }
+    const orders: DynamoDbOrderRepository = new DynamoDbOrderRepository(document, tables.orders);
     const stack: TestStack = {
       origin,
       admin,
+      createCustomer: async (firstName: string, lastName: string): Promise<Customer> => {
+        const customer: Customer = {
+          id: newId(),
+          email: `${randomUUID()}@example.com`,
+          password: randomUUID(),
+          firstName,
+          lastName,
+        };
+        await users.create(
+          User.register(
+            {
+              id: customer.id,
+              email: customer.email,
+              password: await new ScryptPasswordHasher().hash(customer.password),
+              role: "customer",
+              firstName,
+              lastName,
+              preferredLocale: "it",
+            },
+            new Date(),
+          ),
+        );
+        return customer;
+      },
+      createPaidOrder: async (customer: Customer): Promise<string> => {
+        const order: Order = Order.place(
+          {
+            id: newId(),
+            userId: customer.id,
+            lines: [
+              {
+                slug: "e2e-arrosticini",
+                name: { it: "Arrosticini di prova", en: "Test arrosticini" },
+                unitPrice: Money.ofCents(3750),
+                quantity: 2,
+              },
+            ],
+            shippingAddress: {
+              fullName: `${customer.firstName} ${customer.lastName}`,
+              line1: "Via Test 1",
+              city: "Chieti",
+              postalCode: "66100",
+              country: "IT",
+              phone: "+390871000000",
+            },
+          },
+          new Date(),
+        );
+        order.markPaid(new Date());
+        await orders.create(order);
+        return order.id;
+      },
+      createProducts: async (slugs: string[]): Promise<void> => {
+        for (const slug of slugs)
+          await products.create(
+            Product.create(
+              {
+                slug,
+                name: { it: `Prodotto ${slug}`, en: `Product ${slug}` },
+                description: { it: "Prodotto per la paginazione.", en: "Product for paging." },
+                price: Money.ofCents(1000),
+                images: [],
+                status: "ACTIVE",
+              },
+              new Date(),
+            ),
+          );
+      },
       cookie: createCookie("__session", { secrets: [secret] }),
       sessionIds,
       stripe,
