@@ -1,47 +1,40 @@
-import type { Id, Locale } from "@arrosticini/kernel";
-import { DomainError } from "@arrosticini/kernel";
+import type { Id, Locale, Page, PageRequest } from "@arrosticini/kernel";
+import { DomainError, decodeCursor, encodeCursor } from "@arrosticini/kernel";
 import { TransactionCanceledException } from "@aws-sdk/client-dynamodb";
 import {
   type DynamoDBDocumentClient,
   GetCommand,
-  paginateScan,
+  PutCommand,
   QueryCommand,
   TransactWriteCommand,
-  type TransactWriteCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import { type Address, type Role, User, type UserStatus } from "../domain/user.js";
 import type { UserRepository } from "../domain/user-repository.js";
 
-interface ProfileItem {
-  PK: string;
-  SK: "PROFILE";
-  id: Id;
+interface UserItem {
+  userId: Id;
+  kind: "user";
   email: string;
   passwordHash: string;
   salt: string;
   role: Role;
-  status?: UserStatus;
+  status: UserStatus;
   firstName: string;
   lastName: string;
   preferredLocale: Locale;
   createdAt: string;
+  addresses: Address[];
 }
 
-type AddressItem = Address & { PK: string; SK: string };
+interface UserEmailItem {
+  email: string;
+  userId: Id;
+}
 
-type UserItem = ProfileItem | AddressItem;
-
-type TransactItem = NonNullable<TransactWriteCommandInput["TransactItems"]>[number];
-
-const userPk = (id: Id) => `USER#${id}`;
-const emailPk = (email: string) => `EMAIL#${email}`;
-const addressSk = (id: Id) => `ADDRESS#${id}`;
-
-function profileItem(user: User): ProfileItem {
+function toItem(user: User): UserItem {
   return {
-    PK: userPk(user.id),
-    SK: "PROFILE",
-    id: user.id,
+    userId: user.id,
+    kind: "user",
     email: user.email,
     passwordHash: user.password.hash,
     salt: user.password.salt,
@@ -51,100 +44,76 @@ function profileItem(user: User): ProfileItem {
     lastName: user.lastName,
     preferredLocale: user.preferredLocale,
     createdAt: user.createdAt.toISOString(),
+    addresses: [...user.addresses],
   };
 }
 
-function toAddress({ PK: _pk, SK: _sk, ...address }: AddressItem): Address {
-  return address;
-}
-
-function toUser(items: UserItem[]): User | undefined {
-  const profile = items.find((item): item is ProfileItem => item.SK === "PROFILE");
-  if (profile === undefined) {
-    return undefined;
-  }
-  const addresses = items
-    .filter((item): item is AddressItem => item.SK.startsWith("ADDRESS#"))
-    .map(toAddress);
+function toUser(item: UserItem): User {
   return User.restore({
-    id: profile.id,
-    email: profile.email,
-    password: { hash: profile.passwordHash, salt: profile.salt },
-    role: profile.role,
-    status: profile.status ?? "ACTIVE",
-    firstName: profile.firstName,
-    lastName: profile.lastName,
-    preferredLocale: profile.preferredLocale,
-    createdAt: new Date(profile.createdAt),
-    addresses,
+    id: item.userId,
+    email: item.email,
+    password: { hash: item.passwordHash, salt: item.salt },
+    role: item.role,
+    status: item.status,
+    firstName: item.firstName,
+    lastName: item.lastName,
+    preferredLocale: item.preferredLocale,
+    createdAt: new Date(item.createdAt),
+    addresses: item.addresses,
   });
 }
 
 export class DynamoDbUserRepository implements UserRepository {
   readonly #client: DynamoDBDocumentClient;
-  readonly #tableName: string;
+  readonly #usersTable: string;
+  readonly #userEmailsTable: string;
 
-  constructor(client: DynamoDBDocumentClient, tableName: string) {
+  constructor(client: DynamoDBDocumentClient, usersTable: string, userEmailsTable: string) {
     this.#client = client;
-    this.#tableName = tableName;
+    this.#usersTable = usersTable;
+    this.#userEmailsTable = userEmailsTable;
   }
 
   async findById(id: Id): Promise<User | undefined> {
-    const { Items = [] } = await this.#client.send(
-      new QueryCommand({
-        TableName: this.#tableName,
-        KeyConditionExpression: "PK = :pk",
-        ExpressionAttributeValues: { ":pk": userPk(id) },
-      }),
+    const { Item } = await this.#client.send(
+      new GetCommand({ TableName: this.#usersTable, Key: { userId: id } }),
     );
-    return toUser(Items as UserItem[]);
+    return Item === undefined ? undefined : toUser(Item as UserItem);
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
     const { Item } = await this.#client.send(
-      new GetCommand({
-        TableName: this.#tableName,
-        Key: { PK: emailPk(email), SK: "LOOKUP" },
-      }),
+      new GetCommand({ TableName: this.#userEmailsTable, Key: { email } }),
     );
-    return Item === undefined ? undefined : this.findById(Item.userId as Id);
+    return Item === undefined ? undefined : this.findById((Item as UserEmailItem).userId);
   }
 
-  async listAll(): Promise<User[]> {
-    const items: UserItem[] = [];
-    const pages = paginateScan(
-      { client: this.#client },
-      {
-        TableName: this.#tableName,
-        FilterExpression: "begins_with(PK, :user)",
-        ExpressionAttributeValues: { ":user": "USER#" },
-      },
-    );
-    for await (const { Items = [] } of pages) {
-      items.push(...(Items as UserItem[]));
-    }
-    return [...Map.groupBy(items, (item) => item.PK).values()]
-      .flatMap((group) => toUser(group) ?? [])
-      .sort((first, second) => second.createdAt.getTime() - first.createdAt.getTime());
+  listAll(page: PageRequest): Promise<Page<User>> {
+    return this.#newestFirst("byCreatedAt", "kind", "user", page);
+  }
+
+  listByStatus(status: UserStatus, page: PageRequest): Promise<Page<User>> {
+    return this.#newestFirst("byStatus", "status", status, page);
   }
 
   async create(user: User): Promise<void> {
+    const emailItem: UserEmailItem = { email: user.email, userId: user.id };
     try {
       await this.#client.send(
         new TransactWriteCommand({
           TransactItems: [
             {
               Put: {
-                TableName: this.#tableName,
-                Item: profileItem(user),
-                ConditionExpression: "attribute_not_exists(PK)",
+                TableName: this.#usersTable,
+                Item: toItem(user),
+                ConditionExpression: "attribute_not_exists(userId)",
               },
             },
             {
               Put: {
-                TableName: this.#tableName,
-                Item: { PK: emailPk(user.email), SK: "LOOKUP", userId: user.id },
-                ConditionExpression: "attribute_not_exists(PK)",
+                TableName: this.#userEmailsTable,
+                Item: emailItem,
+                ConditionExpression: "attribute_not_exists(email)",
               },
             },
           ],
@@ -162,37 +131,38 @@ export class DynamoDbUserRepository implements UserRepository {
   }
 
   async save(user: User): Promise<void> {
-    const { Items = [] } = await this.#client.send(
-      new QueryCommand({
-        TableName: this.#tableName,
-        KeyConditionExpression: "PK = :pk AND begins_with(SK, :address)",
-        ExpressionAttributeValues: { ":pk": userPk(user.id), ":address": "ADDRESS#" },
-        ProjectionExpression: "SK",
+    await this.#client.send(
+      new PutCommand({
+        TableName: this.#usersTable,
+        Item: toItem(user),
+        ConditionExpression: "attribute_exists(userId)",
       }),
     );
-    const kept = new Set(user.addresses.map(({ id }) => addressSk(id)));
-    const items: TransactItem[] = [
-      {
-        Put: {
-          TableName: this.#tableName,
-          Item: profileItem(user),
-          ConditionExpression: "attribute_exists(PK)",
-        },
-      },
-      ...user.addresses.map(
-        (address): TransactItem => ({
-          Put: {
-            TableName: this.#tableName,
-            Item: { ...address, PK: userPk(user.id), SK: addressSk(address.id) },
-          },
-        }),
-      ),
-      ...Items.filter((item) => !kept.has(String(item.SK))).map(
-        (item): TransactItem => ({
-          Delete: { TableName: this.#tableName, Key: { PK: userPk(user.id), SK: item.SK } },
-        }),
-      ),
-    ];
-    await this.#client.send(new TransactWriteCommand({ TransactItems: items }));
+  }
+
+  async #newestFirst(
+    indexName: string,
+    keyName: string,
+    keyValue: string,
+    { cursor, limit }: PageRequest,
+  ): Promise<Page<User>> {
+    const { Items = [], LastEvaluatedKey } = await this.#client.send(
+      new QueryCommand({
+        TableName: this.#usersTable,
+        IndexName: indexName,
+        KeyConditionExpression: "#key = :value",
+        ExpressionAttributeNames: { "#key": keyName },
+        ExpressionAttributeValues: { ":value": keyValue },
+        ScanIndexForward: false,
+        Limit: limit,
+        ...(cursor === undefined
+          ? {}
+          : { ExclusiveStartKey: decodeCursor(cursor, ["userId", keyName, "createdAt"]) }),
+      }),
+    );
+    return {
+      items: Items.map((item) => toUser(item as UserItem)),
+      ...(LastEvaluatedKey === undefined ? {} : { nextCursor: encodeCursor(LastEvaluatedKey) }),
+    };
   }
 }

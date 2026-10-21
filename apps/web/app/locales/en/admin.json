@@ -113,5 +113,7 @@
   "saved_delivered": "The order has been closed as delivered.",
   "saved_lost": "The order has been closed as lost.",
   "orderNotEditable": "The order has already shipped: the address can no longer be changed.",
-  "orderInvalidTransition": "The order status has changed. Refresh the page and try again."
+  "orderInvalidTransition": "The order status has changed. Refresh the page and try again.",
+  "filterOrders": "Filter orders",
+  "filterUsers": "Filter users"
 }

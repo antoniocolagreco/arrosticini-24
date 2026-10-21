@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { localizedText, Money } from "@arrosticini/kernel";
+import { DomainError, localizedText, Money } from "@arrosticini/kernel";
 import { CreateTableCommand, DeleteTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { Order } from "../domain/order.js";
 import { DynamoDbOrderRepository } from "./dynamodb-order-repository.js";
-import { orderingTableDefinition } from "./ordering-table.js";
+import { ordersTableDefinition } from "./orders-table.js";
 
-const tableName = `ordering-test-${randomUUID()}`;
+const tableName = `orders-test-${randomUUID()}`;
 const client = new DynamoDBClient({
   endpoint: inject("dynamodbEndpoint"),
   region: "local",
@@ -59,7 +59,7 @@ function plain(target: Order | undefined) {
 }
 
 beforeAll(async () => {
-  await client.send(new CreateTableCommand(orderingTableDefinition(tableName)));
+  await client.send(new CreateTableCommand(ordersTableDefinition(tableName)));
 });
 
 afterAll(async () => {
@@ -69,8 +69,8 @@ afterAll(async () => {
 describe("DynamoDbOrderRepository", () => {
   it("creates an order and finds it by id", async () => {
     const created = order(
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+      "0192e1a0-0000-7000-8000-000000000007",
+      "0192e1a0-0000-7000-8000-000000000013",
       "2026-10-09T10:00:00.000Z",
     );
 
@@ -81,8 +81,8 @@ describe("DynamoDbOrderRepository", () => {
 
   it("keeps the payment date of a paid order", async () => {
     const paid = order(
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0B",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+      "0192e1a0-0000-7000-8000-000000000008",
+      "0192e1a0-0000-7000-8000-000000000013",
       "2026-10-09T10:01:00.000Z",
     );
     paid.markPaid(new Date("2026-10-09T10:03:00.000Z"));
@@ -94,8 +94,8 @@ describe("DynamoDbOrderRepository", () => {
 
   it("saves the new status of an existing order", async () => {
     const created = order(
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0E",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0Z",
+      "0192e1a0-0000-7000-8000-00000000000b",
+      "0192e1a0-0000-7000-8000-000000000015",
       "2026-10-09T09:00:00.000Z",
     );
     await repository.create(created);
@@ -108,8 +108,8 @@ describe("DynamoDbOrderRepository", () => {
 
   it("saves the shipment and the new address of a shipped order", async () => {
     const shipped = order(
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0G",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+      "0192e1a0-0000-7000-8000-00000000000d",
+      "0192e1a0-0000-7000-8000-000000000012",
       "2026-10-09T09:30:00.000Z",
     );
     await repository.create(shipped);
@@ -137,8 +137,8 @@ describe("DynamoDbOrderRepository", () => {
     await expect(
       repository.save(
         order(
-          "01JB2Q7Z8X4M3N5P6R7S8T9V0F",
-          "01JB2Q7Z8X4M3N5P6R7S8T9V0Z",
+          "0192e1a0-0000-7000-8000-00000000000c",
+          "0192e1a0-0000-7000-8000-000000000015",
           "2026-10-09T09:00:00.000Z",
         ),
       ),
@@ -146,15 +146,15 @@ describe("DynamoDbOrderRepository", () => {
   });
 
   it("returns undefined for an unknown order", async () => {
-    expect(await repository.findById("01JB2Q7Z8X4M3N5P6R7S8T9V0Z")).toBeUndefined();
+    expect(await repository.findById("0192e1a0-0000-7000-8000-000000000015")).toBeUndefined();
   });
 
   it("refuses to overwrite an existing order", async () => {
     await expect(
       repository.create(
         order(
-          "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-          "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+          "0192e1a0-0000-7000-8000-000000000007",
+          "0192e1a0-0000-7000-8000-000000000014",
           "2026-10-09T11:00:00.000Z",
         ),
       ),
@@ -163,27 +163,73 @@ describe("DynamoDbOrderRepository", () => {
 
   it("lists the orders of a user and all orders, newest first", async () => {
     await repository.create(
-      order("01JB2Q7Z8X4M3N5P6R7S8T9V0C", "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", "2026-10-09T10:02:00.000Z"),
+      order(
+        "0192e1a0-0000-7000-8000-000000000009",
+        "0192e1a0-0000-7000-8000-000000000014",
+        "2026-10-09T10:02:00.000Z",
+      ),
     );
     await repository.create(
-      order("01JB2Q7Z8X4M3N5P6R7S8T9V0D", "01JB2Q7Z8X4M3N5P6R7S8T9V0X", "2026-10-09T10:04:00.000Z"),
+      order(
+        "0192e1a0-0000-7000-8000-00000000000a",
+        "0192e1a0-0000-7000-8000-000000000013",
+        "2026-10-09T10:04:00.000Z",
+      ),
     );
 
-    const mine = await repository.listByUser("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
-    const all = await repository.listAll();
+    const mine = await repository.listByUser("0192e1a0-0000-7000-8000-000000000013", {
+      limit: 20,
+    });
+    const all = await repository.listAll({ limit: 20 });
 
-    expect(mine.map(({ id }) => id)).toEqual([
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0D",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0B",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+    expect(mine.items.map(({ id }) => id)).toEqual([
+      "0192e1a0-0000-7000-8000-00000000000a",
+      "0192e1a0-0000-7000-8000-000000000008",
+      "0192e1a0-0000-7000-8000-000000000007",
     ]);
-    expect(all.map(({ id }) => id)).toEqual([
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0D",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0C",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0B",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0G",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0E",
+    expect(all.items.map(({ id }) => id)).toEqual([
+      "0192e1a0-0000-7000-8000-00000000000a",
+      "0192e1a0-0000-7000-8000-000000000009",
+      "0192e1a0-0000-7000-8000-000000000008",
+      "0192e1a0-0000-7000-8000-000000000007",
+      "0192e1a0-0000-7000-8000-00000000000d",
+      "0192e1a0-0000-7000-8000-00000000000b",
     ]);
+    expect(all.nextCursor).toBeUndefined();
+  });
+
+  it("lists the orders in one status, newest first", async () => {
+    const { items } = await repository.listByStatus("PENDING_PAYMENT", { limit: 20 });
+
+    expect(items.map(({ id }) => id)).toEqual([
+      "0192e1a0-0000-7000-8000-00000000000a",
+      "0192e1a0-0000-7000-8000-000000000009",
+      "0192e1a0-0000-7000-8000-000000000007",
+    ]);
+  });
+
+  it("continues from the cursor of the previous page", async () => {
+    const first = await repository.listAll({ limit: 4 });
+    const second = await repository.listAll({ cursor: first.nextCursor, limit: 4 });
+
+    expect(first.items.map(({ id }) => id)).toEqual([
+      "0192e1a0-0000-7000-8000-00000000000a",
+      "0192e1a0-0000-7000-8000-000000000009",
+      "0192e1a0-0000-7000-8000-000000000008",
+      "0192e1a0-0000-7000-8000-000000000007",
+    ]);
+    expect(second.items.map(({ id }) => id)).toEqual([
+      "0192e1a0-0000-7000-8000-00000000000d",
+      "0192e1a0-0000-7000-8000-00000000000b",
+    ]);
+    expect(second.nextCursor).toBeUndefined();
+  });
+
+  it("rejects a cursor of another index", async () => {
+    const { nextCursor } = await repository.listAll({ limit: 1 });
+
+    await expect(repository.listByStatus("PAID", { cursor: nextCursor, limit: 1 })).rejects.toThrow(
+      new DomainError("INVALID_CURSOR", "Invalid cursor"),
+    );
   });
 });

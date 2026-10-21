@@ -59,10 +59,13 @@ services:
       DYNAMODB_ENDPOINT: http://dynamodb:8000
       S3_ENDPOINT: http://s3:9000
       MEDIA_BUCKET: ${MEDIA_BUCKET:-media}
-      CATALOG_TABLE: ${CATALOG_TABLE:-catalog}
-      IDENTITY_TABLE: ${IDENTITY_TABLE:-identity}
-      ORDERING_TABLE: ${ORDERING_TABLE:-ordering}
+      PRODUCTS_TABLE: ${PRODUCTS_TABLE:-products}
+      USERS_TABLE: ${USERS_TABLE:-users}
+      USER_EMAILS_TABLE: ${USER_EMAILS_TABLE:-user-emails}
+      ORDERS_TABLE: ${ORDERS_TABLE:-orders}
       PAYMENTS_TABLE: ${PAYMENTS_TABLE:-payments}
+      PAYMENT_CUSTOMERS_TABLE: ${PAYMENT_CUSTOMERS_TABLE:-payment-customers}
+      STRIPE_EVENTS_TABLE: ${STRIPE_EVENTS_TABLE:-stripe-events}
       VALKEY_URL: redis://valkey:6379
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

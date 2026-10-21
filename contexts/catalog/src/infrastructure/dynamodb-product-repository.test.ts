@@ -4,10 +4,10 @@ import { CreateTableCommand, DeleteTableCommand, DynamoDBClient } from "@aws-sdk
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { Product, type ProductStatus } from "../domain/product.js";
-import { catalogTableDefinition } from "./catalog-table.js";
 import { DynamoDbProductRepository } from "./dynamodb-product-repository.js";
+import { productsTableDefinition } from "./products-table.js";
 
-const tableName = `catalog-test-${randomUUID()}`;
+const tableName = `products-test-${randomUUID()}`;
 const client = new DynamoDBClient({
   endpoint: inject("dynamodbEndpoint"),
   region: "local",
@@ -15,18 +15,23 @@ const client = new DynamoDBClient({
 });
 const repository = new DynamoDbProductRepository(DynamoDBDocumentClient.from(client), tableName);
 
-function product(slug: string, status: ProductStatus, pieces?: number): Product {
+function product(
+  slug: string,
+  status: ProductStatus,
+  priceCents: number,
+  pieces?: number,
+): Product {
   return Product.create(
     {
       slug,
       name: localizedText({ it: `Prodotto ${slug}`, en: `Product ${slug}` }),
       description: localizedText({ it: "Fatto in Abruzzo", en: "Made in Abruzzo" }),
       ...(pieces === undefined ? {} : { pieces }),
-      price: Money.ofCents(3750),
+      price: Money.ofCents(priceCents),
       images: [
         {
-          id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
-          key: `products/${slug}/01JB2Q7Z8X4M3N5P6R7S8T9V0W.webp`,
+          id: "0192e1a0-0000-7000-8000-000000000012",
+          key: `products/${slug}/0192e1a0-0000-7000-8000-000000000012.webp`,
         },
       ],
       status,
@@ -50,11 +55,16 @@ function plain(target: Product | undefined) {
   );
 }
 
+const firstPage = { limit: 20 };
+
+const slugs = (products: Product[]) => products.map(({ slug }) => slug);
+
 beforeAll(async () => {
-  await client.send(new CreateTableCommand(catalogTableDefinition(tableName)));
-  await repository.create(product("arrosticini-75", "ACTIVE", 75));
-  await repository.create(product("vino", "ACTIVE"));
-  await repository.create(product("carbone", "DRAFT"));
+  await client.send(new CreateTableCommand(productsTableDefinition(tableName)));
+  await repository.create(product("arrosticini-75", "ACTIVE", 3750, 75));
+  await repository.create(product("vino", "ACTIVE", 500));
+  await repository.create(product("carbone", "DRAFT", 2000));
+  await repository.create(product("fornacella", "ACTIVE", 10000));
 });
 
 afterAll(async () => {
@@ -65,7 +75,7 @@ describe("DynamoDbProductRepository", () => {
   it("finds a product by slug with every field", async () => {
     const found = await repository.findBySlug("arrosticini-75");
 
-    expect(plain(found)).toEqual(plain(product("arrosticini-75", "ACTIVE", 75)));
+    expect(plain(found)).toEqual(plain(product("arrosticini-75", "ACTIVE", 3750, 75)));
   });
 
   it("returns undefined for an unknown slug", async () => {
@@ -73,36 +83,67 @@ describe("DynamoDbProductRepository", () => {
   });
 
   it("rejects a duplicate slug", async () => {
-    await expect(repository.create(product("vino", "ACTIVE"))).rejects.toThrow(
+    await expect(repository.create(product("vino", "ACTIVE", 500))).rejects.toThrow(
       new DomainError("PRODUCT_SLUG_TAKEN", "Slug already taken: vino"),
     );
   });
 
-  it("searches by status", async () => {
-    const found = await repository.search({ status: "ACTIVE" });
+  it("searches by status, ordered by slug", async () => {
+    const { items } = await repository.search({ status: "ACTIVE" }, firstPage);
 
-    expect(found.map(({ slug }) => slug).sort()).toEqual(["arrosticini-75", "vino"]);
+    expect(slugs(items)).toEqual(["arrosticini-75", "fornacella", "vino"]);
   });
 
   it("searches by text", async () => {
-    const found = await repository.search({ text: "prodotto vino" });
+    const { items } = await repository.search({ text: "prodotto vino" }, firstPage);
 
-    expect(found.map(({ slug }) => slug)).toEqual(["vino"]);
+    expect(slugs(items)).toEqual(["vino"]);
   });
 
-  it("returns every product without criteria", async () => {
-    const found = await repository.search({});
+  it("returns every product without criteria, ordered by slug", async () => {
+    const { items, nextCursor } = await repository.search({}, firstPage);
 
-    expect(found).toHaveLength(3);
+    expect(slugs(items)).toEqual(["arrosticini-75", "carbone", "fornacella", "vino"]);
+    expect(nextCursor).toBeUndefined();
+  });
+
+  it("continues from the cursor of the previous page", async () => {
+    const first = await repository.search({}, { limit: 3 });
+    const second = await repository.search({}, { cursor: first.nextCursor, limit: 3 });
+
+    expect(slugs(first.items)).toEqual(["arrosticini-75", "carbone", "fornacella"]);
+    expect(slugs(second.items)).toEqual(["vino"]);
+    expect(second.nextCursor).toBeUndefined();
+  });
+
+  it("fills the page when the text filter skips products", async () => {
+    const { items, nextCursor } = await repository.search(
+      { status: "ACTIVE", text: "prodotto fornacella" },
+      { limit: 1 },
+    );
+
+    expect(slugs(items)).toEqual(["fornacella"]);
+    expect(nextCursor).toBeDefined();
+  });
+
+  it("rejects a cursor of another index", async () => {
+    const { nextCursor } = await repository.search({}, { limit: 1 });
+
+    await expect(
+      repository.search({ status: "ACTIVE" }, { cursor: nextCursor, limit: 1 }),
+    ).rejects.toThrow(new DomainError("INVALID_CURSOR", "Invalid cursor"));
   });
 
   it("saves the changes of an existing product", async () => {
-    const changed = product("vino", "ACTIVE");
+    const changed = product("vino", "ACTIVE", 500);
     changed.update(
       { pieces: 6, price: Money.ofCents(4200), status: "ARCHIVED" },
       new Date("2026-10-09T10:00:00.000Z"),
     );
-    changed.removeImage("01JB2Q7Z8X4M3N5P6R7S8T9V0W", new Date("2026-10-09T10:00:00.000Z"));
+    changed.removeImage(
+      "0192e1a0-0000-7000-8000-000000000012",
+      new Date("2026-10-09T10:00:00.000Z"),
+    );
 
     await repository.save(changed);
 
@@ -110,7 +151,7 @@ describe("DynamoDbProductRepository", () => {
   });
 
   it("refuses to save a product that was never created", async () => {
-    await expect(repository.save(product("birra", "DRAFT"))).rejects.toThrow();
+    await expect(repository.save(product("birra", "DRAFT", 400))).rejects.toThrow();
     expect(await repository.findBySlug("birra")).toBeUndefined();
   });
 });

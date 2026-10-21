@@ -1,6 +1,6 @@
-import { DomainError, type Id, localizedText, Money } from "@arrosticini/kernel";
+import { DomainError, type Id, localizedText, Money, type PageRequest } from "@arrosticini/kernel";
 import { describe, expect, it } from "vitest";
-import { Order } from "../domain/order.js";
+import { Order, type OrderStatus } from "../domain/order.js";
 import type { OrderRepository } from "../domain/order-repository.js";
 import type { Actor } from "./actor.js";
 import {
@@ -25,17 +25,25 @@ import type {
 
 class InMemoryOrderRepository implements OrderRepository {
   readonly orders = new Map<Id, Order>();
+  readonly pages: PageRequest[] = [];
 
   async findById(id: Id) {
     return this.orders.get(id);
   }
 
-  async listByUser(userId: Id) {
-    return [...this.orders.values()].filter((order) => order.userId === userId);
+  async listByUser(userId: Id, page: PageRequest) {
+    this.pages.push(page);
+    return { items: [...this.orders.values()].filter((order) => order.userId === userId) };
   }
 
-  async listAll() {
-    return [...this.orders.values()];
+  async listByStatus(status: OrderStatus, page: PageRequest) {
+    this.pages.push(page);
+    return { items: [...this.orders.values()].filter((order) => order.status === status) };
+  }
+
+  async listAll(page: PageRequest) {
+    this.pages.push(page);
+    return { items: [...this.orders.values()], nextCursor: "next-page" };
   }
 
   async create(order: Order) {
@@ -56,9 +64,9 @@ class RecordingPaymentInitiator implements PaymentInitiator {
   }
 }
 
-const mario: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X", role: "customer" };
-const lucia: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", role: "customer" };
-const admin: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Z", role: "admin" };
+const mario: Actor = { userId: "0192e1a0-0000-7000-8000-000000000013", role: "customer" };
+const lucia: Actor = { userId: "0192e1a0-0000-7000-8000-000000000014", role: "customer" };
+const admin: Actor = { userId: "0192e1a0-0000-7000-8000-000000000015", role: "admin" };
 
 const marioAddress = {
   fullName: "Mario Rossi",
@@ -70,17 +78,23 @@ const marioAddress = {
 };
 
 const carts: Record<Id, CartSnapshot> = {
-  "01JB2Q7Z8X4M3N5P6R7S8T9V0A": {
-    ownerId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+  "0192e1a0-0000-7000-8000-000000000007": {
+    ownerId: "0192e1a0-0000-7000-8000-000000000013",
     lines: [
       { slug: "arrosticini-50", quantity: 2 },
       { slug: "vino", quantity: 1 },
     ],
   },
-  "01JB2Q7Z8X4M3N5P6R7S8T9V0B": { ownerId: undefined, lines: [{ slug: "vino", quantity: 1 }] },
-  "01JB2Q7Z8X4M3N5P6R7S8T9V0C": { ownerId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X", lines: [] },
-  "01JB2Q7Z8X4M3N5P6R7S8T9V0D": {
-    ownerId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+  "0192e1a0-0000-7000-8000-000000000008": {
+    ownerId: undefined,
+    lines: [{ slug: "vino", quantity: 1 }],
+  },
+  "0192e1a0-0000-7000-8000-000000000009": {
+    ownerId: "0192e1a0-0000-7000-8000-000000000013",
+    lines: [],
+  },
+  "0192e1a0-0000-7000-8000-00000000000a": {
+    ownerId: "0192e1a0-0000-7000-8000-000000000013",
     lines: [{ slug: "carbone", quantity: 1 }],
   },
 };
@@ -103,7 +117,7 @@ const pricing: CatalogPricing = {
 
 const customers: CustomerDirectory = {
   shippingAddress: async (actor, addressId) =>
-    actor.userId === mario.userId && addressId === "01JB2Q7Z8X4M3N5P6R7S8T9V0M"
+    actor.userId === mario.userId && addressId === "0192e1a0-0000-7000-8000-00000000000f"
       ? marioAddress
       : undefined,
 };
@@ -140,8 +154,8 @@ describe("PlaceOrder", () => {
     const orders = new InMemoryOrderRepository();
 
     const { order } = await placeOrder(orders).execute(mario, {
-      cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+      cartId: "0192e1a0-0000-7000-8000-000000000007",
+      addressId: "0192e1a0-0000-7000-8000-00000000000f",
       ...checkout,
     });
 
@@ -172,8 +186,8 @@ describe("PlaceOrder", () => {
     const { order, paymentUrl } = await placeOrder(new InMemoryOrderRepository(), payments).execute(
       mario,
       {
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
         locale: "en",
         ordersUrl: "https://shop.test/en/orders/",
       },
@@ -196,8 +210,8 @@ describe("PlaceOrder", () => {
   it("requires a signed-in user", async () => {
     await expect(
       placeOrder(new InMemoryOrderRepository()).execute(undefined, {
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
         ...checkout,
       }),
     ).rejects.toEqual(new DomainError("UNAUTHORIZED", "Authentication required"));
@@ -209,8 +223,8 @@ describe("PlaceOrder", () => {
 
     await expect(
       placeOrder(orders, payments).execute(admin, {
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
         ...checkout,
       }),
     ).rejects.toEqual(new DomainError("FORBIDDEN", "Admins cannot place orders"));
@@ -219,13 +233,13 @@ describe("PlaceOrder", () => {
   });
 
   it.each([
-    ["an unknown cart", "01JB2Q7Z8X4M3N5P6R7S8T9V0E"],
-    ["an anonymous cart", "01JB2Q7Z8X4M3N5P6R7S8T9V0B"],
+    ["an unknown cart", "0192e1a0-0000-7000-8000-00000000000b"],
+    ["an anonymous cart", "0192e1a0-0000-7000-8000-000000000008"],
   ])("answers CART_NOT_FOUND for %s", async (_case, cartId) => {
     await expect(
       placeOrder(new InMemoryOrderRepository()).execute(mario, {
         cartId,
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
         ...checkout,
       }),
     ).rejects.toEqual(new DomainError("CART_NOT_FOUND", `Cart not found: ${cartId}`));
@@ -234,20 +248,20 @@ describe("PlaceOrder", () => {
   it("answers CART_NOT_FOUND for the cart of another user", async () => {
     await expect(
       placeOrder(new InMemoryOrderRepository()).execute(lucia, {
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
         ...checkout,
       }),
     ).rejects.toEqual(
-      new DomainError("CART_NOT_FOUND", "Cart not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      new DomainError("CART_NOT_FOUND", "Cart not found: 0192e1a0-0000-7000-8000-000000000007"),
     );
   });
 
   it("answers CART_EMPTY for an empty cart", async () => {
     await expect(
       placeOrder(new InMemoryOrderRepository()).execute(mario, {
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0C",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        cartId: "0192e1a0-0000-7000-8000-000000000009",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
         ...checkout,
       }),
     ).rejects.toMatchObject({ code: "CART_EMPTY" });
@@ -256,12 +270,15 @@ describe("PlaceOrder", () => {
   it("answers ADDRESS_NOT_FOUND for an address the user does not have", async () => {
     await expect(
       placeOrder(new InMemoryOrderRepository()).execute(mario, {
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0N",
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        addressId: "0192e1a0-0000-7000-8000-000000000010",
         ...checkout,
       }),
     ).rejects.toEqual(
-      new DomainError("ADDRESS_NOT_FOUND", "Address not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0N"),
+      new DomainError(
+        "ADDRESS_NOT_FOUND",
+        "Address not found: 0192e1a0-0000-7000-8000-000000000010",
+      ),
     );
   });
 
@@ -271,8 +288,8 @@ describe("PlaceOrder", () => {
 
     await expect(
       placeOrder(orders, payments).execute(mario, {
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0D",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0M",
+        cartId: "0192e1a0-0000-7000-8000-00000000000a",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
         ...checkout,
       }),
     ).rejects.toEqual(new DomainError("PRODUCT_UNAVAILABLE", "Product unavailable: carbone"));
@@ -284,7 +301,7 @@ describe("PlaceOrder", () => {
 describe("MarkOrderPaid", () => {
   it("marks a pending order as paid and ignores repeated events", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
 
     await new MarkOrderPaid(orders).execute(order.id);
     const paidAt = order.paidAt;
@@ -297,13 +314,15 @@ describe("MarkOrderPaid", () => {
 
   it("ignores unknown orders", async () => {
     await expect(
-      new MarkOrderPaid(new InMemoryOrderRepository()).execute("01JB2Q7Z8X4M3N5P6R7S8T9V0H"),
+      new MarkOrderPaid(new InMemoryOrderRepository()).execute(
+        "0192e1a0-0000-7000-8000-00000000000e",
+      ),
     ).resolves.toBeUndefined();
   });
 
   it("ignores a repeated event after the order has shipped", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
     order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
     order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
 
@@ -317,7 +336,7 @@ describe("MarkOrderPaid", () => {
 describe("CancelOrder", () => {
   it("cancels a pending order and ignores repeated events", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
 
     await new CancelOrder(orders).execute(order.id);
     await new CancelOrder(orders).execute(order.id);
@@ -327,7 +346,7 @@ describe("CancelOrder", () => {
 
   it("refuses to cancel a paid order", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
     order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
 
     await expect(new CancelOrder(orders).execute(order.id)).rejects.toMatchObject({
@@ -339,12 +358,13 @@ describe("CancelOrder", () => {
 describe("ListOrders", () => {
   it("lists only the orders of the user", async () => {
     const orders = new InMemoryOrderRepository();
-    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
-    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0G", lucia.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000d", lucia.userId);
 
-    const listed = await new ListOrders(orders).execute(mario);
+    const { items } = await new ListOrders(orders).execute(mario, "next-page");
 
-    expect(listed.map(({ id }) => id)).toEqual(["01JB2Q7Z8X4M3N5P6R7S8T9V0F"]);
+    expect(items.map(({ id }) => id)).toEqual(["0192e1a0-0000-7000-8000-00000000000c"]);
+    expect(orders.pages).toEqual([{ cursor: "next-page", limit: 20 }]);
   });
 
   it("requires a signed-in user", async () => {
@@ -357,18 +377,18 @@ describe("ListOrders", () => {
 describe("GetOrder", () => {
   it("returns an order to its owner and to admins", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
 
     expect(await new GetOrder(orders).execute(mario, order.id)).toBe(order);
     expect(await new GetOrder(orders).execute(admin, order.id)).toBe(order);
   });
 
   it.each([
-    ["the order of another user", "01JB2Q7Z8X4M3N5P6R7S8T9V0F"],
-    ["an unknown order", "01JB2Q7Z8X4M3N5P6R7S8T9V0H"],
+    ["the order of another user", "0192e1a0-0000-7000-8000-00000000000c"],
+    ["an unknown order", "0192e1a0-0000-7000-8000-00000000000e"],
   ])("answers ORDER_NOT_FOUND for %s", async (_case, id) => {
     const orders = new InMemoryOrderRepository();
-    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
 
     await expect(new GetOrder(orders).execute(lucia, id)).rejects.toEqual(
       new DomainError("ORDER_NOT_FOUND", `Order not found: ${id}`),
@@ -379,31 +399,45 @@ describe("GetOrder", () => {
 describe("ListAllOrders", () => {
   it("lists every order for admins", async () => {
     const orders = new InMemoryOrderRepository();
-    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
-    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0G", lucia.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000d", lucia.userId);
 
-    const listed = await new ListAllOrders(orders).execute(admin);
+    const listed = await new ListAllOrders(orders).execute(admin, { cursor: "first-page" });
 
-    expect(listed.map(({ id }) => id)).toEqual([
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0F",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0G",
+    expect(listed.items.map(({ id }) => id)).toEqual([
+      "0192e1a0-0000-7000-8000-00000000000c",
+      "0192e1a0-0000-7000-8000-00000000000d",
     ]);
+    expect(listed.nextCursor).toBe("next-page");
+    expect(orders.pages).toEqual([{ cursor: "first-page", limit: 20 }]);
   });
 
   it("forbids customers", async () => {
-    await expect(new ListAllOrders(new InMemoryOrderRepository()).execute(mario)).rejects.toEqual(
-      new DomainError("FORBIDDEN", "Only admins can list all orders"),
-    );
+    await expect(
+      new ListAllOrders(new InMemoryOrderRepository()).execute(mario, {}),
+    ).rejects.toEqual(new DomainError("FORBIDDEN", "Only admins can list all orders"));
   });
 
   it("lists the orders of one user", async () => {
     const orders = new InMemoryOrderRepository();
-    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
-    stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0G", lucia.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000d", lucia.userId);
 
-    const listed = await new ListAllOrders(orders).execute(admin, lucia.userId);
+    const { items } = await new ListAllOrders(orders).execute(admin, { userId: lucia.userId });
 
-    expect(listed.map(({ id }) => id)).toEqual(["01JB2Q7Z8X4M3N5P6R7S8T9V0G"]);
+    expect(items.map(({ id }) => id)).toEqual(["0192e1a0-0000-7000-8000-00000000000d"]);
+  });
+
+  it("lists the orders in one status", async () => {
+    const orders = new InMemoryOrderRepository();
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
+    stored(orders, "0192e1a0-0000-7000-8000-00000000000d", lucia.userId).markPaid(
+      new Date("2026-10-09T10:05:00.000Z"),
+    );
+
+    const { items } = await new ListAllOrders(orders).execute(admin, { status: "PAID" });
+
+    expect(items.map(({ id }) => id)).toEqual(["0192e1a0-0000-7000-8000-00000000000d"]);
   });
 });
 
@@ -419,7 +453,7 @@ describe("order administration", () => {
 
   it("changes the address, ships and closes an order", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
     order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
 
     await new ChangeShippingAddress(orders).execute(admin, order.id, newAddress);
@@ -437,7 +471,7 @@ describe("order administration", () => {
 
   it("marks a shipped order as lost", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
     order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
     order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
 
@@ -446,7 +480,7 @@ describe("order administration", () => {
 
   it("is reserved to admins", async () => {
     const orders = new InMemoryOrderRepository();
-    const order = stored(orders, "01JB2Q7Z8X4M3N5P6R7S8T9V0F", mario.userId);
+    const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
 
     await expect(
       new ChangeShippingAddress(orders).execute(mario, order.id, newAddress),
@@ -462,12 +496,16 @@ describe("order administration", () => {
 
   it("answers ORDER_NOT_FOUND for an unknown order", async () => {
     await expect(
-      new ShipOrder(new InMemoryOrderRepository()).execute(admin, "01JB2Q7Z8X4M3N5P6R7S8T9V0H", {
-        carrier: "BRT",
-        trackingNumber: "BRT0001",
-      }),
+      new ShipOrder(new InMemoryOrderRepository()).execute(
+        admin,
+        "0192e1a0-0000-7000-8000-00000000000e",
+        {
+          carrier: "BRT",
+          trackingNumber: "BRT0001",
+        },
+      ),
     ).rejects.toEqual(
-      new DomainError("ORDER_NOT_FOUND", "Order not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0H"),
+      new DomainError("ORDER_NOT_FOUND", "Order not found: 0192e1a0-0000-7000-8000-00000000000e"),
     );
   });
 });

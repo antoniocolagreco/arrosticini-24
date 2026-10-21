@@ -1,20 +1,26 @@
 import { readFile } from "node:fs/promises";
 import {
-  catalogTableDefinition,
   DynamoDbProductRepository,
   Product,
+  productsTableDefinition,
   S3ImageStorage,
 } from "@arrosticini/catalog";
 import { Email } from "@arrosticini/contracts";
 import {
   DynamoDbUserRepository,
   EnsureAdmin,
-  identityTableDefinition,
   ScryptPasswordHasher,
+  userEmailsTableDefinition,
+  usersTableDefinition,
 } from "@arrosticini/identity";
 import { localizedText, Money, newId } from "@arrosticini/kernel";
-import { orderingTableDefinition } from "@arrosticini/ordering";
-import { paymentsTableDefinition, paymentsTimeToLive } from "@arrosticini/payments";
+import { ordersTableDefinition } from "@arrosticini/ordering";
+import {
+  paymentCustomersTableDefinition,
+  paymentsTableDefinition,
+  stripeEventsTableDefinition,
+  stripeEventsTimeToLive,
+} from "@arrosticini/payments";
 import {
   CreateTableCommand,
   type CreateTableCommandInput,
@@ -36,10 +42,13 @@ const env = z
     AWS_REGION: z.string().min(1),
     DYNAMODB_ENDPOINT: z.url(),
     S3_ENDPOINT: z.url(),
-    CATALOG_TABLE: z.string().min(1),
-    IDENTITY_TABLE: z.string().min(1),
-    ORDERING_TABLE: z.string().min(1),
+    PRODUCTS_TABLE: z.string().min(1),
+    USERS_TABLE: z.string().min(1),
+    USER_EMAILS_TABLE: z.string().min(1),
+    ORDERS_TABLE: z.string().min(1),
     PAYMENTS_TABLE: z.string().min(1),
+    PAYMENT_CUSTOMERS_TABLE: z.string().min(1),
+    STRIPE_EVENTS_TABLE: z.string().min(1),
     MEDIA_BUCKET: z.string().min(1),
     ADMIN_EMAIL: Email.optional(),
     ADMIN_PASSWORD: z.string().min(8).optional(),
@@ -89,7 +98,7 @@ async function createPublicBucket(bucket: string) {
 }
 
 async function seedCatalog() {
-  const products = new DynamoDbProductRepository(dynamo, env.CATALOG_TABLE);
+  const products = new DynamoDbProductRepository(dynamo, env.PRODUCTS_TABLE);
   const images = new S3ImageStorage(s3, env.MEDIA_BUCKET);
   for (const seed of seedProducts) {
     if (await products.findBySlug(seed.slug)) {
@@ -123,7 +132,7 @@ async function seedAdmin() {
     console.log("admin skipped: set ADMIN_EMAIL and ADMIN_PASSWORD (min 8 chars) in .env.local");
     return;
   }
-  const users = new DynamoDbUserRepository(dynamo, env.IDENTITY_TABLE);
+  const users = new DynamoDbUserRepository(dynamo, env.USERS_TABLE, env.USER_EMAILS_TABLE);
   const result = await new EnsureAdmin(users, new ScryptPasswordHasher()).execute({
     email: env.ADMIN_EMAIL,
     password: env.ADMIN_PASSWORD,
@@ -131,18 +140,21 @@ async function seedAdmin() {
   console.log(`admin ${env.ADMIN_EMAIL} ${result === "created" ? "created" : "already exists"}`);
 }
 
-async function enablePaymentsTimeToLive(tableName: string) {
+async function enableStripeEventsTimeToLive(tableName: string) {
   const ttl = await dynamo.send(new DescribeTimeToLiveCommand({ TableName: tableName }));
   if (ttl.TimeToLiveDescription?.TimeToLiveStatus === "DISABLED") {
-    await dynamo.send(new UpdateTimeToLiveCommand(paymentsTimeToLive(tableName)));
+    await dynamo.send(new UpdateTimeToLiveCommand(stripeEventsTimeToLive(tableName)));
   }
 }
 
-await createTable(catalogTableDefinition(env.CATALOG_TABLE));
-await createTable(identityTableDefinition(env.IDENTITY_TABLE));
-await createTable(orderingTableDefinition(env.ORDERING_TABLE));
+await createTable(productsTableDefinition(env.PRODUCTS_TABLE));
+await createTable(usersTableDefinition(env.USERS_TABLE));
+await createTable(userEmailsTableDefinition(env.USER_EMAILS_TABLE));
+await createTable(ordersTableDefinition(env.ORDERS_TABLE));
 await createTable(paymentsTableDefinition(env.PAYMENTS_TABLE));
-await enablePaymentsTimeToLive(env.PAYMENTS_TABLE);
+await createTable(paymentCustomersTableDefinition(env.PAYMENT_CUSTOMERS_TABLE));
+await createTable(stripeEventsTableDefinition(env.STRIPE_EVENTS_TABLE));
+await enableStripeEventsTimeToLive(env.STRIPE_EVENTS_TABLE);
 await createPublicBucket(env.MEDIA_BUCKET);
 await seedCatalog();
 await seedAdmin();

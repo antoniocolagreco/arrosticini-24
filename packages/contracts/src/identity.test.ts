@@ -19,7 +19,7 @@ describe("Email", () => {
 
 describe("AddressDto", () => {
   const address = {
-    id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+    id: "0192e1a0-0000-7000-8000-000000000012",
     fullName: "Mario Rossi",
     line1: "Via Collegrande 10",
     city: "Chieti",

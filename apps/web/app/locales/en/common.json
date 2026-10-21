@@ -36,5 +36,8 @@
   "deliveryTitleFirst": "From Abruzzo",
   "deliveryTitleSecond": "to the world",
   "deliveryIntro": "Tradition travels. Flavour reaches its destination.",
-  "deliveryBody": "This shop is a demo project: purchases and payments are for testing and do not involve real deliveries. Refrigerated shipping is part of the experience represented by the site."
+  "deliveryBody": "This shop is a demo project: purchases and payments are for testing and do not involve real deliveries. Refrigerated shipping is part of the experience represented by the site.",
+  "pagination": "Pages",
+  "firstPage": "First page",
+  "nextPage": "Next page"
 }

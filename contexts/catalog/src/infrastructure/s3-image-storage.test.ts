@@ -27,21 +27,24 @@ describe("S3ImageStorage", () => {
   it("stores an image with its content type and deletes it", async () => {
     const body = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
-    await storage.put("products/vino/01JB2Q7Z8X4M3N5P6R7S8T9V0A.png", body, "image/png");
+    await storage.put("products/vino/0192e1a0-0000-7000-8000-000000000007.png", body, "image/png");
 
     const stored = await client.send(
-      new GetObjectCommand({ Bucket: bucket, Key: "products/vino/01JB2Q7Z8X4M3N5P6R7S8T9V0A.png" }),
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: "products/vino/0192e1a0-0000-7000-8000-000000000007.png",
+      }),
     );
     expect(stored.ContentType).toBe("image/png");
     expect(await stored.Body?.transformToByteArray()).toEqual(body);
 
-    await storage.delete("products/vino/01JB2Q7Z8X4M3N5P6R7S8T9V0A.png");
+    await storage.delete("products/vino/0192e1a0-0000-7000-8000-000000000007.png");
 
     await expect(
       client.send(
         new HeadObjectCommand({
           Bucket: bucket,
-          Key: "products/vino/01JB2Q7Z8X4M3N5P6R7S8T9V0A.png",
+          Key: "products/vino/0192e1a0-0000-7000-8000-000000000007.png",
         }),
       ),
     ).rejects.toBeInstanceOf(NotFound);

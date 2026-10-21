@@ -13,12 +13,12 @@ afterAll(async () => {
 
 describe("ValkeyCartRepository", () => {
   it("saves and restores a cart with a seven-day expiry", async () => {
-    const cart = Cart.create("01JB2Q7Z8X4M3N5P6R7S8T9V1A", created);
+    const cart = Cart.create("0192e1a0-0000-7000-8000-00000000001e", created);
     cart.setLine("vino", 2, created);
     cart.setLine("arrosticini-75", 1, created);
     await repository.save(cart);
 
-    const found = await repository.findById("01JB2Q7Z8X4M3N5P6R7S8T9V1A");
+    const found = await repository.findById("0192e1a0-0000-7000-8000-00000000001e");
 
     expect(found?.lines).toEqual([
       { slug: "vino", quantity: 2 },
@@ -26,34 +26,34 @@ describe("ValkeyCartRepository", () => {
     ]);
     expect(found?.ownerId).toBeUndefined();
     expect(found?.updatedAt).toEqual(created);
-    const ttl = await valkey.ttl("cart:01JB2Q7Z8X4M3N5P6R7S8T9V1A");
+    const ttl = await valkey.ttl("cart:0192e1a0-0000-7000-8000-00000000001e");
     expect(ttl).toBeGreaterThan(CART_TTL_SECONDS - 5);
     expect(ttl).toBeLessThanOrEqual(CART_TTL_SECONDS);
   });
 
   it("returns undefined for a missing cart", async () => {
-    expect(await repository.findById("01JB2Q7Z8X4M3N5P6R7S8T9V1B")).toBeUndefined();
-    expect(await repository.findByOwner("01JB2Q7Z8X4M3N5P6R7S8T9V1C")).toBeUndefined();
+    expect(await repository.findById("0192e1a0-0000-7000-8000-00000000001f")).toBeUndefined();
+    expect(await repository.findByOwner("0192e1a0-0000-7000-8000-000000000020")).toBeUndefined();
   });
 
   it("finds a cart by its owner", async () => {
-    const cart = Cart.create("01JB2Q7Z8X4M3N5P6R7S8T9V1D", created);
-    cart.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V1E");
+    const cart = Cart.create("0192e1a0-0000-7000-8000-000000000021", created);
+    cart.assignTo("0192e1a0-0000-7000-8000-000000000022");
     await repository.save(cart);
 
-    const found = await repository.findByOwner("01JB2Q7Z8X4M3N5P6R7S8T9V1E");
+    const found = await repository.findByOwner("0192e1a0-0000-7000-8000-000000000022");
 
-    expect(found?.id).toBe("01JB2Q7Z8X4M3N5P6R7S8T9V1D");
-    expect(found?.ownerId).toBe("01JB2Q7Z8X4M3N5P6R7S8T9V1E");
-    expect(await valkey.ttl("cart-owner:01JB2Q7Z8X4M3N5P6R7S8T9V1E")).toBeGreaterThan(
+    expect(found?.id).toBe("0192e1a0-0000-7000-8000-000000000021");
+    expect(found?.ownerId).toBe("0192e1a0-0000-7000-8000-000000000022");
+    expect(await valkey.ttl("cart-owner:0192e1a0-0000-7000-8000-000000000022")).toBeGreaterThan(
       CART_TTL_SECONDS - 5,
     );
   });
 
   it("deletes the absorbed cart when saving a merge", async () => {
-    const owned = Cart.create("01JB2Q7Z8X4M3N5P6R7S8T9V1F", created);
-    owned.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V1G");
-    const anonymous = Cart.create("01JB2Q7Z8X4M3N5P6R7S8T9V1H", created);
+    const owned = Cart.create("0192e1a0-0000-7000-8000-000000000023", created);
+    owned.assignTo("0192e1a0-0000-7000-8000-000000000024");
+    const anonymous = Cart.create("0192e1a0-0000-7000-8000-000000000025", created);
     anonymous.setLine("vino", 1, created);
     await repository.save(owned);
     await repository.save(anonymous);

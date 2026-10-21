@@ -116,7 +116,7 @@ class FakeGateway implements PaymentGateway {
   }
 }
 
-const mario: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X", role: "customer" };
+const mario: Actor = { userId: "0192e1a0-0000-7000-8000-000000000013", role: "customer" };
 
 const profiles: CustomerProfiles = {
   find: async () => ({ email: "mario.rossi@example.com", name: "Mario Rossi" }),
@@ -135,7 +135,7 @@ function setup() {
 function pendingPayment(payments: InMemoryPaymentRepository): Payment {
   const payment = Payment.start(
     {
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
       userId: mario.userId,
       stripeSessionId: "cs_test_a1",
       amount: Money.ofCents(6870),
@@ -151,7 +151,7 @@ describe("StartCheckout", () => {
     const { gateway, customers, payments, deps } = setup();
     const startCheckout = new StartCheckout(payments, deps);
     const command = {
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
       lines: [
         {
           name: localizedText({ it: "Arrosticini classici", en: "Classic arrosticini" }),
@@ -165,8 +165,8 @@ describe("StartCheckout", () => {
         },
       ],
       locale: "en" as const,
-      successUrl: "https://shop.test/en/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      cancelUrl: "https://shop.test/en/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      successUrl: "https://shop.test/en/orders/0192e1a0-0000-7000-8000-000000000007",
+      cancelUrl: "https://shop.test/en/orders/0192e1a0-0000-7000-8000-000000000007",
     };
 
     const url = await startCheckout.execute(mario, command);
@@ -178,7 +178,7 @@ describe("StartCheckout", () => {
     ]);
     expect(customers.customers.get(mario.userId)).toBe("cus_mario");
     expect(gateway.checkoutSessions[0]).toEqual({
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
       userId: mario.userId,
       customerId: "cus_mario",
       lines: [
@@ -186,10 +186,10 @@ describe("StartCheckout", () => {
         { name: "Red wine", unitPrice: Money.ofCents(890), quantity: 1 },
       ],
       locale: "en",
-      successUrl: "https://shop.test/en/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      cancelUrl: "https://shop.test/en/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      successUrl: "https://shop.test/en/orders/0192e1a0-0000-7000-8000-000000000007",
+      cancelUrl: "https://shop.test/en/orders/0192e1a0-0000-7000-8000-000000000007",
     });
-    const payment = payments.payments.get("01JB2Q7Z8X4M3N5P6R7S8T9V0A");
+    const payment = payments.payments.get("0192e1a0-0000-7000-8000-000000000007");
     expect(payment?.status).toBe("PENDING");
     expect(payment?.amount).toEqual(Money.ofCents(6870));
     expect(payment?.stripeSessionId).toBe("cs_test_a1");
@@ -204,7 +204,7 @@ describe("HandleStripeEvent", () => {
     gateway.events.sig_paid = {
       id: "evt_paid",
       kind: "CHECKOUT_PAID",
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
     };
     const handle = new HandleStripeEvent(payments, processed, gateway, bus);
 
@@ -217,7 +217,7 @@ describe("HandleStripeEvent", () => {
         id: expect.any(String),
         type: "PaymentSucceeded",
         occurredAt: expect.any(String),
-        payload: { orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A", userId: mario.userId },
+        payload: { orderId: "0192e1a0-0000-7000-8000-000000000007", userId: mario.userId },
       },
     ]);
     expect(processed.events.has("evt_paid")).toBe(true);
@@ -229,7 +229,7 @@ describe("HandleStripeEvent", () => {
     gateway.events.sig_paid = {
       id: "evt_paid",
       kind: "CHECKOUT_PAID",
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
     };
 
     await new HandleStripeEvent(payments, processed, gateway, bus).execute("{}", "sig_paid");
@@ -243,14 +243,14 @@ describe("HandleStripeEvent", () => {
     gateway.events.sig_expired = {
       id: "evt_expired",
       kind: "CHECKOUT_EXPIRED",
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
     };
 
     await new HandleStripeEvent(payments, processed, gateway, bus).execute("{}", "sig_expired");
 
     expect(payment.status).toBe("EXPIRED");
     expect(bus.published.map(({ type, payload }) => [type, payload])).toEqual([
-      ["PaymentExpired", { orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A", userId: mario.userId }],
+      ["PaymentExpired", { orderId: "0192e1a0-0000-7000-8000-000000000007", userId: mario.userId }],
     ]);
   });
 
@@ -260,7 +260,7 @@ describe("HandleStripeEvent", () => {
     gateway.events.sig_unknown = {
       id: "evt_unknown",
       kind: "CHECKOUT_PAID",
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0B",
+      orderId: "0192e1a0-0000-7000-8000-000000000008",
     };
     const handle = new HandleStripeEvent(payments, processed, gateway, bus);
 
@@ -330,7 +330,7 @@ describe("CreateSetupSession", () => {
 
     await expect(
       new CreateSetupSession(deps).execute(
-        { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Z", role: "admin" },
+        { userId: "0192e1a0-0000-7000-8000-000000000015", role: "admin" },
         { returnUrl: "https://shop.test/it/account/payment-methods", locale: "it" },
       ),
     ).rejects.toEqual(new DomainError("FORBIDDEN", "Admins cannot save payment methods"));

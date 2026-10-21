@@ -113,5 +113,7 @@
   "saved_delivered": "L’ordine è stato chiuso come consegnato.",
   "saved_lost": "L’ordine è stato chiuso come smarrito.",
   "orderNotEditable": "L’ordine è già stato spedito: l’indirizzo non si può più modificare.",
-  "orderInvalidTransition": "Lo stato dell’ordine è cambiato. Aggiorna la pagina e riprova."
+  "orderInvalidTransition": "Lo stato dell’ordine è cambiato. Aggiorna la pagina e riprova.",
+  "filterOrders": "Filtra ordini",
+  "filterUsers": "Filtra utenti"
 }

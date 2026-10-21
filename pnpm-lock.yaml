@@ -305,9 +305,6 @@ catalogs:
     typescript:
       specifier: 7.0.2
       version: 7.0.2
-    ulid:
-      specifier: 3.0.2
-      version: 3.0.2
     vite:
       specifier: 8.3.4
       version: 8.3.4
@@ -828,10 +825,6 @@ importers:
         version: 2.9.1
 
   packages/kernel:
-    dependencies:
-      ulid:
-        specifier: 'catalog:'
-        version: 3.0.2
     devDependencies:
       '@arrosticini/tsconfig':
         specifier: workspace:*
@@ -4139,10 +4132,6 @@ packages:
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
     engines: {node: '>=16.20.0'}
-    hasBin: true
-
-  ulid@3.0.2:
-    resolution: {integrity: sha512-yu26mwteFYzBAot7KVMqFGCVpsF6g8wXfJzQUHvu1no3+rRRSFcSV2nKeYvNPLD2J4b08jYBDhHUjeH0ygIl9w==}
     hasBin: true
 
   undici-types@5.26.5:
@@ -7702,8 +7691,6 @@ snapshots:
       '@typescript/typescript-sunos-x64': 7.0.2
       '@typescript/typescript-win32-arm64': 7.0.2
       '@typescript/typescript-win32-x64': 7.0.2
-
-  ulid@3.0.2: {}
 
   undici-types@5.26.5: {}
 

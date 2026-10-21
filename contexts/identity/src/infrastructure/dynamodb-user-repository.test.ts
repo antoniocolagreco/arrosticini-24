@@ -1,20 +1,25 @@
 import { randomUUID } from "node:crypto";
 import { DomainError } from "@arrosticini/kernel";
 import { CreateTableCommand, DeleteTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { User } from "../domain/user.js";
 import { DynamoDbUserRepository } from "./dynamodb-user-repository.js";
-import { identityTableDefinition } from "./identity-table.js";
+import { userEmailsTableDefinition } from "./user-emails-table.js";
+import { usersTableDefinition } from "./users-table.js";
 
-const tableName = `identity-test-${randomUUID()}`;
+const usersTable = `users-test-${randomUUID()}`;
+const userEmailsTable = `user-emails-test-${randomUUID()}`;
 const client = new DynamoDBClient({
   endpoint: inject("dynamodbEndpoint"),
   region: "local",
   credentials: { accessKeyId: "local", secretAccessKey: "local" },
 });
-const documents = DynamoDBDocumentClient.from(client);
-const repository = new DynamoDbUserRepository(documents, tableName);
+const repository = new DynamoDbUserRepository(
+  DynamoDBDocumentClient.from(client),
+  usersTable,
+  userEmailsTable,
+);
 
 function user(id: string, email: string): User {
   return User.register(
@@ -49,16 +54,18 @@ function plain(target: User | undefined) {
 }
 
 beforeAll(async () => {
-  await client.send(new CreateTableCommand(identityTableDefinition(tableName)));
+  await client.send(new CreateTableCommand(usersTableDefinition(usersTable)));
+  await client.send(new CreateTableCommand(userEmailsTableDefinition(userEmailsTable)));
 });
 
 afterAll(async () => {
-  await client.send(new DeleteTableCommand({ TableName: tableName }));
+  await client.send(new DeleteTableCommand({ TableName: usersTable }));
+  await client.send(new DeleteTableCommand({ TableName: userEmailsTable }));
 });
 
 describe("DynamoDbUserRepository", () => {
   it("creates a user and finds it by id and email", async () => {
-    const mario = user("01JB2Q7Z8X4M3N5P6R7S8T9V0W", "mario.rossi@example.com");
+    const mario = user("0192e1a0-0000-7000-8000-000000000012", "mario.rossi@example.com");
 
     await repository.create(mario);
 
@@ -67,26 +74,28 @@ describe("DynamoDbUserRepository", () => {
   });
 
   it("rejects an email that is already registered", async () => {
-    await repository.create(user("01JB2Q7Z8X4M3N5P6R7S8T9V0X", "luigi.verdi@example.com"));
+    await repository.create(
+      user("0192e1a0-0000-7000-8000-000000000013", "luigi.verdi@example.com"),
+    );
 
     await expect(
-      repository.create(user("01JB2Q7Z8X4M3N5P6R7S8T9V0Y", "luigi.verdi@example.com")),
+      repository.create(user("0192e1a0-0000-7000-8000-000000000014", "luigi.verdi@example.com")),
     ).rejects.toThrow(
       new DomainError("EMAIL_TAKEN", "Email already registered: luigi.verdi@example.com"),
     );
   });
 
   it("returns undefined for unknown users", async () => {
-    expect(await repository.findById("01JB2Q7Z8X4M3N5P6R7S8T9V0Z")).toBeUndefined();
+    expect(await repository.findById("0192e1a0-0000-7000-8000-000000000015")).toBeUndefined();
     expect(await repository.findByEmail("nobody@example.com")).toBeUndefined();
   });
 
   it("saves profile changes, added and removed addresses", async () => {
-    const anna = user("01JB2Q7Z8X4M3N5P6R7S8T9V10", "anna.bianchi@example.com");
+    const anna = user("0192e1a0-0000-7000-8000-000000000016", "anna.bianchi@example.com");
     await repository.create(anna);
     anna.updateProfile({ firstName: "Anna", lastName: "Bianchi", preferredLocale: "it" });
     anna.addAddress(
-      "01JB2Q7Z8X4M3N5P6R7S8T9V11",
+      "0192e1a0-0000-7000-8000-000000000017",
       {
         fullName: "Anna Bianchi",
         line1: "Via Collegrande 10",
@@ -98,7 +107,7 @@ describe("DynamoDbUserRepository", () => {
       false,
     );
     anna.addAddress(
-      "01JB2Q7Z8X4M3N5P6R7S8T9V12",
+      "0192e1a0-0000-7000-8000-000000000018",
       {
         fullName: "Giulia Bianchi",
         line1: "Corso Marrucino 5",
@@ -111,48 +120,33 @@ describe("DynamoDbUserRepository", () => {
     );
     await repository.save(anna);
 
-    anna.removeAddress("01JB2Q7Z8X4M3N5P6R7S8T9V11");
+    anna.removeAddress("0192e1a0-0000-7000-8000-000000000017");
     await repository.save(anna);
 
     expect(plain(await repository.findById(anna.id))).toEqual(plain(anna));
     expect(anna.firstName).toBe("Anna");
     expect(anna.addresses.map(({ id, isDefault }) => ({ id, isDefault }))).toEqual([
-      { id: "01JB2Q7Z8X4M3N5P6R7S8T9V12", isDefault: true },
+      { id: "0192e1a0-0000-7000-8000-000000000018", isDefault: true },
     ]);
   });
 
-  it("saves the suspension and reads profiles without a status as active", async () => {
-    const paolo = user("01JB2Q7Z8X4M3N5P6R7S8T9V13", "paolo.neri@example.com");
+  it("saves the suspension and lists users by status", async () => {
+    const paolo = user("0192e1a0-0000-7000-8000-000000000019", "paolo.neri@example.com");
     await repository.create(paolo);
     paolo.suspend();
     await repository.save(paolo);
-    await documents.send(
-      new PutCommand({
-        TableName: tableName,
-        Item: {
-          PK: "USER#01JB2Q7Z8X4M3N5P6R7S8T9V14",
-          SK: "PROFILE",
-          id: "01JB2Q7Z8X4M3N5P6R7S8T9V14",
-          email: "rosa.gialli@example.com",
-          passwordHash: "aGFzaA==",
-          salt: "c2FsdA==",
-          role: "customer",
-          firstName: "Rosa",
-          lastName: "Gialli",
-          preferredLocale: "it",
-          createdAt: "2026-10-08T10:00:00.000Z",
-        },
-      }),
-    );
+
+    const { items, nextCursor } = await repository.listByStatus("SUSPENDED", { limit: 20 });
 
     expect((await repository.findById(paolo.id))?.status).toBe("SUSPENDED");
-    expect((await repository.findById("01JB2Q7Z8X4M3N5P6R7S8T9V14"))?.status).toBe("ACTIVE");
+    expect(items.map(plain)).toEqual([plain(paolo)]);
+    expect(nextCursor).toBeUndefined();
   });
 
-  it("lists every user with addresses, newest first", async () => {
+  it("lists every user with addresses, newest first, one page at a time", async () => {
     const elena = User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V15",
+        id: "0192e1a0-0000-7000-8000-00000000001b",
         email: "elena.russo@example.com",
         password: { hash: "aGFzaA==", salt: "c2FsdA==" },
         role: "customer",
@@ -164,7 +158,7 @@ describe("DynamoDbUserRepository", () => {
     );
     const franco = User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V16",
+        id: "0192e1a0-0000-7000-8000-00000000001c",
         email: "franco.esposito@example.com",
         password: { hash: "aGFzaA==", salt: "c2FsdA==" },
         role: "customer",
@@ -177,7 +171,7 @@ describe("DynamoDbUserRepository", () => {
     await repository.create(elena);
     await repository.create(franco);
     elena.addAddress(
-      "01JB2Q7Z8X4M3N5P6R7S8T9V17",
+      "0192e1a0-0000-7000-8000-00000000001d",
       {
         fullName: "Elena Russo",
         line1: "Via dei Frentani 3",
@@ -190,12 +184,23 @@ describe("DynamoDbUserRepository", () => {
     );
     await repository.save(elena);
 
-    const users = await repository.listAll();
+    const first = await repository.listAll({ limit: 2 });
+    const rest = await repository.listAll({ cursor: first.nextCursor, limit: 20 });
+    const users = [...first.items, ...rest.items];
 
-    expect(users.slice(0, 2).map(plain)).toEqual([plain(franco), plain(elena)]);
+    expect(first.items.map(plain)).toEqual([plain(franco), plain(elena)]);
+    expect(rest.nextCursor).toBeUndefined();
     expect(users.map(({ email }) => email)).toEqual(
       expect.arrayContaining(["mario.rossi@example.com", "anna.bianchi@example.com"]),
     );
     expect(new Set(users.map(({ id }) => id)).size).toBe(users.length);
+  });
+
+  it("rejects a cursor of another index", async () => {
+    const { nextCursor } = await repository.listAll({ limit: 1 });
+
+    await expect(
+      repository.listByStatus("ACTIVE", { cursor: nextCursor, limit: 1 }),
+    ).rejects.toThrow(new DomainError("INVALID_CURSOR", "Invalid cursor"));
   });
 });

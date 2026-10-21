@@ -1,9 +1,17 @@
-import { type Id, type LocalizedText, Money } from "@arrosticini/kernel";
+import {
+  decodeCursor,
+  encodeCursor,
+  type Id,
+  type LocalizedText,
+  Money,
+  type Page,
+  type PageRequest,
+} from "@arrosticini/kernel";
 import {
   type DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
-  paginateQuery,
+  QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { Order, type OrderStatus, type Shipment, type ShippingAddress } from "../domain/order.js";
 import type { OrderRepository } from "../domain/order-repository.js";
@@ -16,13 +24,8 @@ interface OrderLineItem {
 }
 
 interface OrderItem {
-  PK: string;
-  SK: "META";
-  GSI1PK: string;
-  GSI1SK: string;
-  GSI2PK: "ORDER";
-  GSI2SK: string;
-  id: Id;
+  orderId: Id;
+  kind: "order";
   userId: Id;
   lines: OrderLineItem[];
   shippingAddress: ShippingAddress;
@@ -34,19 +37,10 @@ interface OrderItem {
   paidAt?: string;
 }
 
-function orderKey(id: Id) {
-  return { PK: `ORDER#${id}`, SK: "META" as const };
-}
-
 function toItem(order: Order): OrderItem {
-  const createdAt = order.createdAt.toISOString();
   return {
-    ...orderKey(order.id),
-    GSI1PK: `USER#${order.userId}`,
-    GSI1SK: createdAt,
-    GSI2PK: "ORDER",
-    GSI2SK: createdAt,
-    id: order.id,
+    orderId: order.id,
+    kind: "order",
     userId: order.userId,
     lines: order.lines.map(({ slug, name, unitPrice, quantity }) => ({
       slug,
@@ -59,14 +53,14 @@ function toItem(order: Order): OrderItem {
     currency: order.total.currency,
     status: order.status,
     ...(order.shipment === undefined ? {} : { shipment: order.shipment }),
-    createdAt,
+    createdAt: order.createdAt.toISOString(),
     ...(order.paidAt === undefined ? {} : { paidAt: order.paidAt.toISOString() }),
   };
 }
 
 function toOrder(item: OrderItem): Order {
   return Order.restore({
-    id: item.id,
+    id: item.orderId,
     userId: item.userId,
     lines: item.lines.map(({ slug, name, unitPriceCents, quantity }) => ({
       slug,
@@ -93,17 +87,21 @@ export class DynamoDbOrderRepository implements OrderRepository {
 
   async findById(id: Id): Promise<Order | undefined> {
     const { Item } = await this.#client.send(
-      new GetCommand({ TableName: this.#tableName, Key: orderKey(id) }),
+      new GetCommand({ TableName: this.#tableName, Key: { orderId: id } }),
     );
     return Item === undefined ? undefined : toOrder(Item as OrderItem);
   }
 
-  listByUser(userId: Id): Promise<Order[]> {
-    return this.#newestFirst("GSI1", "GSI1PK", `USER#${userId}`);
+  listByUser(userId: Id, page: PageRequest): Promise<Page<Order>> {
+    return this.#newestFirst("byUser", "userId", userId, page);
   }
 
-  listAll(): Promise<Order[]> {
-    return this.#newestFirst("GSI2", "GSI2PK", "ORDER");
+  listByStatus(status: OrderStatus, page: PageRequest): Promise<Page<Order>> {
+    return this.#newestFirst("byStatus", "status", status, page);
+  }
+
+  listAll(page: PageRequest): Promise<Page<Order>> {
+    return this.#newestFirst("byCreatedAt", "kind", "order", page);
   }
 
   async create(order: Order): Promise<void> {
@@ -111,7 +109,7 @@ export class DynamoDbOrderRepository implements OrderRepository {
       new PutCommand({
         TableName: this.#tableName,
         Item: toItem(order),
-        ConditionExpression: "attribute_not_exists(PK)",
+        ConditionExpression: "attribute_not_exists(orderId)",
       }),
     );
   }
@@ -121,26 +119,34 @@ export class DynamoDbOrderRepository implements OrderRepository {
       new PutCommand({
         TableName: this.#tableName,
         Item: toItem(order),
-        ConditionExpression: "attribute_exists(PK)",
+        ConditionExpression: "attribute_exists(orderId)",
       }),
     );
   }
 
-  async #newestFirst(indexName: string, keyName: string, keyValue: string): Promise<Order[]> {
-    const orders: Order[] = [];
-    const pages = paginateQuery(
-      { client: this.#client },
-      {
+  async #newestFirst(
+    indexName: string,
+    keyName: string,
+    keyValue: string,
+    { cursor, limit }: PageRequest,
+  ): Promise<Page<Order>> {
+    const { Items = [], LastEvaluatedKey } = await this.#client.send(
+      new QueryCommand({
         TableName: this.#tableName,
         IndexName: indexName,
-        KeyConditionExpression: `${keyName} = :key`,
-        ExpressionAttributeValues: { ":key": keyValue },
+        KeyConditionExpression: "#key = :value",
+        ExpressionAttributeNames: { "#key": keyName },
+        ExpressionAttributeValues: { ":value": keyValue },
         ScanIndexForward: false,
-      },
+        Limit: limit,
+        ...(cursor === undefined
+          ? {}
+          : { ExclusiveStartKey: decodeCursor(cursor, ["orderId", keyName, "createdAt"]) }),
+      }),
     );
-    for await (const { Items = [] } of pages) {
-      orders.push(...Items.map((item) => toOrder(item as OrderItem)));
-    }
-    return orders;
+    return {
+      items: Items.map((item) => toOrder(item as OrderItem)),
+      ...(LastEvaluatedKey === undefined ? {} : { nextCursor: encodeCursor(LastEvaluatedKey) }),
+    };
   }
 }

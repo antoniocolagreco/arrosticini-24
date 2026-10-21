@@ -1,5 +1,18 @@
-import { DomainError, type Id, type Locale, newId } from "@arrosticini/kernel";
-import { Order, type OrderLine, type Shipment, type ShippingAddress } from "../domain/order.js";
+import {
+  DomainError,
+  type Id,
+  type Locale,
+  newId,
+  PAGE_SIZE,
+  type Page,
+} from "@arrosticini/kernel";
+import {
+  Order,
+  type OrderLine,
+  type OrderStatus,
+  type Shipment,
+  type ShippingAddress,
+} from "../domain/order.js";
 import type { OrderRepository } from "../domain/order-repository.js";
 import { type Actor, requireActor, requireAdmin } from "./actor.js";
 import type { CartReader, CatalogPricing, CustomerDirectory, PaymentInitiator } from "./ports.js";
@@ -9,6 +22,12 @@ export interface PlaceOrderCommand {
   addressId: Id;
   locale: Locale;
   ordersUrl: string;
+}
+
+export interface ListAllOrdersQuery {
+  userId?: Id | undefined;
+  status?: OrderStatus | undefined;
+  cursor?: string | undefined;
 }
 
 export interface PlacedOrder {
@@ -117,8 +136,8 @@ export class ListOrders {
     this.#orders = orders;
   }
 
-  async execute(actor: Actor | undefined): Promise<Order[]> {
-    return this.#orders.listByUser(requireActor(actor).userId);
+  async execute(actor: Actor | undefined, cursor?: string): Promise<Page<Order>> {
+    return this.#orders.listByUser(requireActor(actor).userId, { cursor, limit: PAGE_SIZE });
   }
 }
 
@@ -146,9 +165,19 @@ export class ListAllOrders {
     this.#orders = orders;
   }
 
-  async execute(actor: Actor | undefined, userId?: Id): Promise<Order[]> {
+  async execute(
+    actor: Actor | undefined,
+    { userId, status, cursor }: ListAllOrdersQuery,
+  ): Promise<Page<Order>> {
     requireAdmin(actor, "list all orders");
-    return userId === undefined ? this.#orders.listAll() : this.#orders.listByUser(userId);
+    const page = { cursor, limit: PAGE_SIZE };
+    if (userId !== undefined) {
+      return this.#orders.listByUser(userId, page);
+    }
+    if (status !== undefined) {
+      return this.#orders.listByStatus(status, page);
+    }
+    return this.#orders.listAll(page);
   }
 }
 

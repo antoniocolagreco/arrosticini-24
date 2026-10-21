@@ -2,10 +2,6 @@ import type { Id } from "@arrosticini/kernel";
 import { type DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import type { PaymentCustomerRepository } from "../domain/payment-customer-repository.js";
 
-function customerKey(userId: Id) {
-  return { PK: `CUSTOMER#${userId}`, SK: "STRIPE" as const };
-}
-
 export class DynamoDbPaymentCustomerRepository implements PaymentCustomerRepository {
   readonly #client: DynamoDBDocumentClient;
   readonly #tableName: string;
@@ -17,7 +13,7 @@ export class DynamoDbPaymentCustomerRepository implements PaymentCustomerReposit
 
   async findStripeCustomerId(userId: Id): Promise<string | undefined> {
     const { Item } = await this.#client.send(
-      new GetCommand({ TableName: this.#tableName, Key: customerKey(userId) }),
+      new GetCommand({ TableName: this.#tableName, Key: { userId } }),
     );
     return Item?.stripeCustomerId as string | undefined;
   }
@@ -26,7 +22,7 @@ export class DynamoDbPaymentCustomerRepository implements PaymentCustomerReposit
     await this.#client.send(
       new PutCommand({
         TableName: this.#tableName,
-        Item: { ...customerKey(userId), stripeCustomerId },
+        Item: { userId, stripeCustomerId },
       }),
     );
   }

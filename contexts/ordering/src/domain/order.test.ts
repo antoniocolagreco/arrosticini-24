@@ -32,8 +32,8 @@ const shippingAddress = {
 function place(): Order {
   return Order.place(
     {
-      id: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+      id: "0192e1a0-0000-7000-8000-000000000007",
+      userId: "0192e1a0-0000-7000-8000-000000000013",
       lines,
       shippingAddress,
     },
@@ -55,22 +55,24 @@ describe("Order", () => {
     expect(() =>
       Order.place(
         {
-          id: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-          userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+          id: "0192e1a0-0000-7000-8000-000000000007",
+          userId: "0192e1a0-0000-7000-8000-000000000013",
           lines: [],
           shippingAddress,
         },
         placed,
       ),
-    ).toThrow(new DomainError("CART_EMPTY", "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A has no lines"));
+    ).toThrow(
+      new DomainError("CART_EMPTY", "Order 0192e1a0-0000-7000-8000-000000000007 has no lines"),
+    );
   });
 
   it.each([0, -1, 1.5])("rejects quantity %o", (quantity) => {
     expect(() =>
       Order.place(
         {
-          id: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-          userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+          id: "0192e1a0-0000-7000-8000-000000000007",
+          userId: "0192e1a0-0000-7000-8000-000000000013",
           lines: [
             {
               slug: "arrosticini-50",
@@ -114,19 +116,19 @@ describe("Order", () => {
     expect(() => paidOrder.cancel()).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from PAID to CANCELLED",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot go from PAID to CANCELLED",
       ),
     );
     expect(() => paidOrder.markPaid(paid)).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from PAID to PAID",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot go from PAID to PAID",
       ),
     );
     expect(() => cancelledOrder.markPaid(paid)).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from CANCELLED to PAID",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot go from CANCELLED to PAID",
       ),
     );
   });
@@ -168,7 +170,7 @@ describe("Order", () => {
     expect(() => delivered.markLost()).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from DELIVERED to LOST",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot go from DELIVERED to LOST",
       ),
     );
   });
@@ -198,7 +200,7 @@ describe("Order", () => {
     expect(() => order.ship({ carrier: "BRT" })).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from CANCELLED to SHIPPED",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot go from CANCELLED to SHIPPED",
       ),
     );
   });
@@ -209,13 +211,13 @@ describe("Order", () => {
     expect(() => order.ship({ carrier: "BRT", trackingNumber: "BRT0001" })).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from PENDING_PAYMENT to SHIPPED",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot go from PENDING_PAYMENT to SHIPPED",
       ),
     );
     expect(() => order.deliver()).toThrow(
       new DomainError(
         "ORDER_INVALID_TRANSITION",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from PENDING_PAYMENT to DELIVERED",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot go from PENDING_PAYMENT to DELIVERED",
       ),
     );
   });
@@ -241,7 +243,7 @@ describe("Order", () => {
     expect(() => order.changeShippingAddress(newAddress)).toThrow(
       new DomainError(
         "ORDER_NOT_EDITABLE",
-        "Order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot change address when SHIPPED",
+        "Order 0192e1a0-0000-7000-8000-000000000007 cannot change address when SHIPPED",
       ),
     );
   });

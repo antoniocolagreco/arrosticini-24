@@ -1,7 +1,12 @@
-import { DomainError, type Id } from "@arrosticini/kernel";
+import { DomainError, type Id, PAGE_SIZE, type Page } from "@arrosticini/kernel";
 import type { User, UserStatus } from "../domain/user.js";
 import type { UserRepository } from "../domain/user-repository.js";
 import { type Actor, requireAdmin } from "./actor.js";
+
+export interface ListUsersQuery {
+  status?: UserStatus | undefined;
+  cursor?: string | undefined;
+}
 
 async function findUser(users: UserRepository, id: Id): Promise<User> {
   const user = await users.findById(id);
@@ -18,9 +23,12 @@ export class ListUsers {
     this.#users = users;
   }
 
-  async execute(actor: Actor | undefined): Promise<User[]> {
+  async execute(actor: Actor | undefined, { status, cursor }: ListUsersQuery): Promise<Page<User>> {
     requireAdmin(actor);
-    return this.#users.listAll();
+    const page = { cursor, limit: PAGE_SIZE };
+    return status === undefined
+      ? this.#users.listAll(page)
+      : this.#users.listByStatus(status, page);
   }
 }
 

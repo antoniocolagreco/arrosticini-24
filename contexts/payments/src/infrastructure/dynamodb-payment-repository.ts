@@ -4,8 +4,6 @@ import { Payment, type PaymentStatus } from "../domain/payment.js";
 import type { PaymentRepository } from "../domain/payment-repository.js";
 
 interface PaymentItem {
-  PK: string;
-  SK: "META";
   orderId: Id;
   userId: Id;
   stripeSessionId: string;
@@ -14,10 +12,6 @@ interface PaymentItem {
   status: PaymentStatus;
   createdAt: string;
   updatedAt: string;
-}
-
-function paymentKey(orderId: Id) {
-  return { PK: `PAYMENT#${orderId}`, SK: "META" as const };
 }
 
 export class DynamoDbPaymentRepository implements PaymentRepository {
@@ -31,7 +25,7 @@ export class DynamoDbPaymentRepository implements PaymentRepository {
 
   async findByOrderId(orderId: Id): Promise<Payment | undefined> {
     const { Item } = await this.#client.send(
-      new GetCommand({ TableName: this.#tableName, Key: paymentKey(orderId) }),
+      new GetCommand({ TableName: this.#tableName, Key: { orderId } }),
     );
     if (Item === undefined) {
       return undefined;
@@ -50,7 +44,6 @@ export class DynamoDbPaymentRepository implements PaymentRepository {
 
   async save(payment: Payment): Promise<void> {
     const item: PaymentItem = {
-      ...paymentKey(payment.orderId),
       orderId: payment.orderId,
       userId: payment.userId,
       stripeSessionId: payment.stripeSessionId,

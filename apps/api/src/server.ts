@@ -40,10 +40,13 @@ const api = createApi(
   {
     mediaBucket: config.MEDIA_BUCKET,
     tables: {
-      catalog: config.CATALOG_TABLE,
-      identity: config.IDENTITY_TABLE,
-      ordering: config.ORDERING_TABLE,
+      products: config.PRODUCTS_TABLE,
+      users: config.USERS_TABLE,
+      userEmails: config.USER_EMAILS_TABLE,
+      orders: config.ORDERS_TABLE,
       payments: config.PAYMENTS_TABLE,
+      paymentCustomers: config.PAYMENT_CUSTOMERS_TABLE,
+      stripeEvents: config.STRIPE_EVENTS_TABLE,
     },
     stripeWebhookSecret: config.STRIPE_WEBHOOK_SECRET,
     whoami,

@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import { data, Form, Link, useFetcher, useNavigation } from "react-router";
 import { AccountLayout } from "../components/account-layout.js";
 import { FormAlert } from "../components/form-alert.js";
+import { Pager } from "../components/pager.js";
 import { Price } from "../components/price.js";
 import { ProductImage } from "../components/product-image.js";
 import { Button } from "../components/ui/button.js";
 import { api } from "../lib/api.server.js";
 import { catalogAdminAction, requireAdmin } from "../lib/catalog-admin.server.js";
+import { loadPage, readCursor } from "../lib/pagination.server.js";
 import { productImages } from "../lib/product.server.js";
 import type { Route } from "./+types/admin-products.js";
 
@@ -19,16 +21,24 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
   const status: string = url.searchParams.get("status") ?? "";
   const parsedStatus = ProductStatus.safeParse(status);
   if (query.length > 100 || (status && !parsedStatus.success))
-    return data({ items: [], query, status, invalidSearch: true }, { status: 400 });
-  const { items } = await api(request, {
-    userId: user.userId,
-    role: user.role,
-  }).catalog.listProducts({
-    ...(query ? { q: query } : {}),
-    ...(parsedStatus.success ? { status: parsedStatus.data } : {}),
-  });
+    return data(
+      { items: [], nextCursor: undefined, query, status, invalidSearch: true },
+      { status: 400 },
+    );
+  const cursor: string | undefined = readCursor(request);
+  const { items, nextCursor } = await loadPage(() =>
+    api(request, {
+      userId: user.userId,
+      role: user.role,
+    }).catalog.listProducts({
+      ...(query ? { q: query } : {}),
+      ...(parsedStatus.success ? { status: parsedStatus.data } : {}),
+      ...(cursor ? { cursor } : {}),
+    }),
+  );
   return {
     items: items.map((product: ProductDto) => ({ product, image: productImages(product)[0] })),
+    nextCursor,
     query,
     status,
     invalidSearch: false,
@@ -222,6 +232,7 @@ export default function AdminProducts({ loaderData }: Route.ComponentProps) {
           </div>
         )}
       </section>
+      <Pager nextCursor={loaderData.nextCursor} />
       <span className="sr-only" role="status">
         {busy ? t("working") : ""}
       </span>

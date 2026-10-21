@@ -40,7 +40,7 @@ function store() {
 }
 
 const user: UserDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+  id: "0192e1a0-0000-7000-8000-000000000012",
   email: "antonio@example.com",
   firstName: "Antonio",
   lastName: "Colagreco",

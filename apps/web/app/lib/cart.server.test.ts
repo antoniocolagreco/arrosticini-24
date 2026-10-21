@@ -12,17 +12,17 @@ import {
 afterEach(() => vi.restoreAllMocks());
 
 const empty: CartDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+  id: "0192e1a0-0000-7000-8000-000000000013",
   lines: [],
   updatedAt: "2026-10-09T00:00:00.000Z",
 };
 const existing: CartDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+  id: "0192e1a0-0000-7000-8000-000000000014",
   lines: [{ slug: "arrosticini-75", quantity: 3 }],
   updatedAt: "2026-10-09T00:00:00.000Z",
 };
 const merged: CartDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Z",
+  id: "0192e1a0-0000-7000-8000-000000000015",
   lines: [{ slug: "arrosticini-75", quantity: 4 }],
   updatedAt: "2026-10-09T00:00:00.000Z",
 };
@@ -189,14 +189,14 @@ describe("shopping cart", () => {
     expect(
       await mergeOwnedCart(
         new Request("http://web.test/it/login", { headers: { "x-actor": "forged" } }),
-        { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W", role: "customer" },
+        { userId: "0192e1a0-0000-7000-8000-000000000012", role: "customer" },
         existing.id,
       ),
     ).toEqual(merged);
     const request: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(request.url).toContain(`/shopping/carts/${existing.id}/merge`);
     expect(request.headers.get("x-actor")).toBe(
-      '{"userId":"01JB2Q7Z8X4M3N5P6R7S8T9V0W","role":"customer"}',
+      '{"userId":"0192e1a0-0000-7000-8000-000000000012","role":"customer"}',
     );
   });
 
@@ -208,7 +208,7 @@ describe("shopping cart", () => {
     expect(
       (
         await mergeOwnedCart(new Request("http://web.test"), {
-          userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+          userId: "0192e1a0-0000-7000-8000-000000000012",
           role: "customer",
         })
       ).id,

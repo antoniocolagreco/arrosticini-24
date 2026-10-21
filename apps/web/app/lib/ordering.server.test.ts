@@ -15,8 +15,8 @@ afterEach(() => {
 });
 
 const order: OrderDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Z",
-  userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+  id: "0192e1a0-0000-7000-8000-000000000015",
+  userId: "0192e1a0-0000-7000-8000-000000000012",
   lines: [
     {
       slug: "arrosticini-75",
@@ -39,7 +39,7 @@ const order: OrderDto = {
   createdAt: "2026-10-09T08:00:00.000Z",
 };
 const address: AddressDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+  id: "0192e1a0-0000-7000-8000-000000000014",
   fullName: "Antonio Colagreco",
   line1: "Via Roma 1",
   city: "Chieti",
@@ -63,11 +63,11 @@ async function context(signedIn = true, withCart = true): Promise<RouterContextP
   const state: RouterContextProvider = new RouterContextProvider();
   const session = await sessions.getSession();
   if (signedIn) {
-    session.set("userId", "01JB2Q7Z8X4M3N5P6R7S8T9V0W");
+    session.set("userId", "0192e1a0-0000-7000-8000-000000000012");
     session.set("role", "customer");
     session.set("locale", "it");
   }
-  if (withCart) session.set("cartId", "01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+  if (withCart) session.set("cartId", "0192e1a0-0000-7000-8000-000000000013");
   state.set(sessionContext, session);
   state.set(sessionStorageContext, sessions);
   return state;
@@ -153,7 +153,7 @@ describe("checkout actions", () => {
     const result = await checkoutAction(
       post({
         intent: "order",
-        addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+        addressId: "0192e1a0-0000-7000-8000-000000000014",
         cartId: "forged",
         totalCents: "1",
       }),
@@ -165,13 +165,13 @@ describe("checkout actions", () => {
     expect(result.headers.get("Location")).toBe("https://checkout.stripe.com/c/pay/test");
     const outgoing: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(await outgoing.json()).toEqual({
-      cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
-      addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+      cartId: "0192e1a0-0000-7000-8000-000000000013",
+      addressId: "0192e1a0-0000-7000-8000-000000000014",
       locale: "en",
       ordersUrl: "http://web.test/en/orders",
     });
     expect(outgoing.headers.get("x-actor")).toBe(
-      '{"userId":"01JB2Q7Z8X4M3N5P6R7S8T9V0W","role":"customer"}',
+      '{"userId":"0192e1a0-0000-7000-8000-000000000012","role":"customer"}',
     );
   });
   it("redirects to the payment URL with a 303", async () => {
@@ -179,7 +179,7 @@ describe("checkout actions", () => {
       Response.json({ order, paymentUrl: "https://checkout.stripe.com/c/pay/test" }),
     );
     const result = await checkoutAction(
-      post({ intent: "order", addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y" }),
+      post({ intent: "order", addressId: "0192e1a0-0000-7000-8000-000000000014" }),
       await context(),
       "it",
     );
@@ -198,7 +198,7 @@ describe("checkout actions", () => {
       post(
         {
           intent: "order",
-          addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+          addressId: "0192e1a0-0000-7000-8000-000000000014",
           ordersUrl: "https://evil.test",
           locale: "en",
         },
@@ -209,8 +209,8 @@ describe("checkout actions", () => {
     );
     const outgoing: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(await outgoing.json()).toEqual({
-      cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
-      addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+      cartId: "0192e1a0-0000-7000-8000-000000000013",
+      addressId: "0192e1a0-0000-7000-8000-000000000014",
       locale: "it",
       ordersUrl: "https://shop.test/it/orders",
     });
@@ -240,7 +240,7 @@ describe("checkout actions", () => {
         Response.json({ defined: true, code, status, message: code }, { status }),
       );
       const result = await checkoutAction(
-        post({ intent: "order", addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y" }),
+        post({ intent: "order", addressId: "0192e1a0-0000-7000-8000-000000000014" }),
         await context(),
         "it",
       );
