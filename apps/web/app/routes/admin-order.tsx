@@ -99,7 +99,8 @@ export default function AdminOrder({ loaderData, actionData }: Route.ComponentPr
     <AccountLayout
       crumbs={[{ label: t("allOrders"), to: `/${locale}/admin/orders` }, { label: reference }]}
       eyebrow={reference}
-      title={t("orderTitle", {
+      titleFirst={t("orderTitleFirst", { ns: "shop" })}
+      title={t("orderTitleSecond", {
         ns: "shop",
         date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
           new Date(order.createdAt),

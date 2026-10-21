@@ -1,7 +1,21 @@
-import { test as base } from "@playwright/test";
+import { test as base, expect } from "@playwright/test";
 import { type TestStack, withStack } from "./stack.js";
 
-export const test = base.extend<{ sessionTracking: undefined }, { stack: TestStack }>({
+export const test = base.extend<
+  { sessionTracking: undefined; pageErrors: undefined },
+  { stack: TestStack }
+>({
+  pageErrors: [
+    async ({ context, stack }, use) => {
+      const errors: string[] = [];
+      context.on("weberror", (error) => {
+        if (error.page()?.url().startsWith(`${stack.origin}/`)) errors.push(error.error().message);
+      });
+      await use(undefined);
+      expect(errors).toEqual([]);
+    },
+    { auto: true },
+  ],
   stack: [
     async ({ browserName }, use, workerInfo) => {
       await withStack(use, `${browserName}-${workerInfo.workerIndex}`);
@@ -45,4 +59,4 @@ export const test = base.extend<{ sessionTracking: undefined }, { stack: TestSta
   ],
 });
 
-export { expect } from "@playwright/test";
+export { expect };

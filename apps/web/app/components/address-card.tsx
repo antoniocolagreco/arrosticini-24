@@ -1,10 +1,12 @@
 import type { AddressDto, ShippingAddressDto } from "@arrosticini/contracts";
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Form, useNavigation } from "react-router";
+import { Form, useNavigation, useRouteLoaderData } from "react-router";
+import type { loader } from "../root.js";
 
 function AddressLines({ address }: { address: AddressDto | ShippingAddressDto }) {
-  const { t, i18n } = useTranslation("shop");
+  const { t } = useTranslation("shop");
+  const countries = useRouteLoaderData<typeof loader>("root")?.countries ?? [];
   return (
     <>
       <div className="tile-head">
@@ -24,7 +26,7 @@ function AddressLines({ address }: { address: AddressDto | ShippingAddressDto })
         <br />
         {address.postalCode} {address.city}
         <br />
-        {new Intl.DisplayNames([i18n.language], { type: "region" }).of(address.country)}
+        {countries.find(({ code }) => code === address.country)?.name ?? address.country}
       </address>
       <p className="tile-meta">{address.phone}</p>
     </>

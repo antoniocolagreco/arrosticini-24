@@ -1,8 +1,9 @@
 import type { AddressDto, ShippingAddressDto } from "@arrosticini/contracts";
 import { useTranslation } from "react-i18next";
-import { Form, useNavigation } from "react-router";
+import { Form, useNavigation, useRouteLoaderData } from "react-router";
 import type { AddressFormResult } from "../lib/addresses.server.js";
-import { COUNTRY_CODES } from "../lib/countries.js";
+import type { Country } from "../lib/countries.js";
+import type { loader } from "../root.js";
 import { FormField, SelectField } from "./form-field.js";
 import { Button } from "./ui/button.js";
 
@@ -19,7 +20,7 @@ export function AddressForm({
   result: AddressFormResult | undefined;
   onCancel?: () => void;
 }) {
-  const { t, i18n } = useTranslation("shop");
+  const { t } = useTranslation("shop");
   const navigation = useNavigation();
   const busy: boolean = navigation.state !== "idle";
   const saving: boolean = busy && navigation.formData?.get("intent") === intent;
@@ -33,12 +34,7 @@ export function AddressForm({
     country: address?.country ?? "IT",
   };
   const errors: Record<string, string> = result?.errors ?? {};
-  const regions = new Intl.DisplayNames([i18n.language], { type: "region" });
-  const collator = new Intl.Collator(i18n.language);
-  const countries: { code: string; name: string }[] = COUNTRY_CODES.map((code) => ({
-    code,
-    name: regions.of(code) ?? code,
-  })).sort((a, b) => collator.compare(a.name, b.name));
+  const countries: Country[] = useRouteLoaderData<typeof loader>("root")?.countries ?? [];
   const field = (name: string) => ({
     id: `address-${name}`,
     name,
