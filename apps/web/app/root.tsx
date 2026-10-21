@@ -14,6 +14,7 @@ import type { Route } from "./+types/root.js";
 import { ErrorPage } from "./components/error-page.js";
 import { SiteLayout } from "./components/site-layout.js";
 import { readCart } from "./lib/cart.server.js";
+import { countriesFor } from "./lib/countries.js";
 import { localeCookie } from "./lib/locale.server.js";
 import { sessionContext, sessionMiddleware } from "./lib/session.server.js";
 import { getLocale, i18nextMiddleware } from "./middleware/i18next.js";
@@ -33,6 +34,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
       cartCount:
         (await readCart(request, context))?.lines.reduce((sum, line) => sum + line.quantity, 0) ??
         0,
+      countries: countriesFor(locale),
     },
     {
       headers: {
