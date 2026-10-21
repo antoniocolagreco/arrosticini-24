@@ -16,6 +16,9 @@
     "lint": "biome check .",
     "test": "vitest run"
   },
+  "dependencies": {
+    "uuid": "catalog:"
+  },
   "devDependencies": {
     "@arrosticini/tsconfig": "workspace:*",
     "@types/node": "catalog:",
