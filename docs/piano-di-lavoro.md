@@ -192,10 +192,10 @@ Prezzi in centesimi interi con valuta `EUR` (value object `Money`). Testi locali
 
 | Chiave | Indici | Attributi |
 |---|---|---|
-| `slug` | `byStatus` (`status` + `priceCents`), `byPrice` (`kind` + `priceCents`) | kind, name, description, pieces (facoltativo, solo arrosticini), priceCents, currency, images[] (chiavi S3), status `DRAFT\|ACTIVE\|ARCHIVED`, searchText, updatedAt |
+| `slug` | `byStatus` (`status` + `slug`), `bySlug` (`kind` + `slug`) | kind, name, description, pieces (facoltativo, solo arrosticini), priceCents, currency, images[] (chiavi S3), status `DRAFT\|ACTIVE\|ARCHIVED`, searchText, updatedAt |
 
 - Lo slug è l'identità del prodotto ed è immutabile. Si crea con `attribute_not_exists(slug)`.
-- **Liste:** dal più economico. Il negozio legge `byStatus` con `ACTIVE`; l'admin legge `byStatus` se filtra per stato, altrimenti `byPrice`.
+- **Liste:** in ordine di slug. Il negozio legge `byStatus` con `ACTIVE`; l'admin legge `byStatus` se filtra per stato, altrimenti `bySlug`.
 - **Ricerca:** filtro `contains(searchText, q)` sulla Query. Il repository legge più pagine finché ne riempie una. `searchText` contiene nomi e descrizioni IT ed EN, in minuscolo e senza accenti.
 - I prodotti si archiviano, non si cancellano.
 

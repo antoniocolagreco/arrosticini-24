@@ -88,10 +88,10 @@ describe("DynamoDbProductRepository", () => {
     );
   });
 
-  it("searches by status, cheapest first", async () => {
+  it("searches by status, ordered by slug", async () => {
     const { items } = await repository.search({ status: "ACTIVE" }, firstPage);
 
-    expect(slugs(items)).toEqual(["vino", "arrosticini-75", "fornacella"]);
+    expect(slugs(items)).toEqual(["arrosticini-75", "fornacella", "vino"]);
   });
 
   it("searches by text", async () => {
@@ -100,10 +100,10 @@ describe("DynamoDbProductRepository", () => {
     expect(slugs(items)).toEqual(["vino"]);
   });
 
-  it("returns every product without criteria, cheapest first", async () => {
+  it("returns every product without criteria, ordered by slug", async () => {
     const { items, nextCursor } = await repository.search({}, firstPage);
 
-    expect(slugs(items)).toEqual(["vino", "carbone", "arrosticini-75", "fornacella"]);
+    expect(slugs(items)).toEqual(["arrosticini-75", "carbone", "fornacella", "vino"]);
     expect(nextCursor).toBeUndefined();
   });
 
@@ -111,8 +111,8 @@ describe("DynamoDbProductRepository", () => {
     const first = await repository.search({}, { limit: 3 });
     const second = await repository.search({}, { cursor: first.nextCursor, limit: 3 });
 
-    expect(slugs(first.items)).toEqual(["vino", "carbone", "arrosticini-75"]);
-    expect(slugs(second.items)).toEqual(["fornacella"]);
+    expect(slugs(first.items)).toEqual(["arrosticini-75", "carbone", "fornacella"]);
+    expect(slugs(second.items)).toEqual(["vino"]);
     expect(second.nextCursor).toBeUndefined();
   });
 

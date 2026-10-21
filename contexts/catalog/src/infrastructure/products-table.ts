@@ -8,7 +8,6 @@ export function productsTableDefinition(tableName: string): CreateTableCommandIn
       { AttributeName: "slug", AttributeType: "S" },
       { AttributeName: "kind", AttributeType: "S" },
       { AttributeName: "status", AttributeType: "S" },
-      { AttributeName: "priceCents", AttributeType: "N" },
     ],
     KeySchema: [{ AttributeName: "slug", KeyType: "HASH" }],
     GlobalSecondaryIndexes: [
@@ -16,15 +15,15 @@ export function productsTableDefinition(tableName: string): CreateTableCommandIn
         IndexName: "byStatus",
         KeySchema: [
           { AttributeName: "status", KeyType: "HASH" },
-          { AttributeName: "priceCents", KeyType: "RANGE" },
+          { AttributeName: "slug", KeyType: "RANGE" },
         ],
         Projection: { ProjectionType: "ALL" },
       },
       {
-        IndexName: "byPrice",
+        IndexName: "bySlug",
         KeySchema: [
           { AttributeName: "kind", KeyType: "HASH" },
-          { AttributeName: "priceCents", KeyType: "RANGE" },
+          { AttributeName: "slug", KeyType: "RANGE" },
         ],
         Projection: { ProjectionType: "ALL" },
       },

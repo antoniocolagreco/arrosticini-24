@@ -211,11 +211,11 @@ describe("GET /healthz", () => {
 });
 
 describe("catalog", () => {
-  it("lists active products, cheapest first", async () => {
+  it("lists active products, ordered by slug", async () => {
     const { items } = await client().catalog.listProducts({});
 
-    expect(items.map(({ slug }) => slug)).toEqual(["vino", "fornacella"]);
-    expect(items[0]).toEqual({
+    expect(items.map(({ slug }) => slug)).toEqual(["fornacella", "vino"]);
+    expect(items[1]).toEqual({
       slug: "vino",
       name: { it: "Prodotto vino", en: "Product vino" },
       description: { it: "Fatto in Abruzzo", en: "Made in Abruzzo" },

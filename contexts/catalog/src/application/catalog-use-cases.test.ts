@@ -33,7 +33,7 @@ class InMemoryProductRepository implements ProductRepository {
             (criteria.status === undefined || product.status === criteria.status) &&
             (criteria.text === undefined || product.searchText.includes(criteria.text)),
         )
-        .sort((a, b) => a.price.amountCents - b.price.amountCents),
+        .sort((a, b) => a.slug.localeCompare(b.slug)),
     };
   }
 
@@ -93,13 +93,13 @@ describe("ListProducts", () => {
   it("shows only active products to anonymous users", async () => {
     const { items } = await new ListProducts(repository()).execute(undefined, {});
 
-    expect(items.map(({ slug }) => slug)).toEqual(["vino", "fornacella"]);
+    expect(items.map(({ slug }) => slug)).toEqual(["fornacella", "vino"]);
   });
 
   it("shows every product to admins", async () => {
     const { items } = await new ListProducts(repository()).execute(admin, {});
 
-    expect(items.map(({ slug }) => slug)).toEqual(["vino", "carbone", "cuoco", "fornacella"]);
+    expect(items.map(({ slug }) => slug)).toEqual(["carbone", "cuoco", "fornacella", "vino"]);
   });
 
   it("filters by status for admins", async () => {

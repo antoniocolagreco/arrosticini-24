@@ -83,11 +83,11 @@ export class DynamoDbProductRepository implements ProductRepository {
   ): Promise<Page<Product>> {
     const index =
       status === undefined
-        ? { name: "byPrice", key: "kind", value: "product" }
+        ? { name: "bySlug", key: "kind", value: "product" }
         : { name: "byStatus", key: "status", value: status };
     const products: Product[] = [];
     let startKey: CursorKey | undefined =
-      cursor === undefined ? undefined : decodeCursor(cursor, ["slug", index.key, "priceCents"]);
+      cursor === undefined ? undefined : decodeCursor(cursor, ["slug", index.key]);
     do {
       const { Items = [], LastEvaluatedKey } = await this.#client.send(
         new QueryCommand({
