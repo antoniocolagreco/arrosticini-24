@@ -5,6 +5,7 @@ export {
   CloseOrder,
   GetOrder,
   ListAllOrders,
+  type ListAllOrdersQuery,
   ListOrders,
   MarkOrderPaid,
   type PlacedOrder,
@@ -32,4 +33,4 @@ export {
 export type { OrderRepository } from "./domain/order-repository.js";
 export { type OrderingContext, type OrderingUseCases, orderingRouter } from "./http/router.js";
 export { DynamoDbOrderRepository } from "./infrastructure/dynamodb-order-repository.js";
-export { orderingTableDefinition } from "./infrastructure/ordering-table.js";
+export { ordersTableDefinition } from "./infrastructure/orders-table.js";

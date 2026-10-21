@@ -5,7 +5,7 @@ import { Cart } from "./cart.js";
 const created = new Date("2026-10-09T10:00:00.000Z");
 const changed = new Date("2026-10-09T10:05:00.000Z");
 
-function cart(id = "01JB2Q7Z8X4M3N5P6R7S8T9V0A"): Cart {
+function cart(id = "0192e1a0-0000-7000-8000-000000000007"): Cart {
   return Cart.create(id, created);
 }
 
@@ -43,10 +43,10 @@ describe("Cart.setLine", () => {
 
 describe("Cart.absorb", () => {
   it("adds the other cart's quantities, capped at 99", () => {
-    const owned = cart("01JB2Q7Z8X4M3N5P6R7S8T9V0A");
+    const owned = cart("0192e1a0-0000-7000-8000-000000000007");
     owned.setLine("vino", 60, created);
     owned.setLine("carbone", 1, created);
-    const anonymous = cart("01JB2Q7Z8X4M3N5P6R7S8T9V0B");
+    const anonymous = cart("0192e1a0-0000-7000-8000-000000000008");
     anonymous.setLine("vino", 50, created);
     anonymous.setLine("arrosticini-225", 2, created);
 
@@ -65,12 +65,12 @@ describe("Cart.clear", () => {
   it("removes every line and keeps the owner", () => {
     const target = cart();
     target.setLine("vino", 2, created);
-    target.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    target.assignTo("0192e1a0-0000-7000-8000-000000000013");
 
     target.clear(changed);
 
     expect(target.lines).toEqual([]);
-    expect(target.ownerId).toBe("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    expect(target.ownerId).toBe("0192e1a0-0000-7000-8000-000000000013");
     expect(target.updatedAt).toEqual(changed);
   });
 });
@@ -78,18 +78,21 @@ describe("Cart.clear", () => {
 describe("Cart.assignTo", () => {
   it("binds the cart to its owner", () => {
     const target = cart();
-    target.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
-    target.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    target.assignTo("0192e1a0-0000-7000-8000-000000000013");
+    target.assignTo("0192e1a0-0000-7000-8000-000000000013");
 
-    expect(target.ownerId).toBe("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    expect(target.ownerId).toBe("0192e1a0-0000-7000-8000-000000000013");
   });
 
   it("refuses a second owner", () => {
     const target = cart();
-    target.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    target.assignTo("0192e1a0-0000-7000-8000-000000000013");
 
-    expect(() => target.assignTo("01JB2Q7Z8X4M3N5P6R7S8T9V0Y")).toThrow(
-      new DomainError("CART_OWNED", "Cart 01JB2Q7Z8X4M3N5P6R7S8T9V0A belongs to another user"),
+    expect(() => target.assignTo("0192e1a0-0000-7000-8000-000000000014")).toThrow(
+      new DomainError(
+        "CART_OWNED",
+        "Cart 0192e1a0-0000-7000-8000-000000000007 belongs to another user",
+      ),
     );
   });
 });

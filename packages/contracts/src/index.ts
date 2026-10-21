@@ -15,7 +15,7 @@ export {
   ProductSlug,
   ProductStatus,
 } from "./catalog.js";
-export { CurrencyDto, IdDto, LocaleDto, localizedTextDto } from "./common.js";
+export { CurrencyDto, Cursor, IdDto, LocaleDto, localizedTextDto, pageDto } from "./common.js";
 export {
   AddressDto,
   Email,

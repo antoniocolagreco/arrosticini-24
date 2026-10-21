@@ -4,25 +4,34 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { data, Link, useNavigation } from "react-router";
 import { Breadcrumb } from "../components/breadcrumb.js";
+import { Pager } from "../components/pager.js";
 import { ProductCard } from "../components/product-card.js";
 import { ProductSearch } from "../components/product-search.js";
 import { Button } from "../components/ui/button.js";
 import { api, getApiError } from "../lib/api.server.js";
+import { loadPage, readCursor } from "../lib/pagination.server.js";
 import { productImages } from "../lib/product.server.js";
 import type { Route } from "./+types/products.js";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const query: string = new URL(request.url).searchParams.get("q")?.trim() ?? "";
+  const cursor: string | undefined = readCursor(request);
   try {
-    const { items } = await api(request).catalog.listProducts(query ? { q: query } : {});
+    const { items, nextCursor } = await loadPage(() =>
+      api(request).catalog.listProducts({
+        ...(query ? { q: query } : {}),
+        ...(cursor ? { cursor } : {}),
+      }),
+    );
     return data({
       items: items.map((product: ProductDto) => ({ product, image: productImages(product)[0] })),
+      nextCursor,
       query,
       invalidSearch: false,
     });
   } catch (error: unknown) {
     if (getApiError(error) !== "BAD_REQUEST") throw error;
-    return data({ items: [], query, invalidSearch: true }, { status: 400 });
+    return data({ items: [], nextCursor: undefined, query, invalidSearch: true }, { status: 400 });
   }
 }
 
@@ -101,6 +110,7 @@ export default function Products({ loaderData }: Route.ComponentProps) {
           )}
         </div>
       ) : null}
+      <Pager nextCursor={loaderData.nextCursor} />
     </section>
   );
 }

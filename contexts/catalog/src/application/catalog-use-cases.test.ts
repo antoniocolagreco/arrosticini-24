@@ -1,4 +1,4 @@
-import { DomainError, localizedText, Money } from "@arrosticini/kernel";
+import { DomainError, localizedText, Money, type PageRequest } from "@arrosticini/kernel";
 import { describe, expect, it } from "vitest";
 import { Product, type ProductStatus } from "../domain/product.js";
 import type { ProductRepository, ProductSearch } from "../domain/product-repository.js";
@@ -13,6 +13,7 @@ import { UpdateProduct } from "./update-product.js";
 class InMemoryProductRepository implements ProductRepository {
   readonly products: Product[];
   lastSearch: ProductSearch | undefined;
+  lastPage: PageRequest | undefined;
 
   constructor(products: Product[]) {
     this.products = products;
@@ -22,13 +23,18 @@ class InMemoryProductRepository implements ProductRepository {
     return this.products.find((product) => product.slug === slug);
   }
 
-  async search(criteria: ProductSearch) {
+  async search(criteria: ProductSearch, page: PageRequest) {
     this.lastSearch = criteria;
-    return this.products.filter(
-      (product) =>
-        (criteria.status === undefined || product.status === criteria.status) &&
-        (criteria.text === undefined || product.searchText.includes(criteria.text)),
-    );
+    this.lastPage = page;
+    return {
+      items: this.products
+        .filter(
+          (product) =>
+            (criteria.status === undefined || product.status === criteria.status) &&
+            (criteria.text === undefined || product.searchText.includes(criteria.text)),
+        )
+        .sort((a, b) => a.price.amountCents - b.price.amountCents),
+    };
   }
 
   async create(product: Product) {
@@ -71,8 +77,8 @@ function product(slug: string, priceCents: number, status: ProductStatus): Produ
   );
 }
 
-const admin: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W", role: "admin" };
-const customer: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X", role: "customer" };
+const admin: Actor = { userId: "0192e1a0-0000-7000-8000-000000000012", role: "admin" };
+const customer: Actor = { userId: "0192e1a0-0000-7000-8000-000000000013", role: "customer" };
 
 function repository() {
   return new InMemoryProductRepository([
@@ -84,22 +90,30 @@ function repository() {
 }
 
 describe("ListProducts", () => {
-  it("shows only active products to anonymous users, cheapest first", async () => {
-    const products = await new ListProducts(repository()).execute(undefined, {});
+  it("shows only active products to anonymous users", async () => {
+    const { items } = await new ListProducts(repository()).execute(undefined, {});
 
-    expect(products.map(({ slug }) => slug)).toEqual(["vino", "fornacella"]);
+    expect(items.map(({ slug }) => slug)).toEqual(["vino", "fornacella"]);
   });
 
   it("shows every product to admins", async () => {
-    const products = await new ListProducts(repository()).execute(admin, {});
+    const { items } = await new ListProducts(repository()).execute(admin, {});
 
-    expect(products.map(({ slug }) => slug)).toEqual(["vino", "carbone", "cuoco", "fornacella"]);
+    expect(items.map(({ slug }) => slug)).toEqual(["vino", "carbone", "cuoco", "fornacella"]);
   });
 
   it("filters by status for admins", async () => {
-    const products = await new ListProducts(repository()).execute(admin, { status: "DRAFT" });
+    const { items } = await new ListProducts(repository()).execute(admin, { status: "DRAFT" });
 
-    expect(products.map(({ slug }) => slug)).toEqual(["carbone"]);
+    expect(items.map(({ slug }) => slug)).toEqual(["carbone"]);
+  });
+
+  it("asks for one page from the given cursor", async () => {
+    const products = repository();
+
+    await new ListProducts(products).execute(undefined, { cursor: "next-page" });
+
+    expect(products.lastPage).toEqual({ cursor: "next-page", limit: 20 });
   });
 
   it("forbids the status filter to customers", async () => {
@@ -174,7 +188,11 @@ describe("product administration", () => {
       error,
     );
     await expect(
-      new RemoveProductImage(products, images).execute(actor, "vino", "01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      new RemoveProductImage(products, images).execute(
+        actor,
+        "vino",
+        "0192e1a0-0000-7000-8000-000000000007",
+      ),
     ).rejects.toEqual(error);
     expect(images.stored).toEqual([]);
     expect(products.saved).toEqual([]);
@@ -239,7 +257,12 @@ describe("AddProductImage", () => {
     const updated = await new AddProductImage(products, images).execute(admin, "vino", png);
 
     expect(updated.images).toEqual([
-      { id: expect.stringMatching(/^[0-9A-HJKMNP-TV-Z]{26}$/), key: expect.any(String) },
+      {
+        id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+        key: expect.any(String),
+      },
     ]);
     const [image] = updated.images;
     expect(image?.key).toBe(`products/vino/${image?.id}.png`);
@@ -293,10 +316,13 @@ describe("RemoveProductImage", () => {
       new RemoveProductImage(repository(), images).execute(
         admin,
         "vino",
-        "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+        "0192e1a0-0000-7000-8000-000000000007",
       ),
     ).rejects.toEqual(
-      new DomainError("PRODUCT_IMAGE_NOT_FOUND", "Image not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      new DomainError(
+        "PRODUCT_IMAGE_NOT_FOUND",
+        "Image not found: 0192e1a0-0000-7000-8000-000000000007",
+      ),
     );
     expect(images.deleted).toEqual([]);
   });

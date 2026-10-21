@@ -12,7 +12,7 @@ const product: ProductDto = {
   description: { it: "Vino rosso abruzzese", en: "Red wine from Abruzzo" },
   priceCents: 500,
   currency: "EUR",
-  images: [{ id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W", key: "products/vino/red.webp" }],
+  images: [{ id: "0192e1a0-0000-7000-8000-000000000012", key: "products/vino/red.webp" }],
   status: "ACTIVE",
   updatedAt: "2026-10-08T10:00:00.000Z",
 };
@@ -61,6 +61,42 @@ describe("public catalog loaders", () => {
       context: new RouterContextProvider(),
     });
     expect(result.data).toEqual({ items: [], query: "missing", invalidSearch: false });
+  });
+
+  it("forwards the cursor of the page and returns the next one", async () => {
+    vi.stubEnv("API_URL", "http://api.test:4100");
+    const fetchMock: MockInstance<typeof fetch> = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json({ items: [], nextCursor: "page-3" }));
+    const result = await productsLoader({
+      request: new Request("http://web.test/it/products?q=vino&cursor=page-2"),
+      params: { lang: "it" },
+      url: new URL("http://web.test/it/products?q=vino&cursor=page-2"),
+      pattern: "/:lang/products",
+      context: new RouterContextProvider(),
+    });
+
+    expect(result.data.nextCursor).toBe("page-3");
+    const outbound: Request = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(outbound.url).toBe("http://api.test:4100/catalog/products?q=vino&cursor=page-2");
+  });
+
+  it("answers 400 for a cursor the API rejects", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json(
+        { code: "INVALID_CURSOR", status: 400, message: "Invalid cursor", defined: true },
+        { status: 400 },
+      ),
+    );
+    const error: unknown = await productsLoader({
+      request: new Request("http://web.test/it/products?cursor=forged"),
+      params: { lang: "it" },
+      url: new URL("http://web.test/it/products?cursor=forged"),
+      pattern: "/:lang/products",
+      context: new RouterContextProvider(),
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ type: "DataWithResponseInit", init: { status: 400 } });
   });
 
   it("returns search validation errors with status 400", async () => {

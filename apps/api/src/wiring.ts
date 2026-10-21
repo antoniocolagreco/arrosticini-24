@@ -78,10 +78,13 @@ import { paymentsInitiator } from "./payment-initiator.js";
 import { catalogProductAvailability } from "./product-availability.js";
 
 export interface Tables {
-  catalog: string;
-  identity: string;
-  ordering: string;
+  products: string;
+  users: string;
+  userEmails: string;
+  orders: string;
   payments: string;
+  paymentCustomers: string;
+  stripeEvents: string;
 }
 
 export interface Clients {
@@ -102,11 +105,11 @@ export function createApi(
   { dynamo, s3, valkey, stripe }: Clients,
   { tables, mediaBucket, stripeWebhookSecret, whoami }: Settings,
 ) {
-  const products = new DynamoDbProductRepository(dynamo, tables.catalog);
+  const products = new DynamoDbProductRepository(dynamo, tables.products);
   const images = new S3ImageStorage(s3, mediaBucket);
-  const users = new DynamoDbUserRepository(dynamo, tables.identity);
+  const users = new DynamoDbUserRepository(dynamo, tables.users, tables.userEmails);
   const carts = new ValkeyCartRepository(valkey);
-  const orders = new DynamoDbOrderRepository(dynamo, tables.ordering);
+  const orders = new DynamoDbOrderRepository(dynamo, tables.orders);
   const payments = new DynamoDbPaymentRepository(dynamo, tables.payments);
   const hasher = new ScryptPasswordHasher();
   const getProduct = new GetProduct(products);
@@ -115,7 +118,7 @@ export function createApi(
   const getCart = new GetCart(carts);
   const gateway = new StripePaymentGateway(stripe, stripeWebhookSecret);
   const stripeCustomers = {
-    customers: new DynamoDbPaymentCustomerRepository(dynamo, tables.payments),
+    customers: new DynamoDbPaymentCustomerRepository(dynamo, tables.paymentCustomers),
     profiles: identityCustomerProfiles(getMe),
     gateway,
   };
@@ -183,7 +186,7 @@ export function createApi(
   };
   const handleStripeEvent = new HandleStripeEvent(
     payments,
-    new DynamoDbProcessedEventRepository(dynamo, tables.payments),
+    new DynamoDbProcessedEventRepository(dynamo, tables.stripeEvents),
     gateway,
     bus,
   );

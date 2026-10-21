@@ -1,6 +1,6 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
-import { admin, authed, IdDto, LocaleDto } from "./common.js";
+import { admin, authed, Cursor, IdDto, invalidCursor, LocaleDto, pageDto } from "./common.js";
 
 export const MAX_ADDRESSES_PER_USER = 5;
 
@@ -126,7 +126,9 @@ export const deleteAddress = authed
 
 export const listUsers = admin
   .route({ method: "GET", path: "/identity/admin/users" })
-  .output(z.object({ items: z.array(UserDto) }));
+  .input(z.object({ status: UserStatus.optional(), cursor: Cursor.optional() }))
+  .output(pageDto(UserDto))
+  .errors(invalidCursor);
 
 export const getUser = admin
   .route({ method: "GET", path: "/identity/admin/users/{id}" })

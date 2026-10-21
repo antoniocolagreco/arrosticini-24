@@ -5,11 +5,13 @@ import { Form, Link, useNavigation, useSearchParams } from "react-router";
 import { AccountLayout } from "../components/account-layout.js";
 import { AddressCard } from "../components/address-card.js";
 import { FormAlert } from "../components/form-alert.js";
+import { Pager } from "../components/pager.js";
 import { Price } from "../components/price.js";
 import { StatusBadge } from "../components/status-badge.js";
 import { Button } from "../components/ui/button.js";
 import { api, getApiError } from "../lib/api.server.js";
 import { requireAdmin } from "../lib/catalog-admin.server.js";
+import { loadPage, readCursor } from "../lib/pagination.server.js";
 import { userAdminAction } from "../lib/users-admin.server.js";
 import type { Route } from "./+types/admin-user.js";
 
@@ -18,12 +20,15 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
   const id = IdDto.safeParse(params.id);
   if (!id.success) throw new Response(null, { status: 404 });
   const client = api(request, { userId: admin.userId, role: admin.role });
+  const cursor: string | undefined = readCursor(request);
   try {
     const [card, orders] = await Promise.all([
       client.identity.getUser({ id: id.data }),
-      client.ordering.listAllOrders({ userId: id.data }),
+      loadPage(() =>
+        client.ordering.listAllOrders({ userId: id.data, ...(cursor ? { cursor } : {}) }),
+      ),
     ]);
-    return { ...card, orders: orders.items };
+    return { ...card, orders: orders.items, nextCursor: orders.nextCursor };
   } catch (error: unknown) {
     if (getApiError(error) === "USER_NOT_FOUND") throw new Response(null, { status: 404 });
     throw error;
@@ -154,6 +159,7 @@ export default function AdminUser({ loaderData, actionData }: Route.ComponentPro
           ) : (
             <p className="panel-note">{t("noUserOrders")}</p>
           )}
+          <Pager nextCursor={loaderData.nextCursor} />
         </section>
       </div>
     </AccountLayout>

@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { ProductSlug } from "./catalog.js";
-import { admin, authed, CurrencyDto, IdDto, LocaleDto, localizedTextDto } from "./common.js";
+import {
+  admin,
+  authed,
+  CurrencyDto,
+  Cursor,
+  IdDto,
+  invalidCursor,
+  LocaleDto,
+  localizedTextDto,
+  pageDto,
+} from "./common.js";
 import { AddressFields } from "./identity.js";
 
 export const OrderStatus = z.enum([
@@ -71,7 +81,9 @@ export const placeOrder = authed
 
 export const listOrders = authed
   .route({ method: "GET", path: "/ordering/orders" })
-  .output(z.object({ items: z.array(OrderDto) }));
+  .input(z.object({ cursor: Cursor.optional() }))
+  .output(pageDto(OrderDto))
+  .errors(invalidCursor);
 
 export const getOrder = authed
   .route({ method: "GET", path: "/ordering/orders/{id}" })
@@ -81,8 +93,19 @@ export const getOrder = authed
 
 export const listAllOrders = admin
   .route({ method: "GET", path: "/ordering/admin/orders" })
-  .input(z.object({ userId: IdDto.optional() }))
-  .output(z.object({ items: z.array(OrderDto) }));
+  .input(
+    z
+      .object({
+        userId: IdDto.optional(),
+        status: OrderStatus.optional(),
+        cursor: Cursor.optional(),
+      })
+      .refine(({ userId, status }) => userId === undefined || status === undefined, {
+        message: "Filter by user or by status, not both",
+      }),
+  )
+  .output(pageDto(OrderDto))
+  .errors(invalidCursor);
 
 const orderNotFound = { ORDER_NOT_FOUND: { status: 404 } } as const;
 

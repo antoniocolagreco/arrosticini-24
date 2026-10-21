@@ -21,7 +21,7 @@ Riferimenti visivi: `docs/mock.png` (home) e `docs/images/` (immagini del sito e
 - **web:** React Router v8 (framework mode, SSR) su Fargate. Tailwind v4, shadcn/ui, Motion, Lucide.
 - **api:** Express 5, Zod 4, AWS SDK v3 su Fargate. Non raggiungibile dalla rete pubblica.
 - **Contratto web↔api:** oRPC contract-first in `packages/contracts`.
-- **Persistenza:** DynamoDB (una tabella per bounded context), Valkey (sessioni e carrelli), S3 (asset della build e immagini dei prodotti).
+- **Persistenza:** DynamoDB (una tabella per tipo di dato, liste paginate su indici, niente Scan), Valkey (sessioni e carrelli), S3 (asset della build e immagini dei prodotti).
 - **Autenticazione:** email e password, sessione su Valkey, cookie HttpOnly. In registrazione si chiedono anche nome e cognome; il telefono sta su ogni indirizzo di spedizione, perché il corriere chiama chi riceve.
 - **Pagamenti:** Stripe Checkout ospitato, modalità test.
 - **Multilingua:** IT ed EN, lingua nel prefisso dell'URL (`/it/...`, `/en/...`).
@@ -76,7 +76,7 @@ Stripe ──► webhook ──► CloudFront ──► web /webhooks/stripe ─
 2. Nessun import diretto tra contesti. Se un contesto ha bisogno di un altro, dichiara una porta nel proprio livello application; l'adapter sta in `apps/api` (composition root).
 3. La comunicazione asincrona passa da domain event su un'interfaccia `EventBus`, oggi implementata in-process.
 4. Ogni contesto legge e scrive solo i propri dati.
-5. Lo shared kernel (`packages/kernel`) contiene solo `Money`, `Locale`, `LocalizedText`, ID (ULID), `DomainError`, `DomainEvent`, `EventBus`.
+5. Lo shared kernel (`packages/kernel`) contiene solo `Money`, `Locale`, `LocalizedText`, ID (UUIDv7), paginazione (`Page`, cursore), `DomainError`, `DomainEvent`, `EventBus`.
 6. `turbo boundaries` con tag (`context`, `kernel`, `app`) vieta le dipendenze tra contesti.
 7. Per estrarre un contesto: nuovo `apps/<contesto>-service` che monta il suo router, adapter HTTP al posto di quello in-process, SQS o EventBridge al posto del bus in-process.
 
@@ -181,46 +181,52 @@ arrosticini-24/
 
 ## Dati
 
-Prezzi in centesimi interi con valuta `EUR` (value object `Money`). Testi localizzati come `{ it, en }` (value object `LocalizedText`).
+Prezzi in centesimi interi con valuta `EUR` (value object `Money`). Testi localizzati come `{ it, en }` (value object `LocalizedText`). ID in UUIDv7.
 
-### `catalog`
+- **Una tabella per tipo di dato:** la chiave è il campo del dominio con il suo nome, senza `PK`/`SK` e senza prefissi.
+- **Niente Scan:** ogni lista legge un indice con una Query.
+- **Paginazione:** `Limit` di 20 e `LastEvaluatedKey` restituita come `nextCursor` (base64url). La pagina successiva si chiede con `cursor`. Un cursore non valido risponde `INVALID_CURSOR` (400).
+- **`kind`:** attributo con lo stesso valore su ogni item (`product`, `user`, `order`). È la partition key degli indici che elencano tutti gli item. Regge circa 1000 nuove scritture al secondo.
 
-| Item | PK | SK | Attributi |
-|---|---|---|---|
-| Prodotto | `PRODUCT#<slug>` | `META` | name, description, pieces (facoltativo, solo arrosticini), priceCents, currency, images[] (chiavi S3), status `DRAFT\|ACTIVE\|ARCHIVED`, searchText, updatedAt |
+### Catalog: `products`
 
-- Lo slug è l'identità del prodotto ed è immutabile. Si crea con `attribute_not_exists(PK)`.
-- **Ricerca:** Scan con filtro `status = ACTIVE` e `contains(searchText, q)`. `searchText` contiene nomi e descrizioni IT ed EN, in minuscolo e senza accenti.
+| Chiave | Indici | Attributi |
+|---|---|---|
+| `slug` | `byStatus` (`status` + `priceCents`), `byPrice` (`kind` + `priceCents`) | kind, name, description, pieces (facoltativo, solo arrosticini), priceCents, currency, images[] (chiavi S3), status `DRAFT\|ACTIVE\|ARCHIVED`, searchText, updatedAt |
+
+- Lo slug è l'identità del prodotto ed è immutabile. Si crea con `attribute_not_exists(slug)`.
+- **Liste:** dal più economico. Il negozio legge `byStatus` con `ACTIVE`; l'admin legge `byStatus` se filtra per stato, altrimenti `byPrice`.
+- **Ricerca:** filtro `contains(searchText, q)` sulla Query. Il repository legge più pagine finché ne riempie una. `searchText` contiene nomi e descrizioni IT ed EN, in minuscolo e senza accenti.
 - I prodotti si archiviano, non si cancellano.
 
-### `identity`
+### Identity: `users` e `user-emails`
 
-| Item | PK | SK | Attributi |
+| Tabella | Chiave | Indici | Attributi |
 |---|---|---|---|
-| Utente | `USER#<userId>` | `PROFILE` | email, passwordHash, salt, role, firstName, lastName, preferredLocale, createdAt |
-| Indice email | `EMAIL#<email>` | `LOOKUP` | userId |
-| Indirizzo | `USER#<userId>` | `ADDRESS#<addressId>` | fullName, line1, line2, city, postalCode, country, phone, isDefault |
+| `users` | `userId` | `byStatus` (`status` + `createdAt`), `byCreatedAt` (`kind` + `createdAt`) | kind, email, passwordHash, salt, role, status `ACTIVE\|SUSPENDED`, firstName, lastName, preferredLocale, createdAt, addresses[] (id, fullName, line1, line2, city, postalCode, country, phone, isDefault) |
+| `user-emails` | `email` | — | userId |
 
-- L'email è salvata in minuscolo, senza spazi ai lati.
+- L'email è salvata in minuscolo, senza spazi ai lati, e non si modifica.
 - Il telefono dell'indirizzo è obbligatorio; `line2` è l'unico campo facoltativo.
-- La registrazione scrive utente e indice email in una `TransactWriteItems`, con condizione di non esistenza su entrambi.
-- Massimo 5 indirizzi per utente.
+- La registrazione scrive `users` e `user-emails` in una `TransactWriteItems`, con condizione di non esistenza su entrambe: l'email resta unica.
+- Massimo 5 indirizzi per utente, salvati dentro l'utente.
+- **Liste admin:** dal più recente, tutti gli utenti (`byCreatedAt`) o quelli di uno stato (`byStatus`).
 
-### `ordering`
+### Ordering: `orders`
 
-| Item | PK | SK | GSI1 (utente) | GSI2 (admin) |
-|---|---|---|---|---|
-| Ordine | `ORDER#<orderId>` | `META` | `USER#<userId>` / createdAt | `ORDER` / createdAt |
+| Chiave | Indici | Attributi |
+|---|---|---|
+| `orderId` | `byUser` (`userId` + `createdAt`), `byStatus` (`status` + `createdAt`), `byCreatedAt` (`kind` + `createdAt`) | kind, userId, lines[] (slug, name, unitPriceCents, quantity), shippingAddress, totalCents, currency, status, shipment, createdAt, paidAt |
 
-Attributi: userId, lines[] (slug, name, unitPriceCents, quantity), shippingAddress, totalCents, status, createdAt, paidAt.
+- **Liste:** dal più recente. Il cliente legge `byUser`; l'admin legge tutti gli ordini (`byCreatedAt`), quelli di uno stato (`byStatus`) o quelli di un utente (`byUser`).
 
-### `payments`
+### Payments: `payments`, `payment-customers`, `stripe-events`
 
-| Item | PK | SK | Attributi |
-|---|---|---|---|
-| Pagamento | `PAYMENT#<orderId>` | `META` | stripeSessionId, amountCents, status `PENDING\|SUCCEEDED\|EXPIRED` |
-| Cliente | `CUSTOMER#<userId>` | `STRIPE` | stripeCustomerId |
-| Evento visto | `EVENT#<stripeEventId>` | `META` | receivedAt, ttl (30 giorni) |
+| Tabella | Chiave | Attributi |
+|---|---|---|
+| `payments` | `orderId` | userId, stripeSessionId, amountCents, currency, status `PENDING\|SUCCEEDED\|EXPIRED`, createdAt, updatedAt |
+| `payment-customers` | `userId` | stripeCustomerId |
+| `stripe-events` | `eventId` | receivedAt, ttl (30 giorni) |
 
 Le carte salvate restano su Stripe.
 
@@ -292,7 +298,7 @@ Regole:
 | Ops | `GET /internal/whoami` | solo da web |
 | Ops | `GET /healthz` | ECS |
 
-**Upload immagini:** `web` inoltra il file ad `api` come `File` dichiarato nel contratto. Catalog controlla il tipo dai magic byte (JPEG, PNG, WebP) e la dimensione (massimo 5 MB), poi lo salva su S3 `media` con chiave `products/<slug>/<ulid>.<ext>`.
+**Upload immagini:** `web` inoltra il file ad `api` come `File` dichiarato nel contratto. Catalog controlla il tipo dai magic byte (JPEG, PNG, WebP) e la dimensione (massimo 5 MB), poi lo salva su S3 `media` con chiave `products/<slug>/<uuid>.<ext>`.
 
 ## Web
 
@@ -381,7 +387,7 @@ Il codice è in `packages/ops`, dalla fase 0.
 
 ### Request id
 
-- `web` genera un `requestId` (ULID) per ogni richiesta, o riusa `x-request-id` se arriva già.
+- `web` genera un `requestId` (UUIDv7) per ogni richiesta, o riusa `x-request-id` se arriva già.
 - Il client oRPC lo passa ad `api` in `x-request-id`.
 - La pagina 500 lo mostra.
 

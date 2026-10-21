@@ -32,8 +32,8 @@ const products: ProductAvailability = {
 };
 
 const created = new Date("2026-10-09T10:00:00.000Z");
-const mario: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X", role: "customer" };
-const lucia: Actor = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", role: "customer" };
+const mario: Actor = { userId: "0192e1a0-0000-7000-8000-000000000013", role: "customer" };
+const lucia: Actor = { userId: "0192e1a0-0000-7000-8000-000000000014", role: "customer" };
 
 function stored(
   carts: InMemoryCartRepository,
@@ -62,9 +62,9 @@ describe("CreateCart", () => {
 describe("GetCart", () => {
   it("fails for an unknown cart", async () => {
     await expect(
-      new GetCart(new InMemoryCartRepository()).execute("01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      new GetCart(new InMemoryCartRepository()).execute("0192e1a0-0000-7000-8000-000000000007"),
     ).rejects.toEqual(
-      new DomainError("CART_NOT_FOUND", "Cart not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      new DomainError("CART_NOT_FOUND", "Cart not found: 0192e1a0-0000-7000-8000-000000000007"),
     );
   });
 });
@@ -72,10 +72,10 @@ describe("GetCart", () => {
 describe("SetCartLine", () => {
   it("sets the quantity of an available product", async () => {
     const carts = new InMemoryCartRepository();
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", []);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", []);
 
     const cart = await new SetCartLine(carts, products).execute({
-      cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      cartId: "0192e1a0-0000-7000-8000-000000000007",
       slug: "vino",
       quantity: 3,
     });
@@ -85,11 +85,11 @@ describe("SetCartLine", () => {
 
   it("rejects a product that cannot be sold", async () => {
     const carts = new InMemoryCartRepository();
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", []);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", []);
 
     await expect(
       new SetCartLine(carts, products).execute({
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
         slug: "carbone",
         quantity: 1,
       }),
@@ -98,10 +98,10 @@ describe("SetCartLine", () => {
 
   it("removes a line even when the product is no longer sold", async () => {
     const carts = new InMemoryCartRepository();
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["carbone", 2]]);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["carbone", 2]]);
 
     const cart = await new SetCartLine(carts, products).execute({
-      cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      cartId: "0192e1a0-0000-7000-8000-000000000007",
       slug: "carbone",
       quantity: 0,
     });
@@ -112,12 +112,12 @@ describe("SetCartLine", () => {
   it("fails for an unknown cart", async () => {
     await expect(
       new SetCartLine(new InMemoryCartRepository(), products).execute({
-        cartId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
         slug: "vino",
         quantity: 1,
       }),
     ).rejects.toEqual(
-      new DomainError("CART_NOT_FOUND", "Cart not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      new DomainError("CART_NOT_FOUND", "Cart not found: 0192e1a0-0000-7000-8000-000000000007"),
     );
   });
 });
@@ -125,18 +125,21 @@ describe("SetCartLine", () => {
 describe("MergeCart", () => {
   it("requires a signed-in user", async () => {
     await expect(
-      new MergeCart(new InMemoryCartRepository()).execute(undefined, "01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      new MergeCart(new InMemoryCartRepository()).execute(
+        undefined,
+        "0192e1a0-0000-7000-8000-000000000007",
+      ),
     ).rejects.toEqual(new DomainError("UNAUTHORIZED", "Authentication required"));
   });
 
   it("forbids admins", async () => {
     const carts = new InMemoryCartRepository();
-    const cart = stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 1]]);
+    const cart = stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["vino", 1]]);
 
     await expect(
       new MergeCart(carts).execute(
-        { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Z", role: "admin" },
-        "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+        { userId: "0192e1a0-0000-7000-8000-000000000015", role: "admin" },
+        "0192e1a0-0000-7000-8000-000000000007",
       ),
     ).rejects.toEqual(new DomainError("FORBIDDEN", "Admins cannot own a cart"));
     expect(cart.ownerId).toBeUndefined();
@@ -144,47 +147,49 @@ describe("MergeCart", () => {
 
   it("gives the cart to a user who has none", async () => {
     const carts = new InMemoryCartRepository();
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 1]]);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["vino", 1]]);
 
-    const cart = await new MergeCart(carts).execute(mario, "01JB2Q7Z8X4M3N5P6R7S8T9V0A");
+    const cart = await new MergeCart(carts).execute(mario, "0192e1a0-0000-7000-8000-000000000007");
 
-    expect(cart.id).toBe("01JB2Q7Z8X4M3N5P6R7S8T9V0A");
+    expect(cart.id).toBe("0192e1a0-0000-7000-8000-000000000007");
     expect(cart.ownerId).toBe(mario.userId);
   });
 
   it("moves an anonymous cart into the user's cart", async () => {
     const carts = new InMemoryCartRepository();
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 2]], mario.userId);
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0B", [
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["vino", 2]], mario.userId);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000008", [
       ["vino", 1],
       ["arrosticini-75", 1],
     ]);
 
-    const cart = await new MergeCart(carts).execute(mario, "01JB2Q7Z8X4M3N5P6R7S8T9V0B");
+    const cart = await new MergeCart(carts).execute(mario, "0192e1a0-0000-7000-8000-000000000008");
 
-    expect(cart.id).toBe("01JB2Q7Z8X4M3N5P6R7S8T9V0A");
+    expect(cart.id).toBe("0192e1a0-0000-7000-8000-000000000007");
     expect(cart.lines).toEqual([
       { slug: "vino", quantity: 3 },
       { slug: "arrosticini-75", quantity: 1 },
     ]);
-    expect(carts.carts.has("01JB2Q7Z8X4M3N5P6R7S8T9V0B")).toBe(false);
+    expect(carts.carts.has("0192e1a0-0000-7000-8000-000000000008")).toBe(false);
   });
 
   it("returns the user's own cart unchanged", async () => {
     const carts = new InMemoryCartRepository();
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 2]], mario.userId);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["vino", 2]], mario.userId);
 
-    const cart = await new MergeCart(carts).execute(mario, "01JB2Q7Z8X4M3N5P6R7S8T9V0A");
+    const cart = await new MergeCart(carts).execute(mario, "0192e1a0-0000-7000-8000-000000000007");
 
     expect(cart.lines).toEqual([{ slug: "vino", quantity: 2 }]);
   });
 
   it("hides another user's cart", async () => {
     const carts = new InMemoryCartRepository();
-    stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 2]], lucia.userId);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["vino", 2]], lucia.userId);
 
-    await expect(new MergeCart(carts).execute(mario, "01JB2Q7Z8X4M3N5P6R7S8T9V0A")).rejects.toEqual(
-      new DomainError("CART_NOT_FOUND", "Cart not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+    await expect(
+      new MergeCart(carts).execute(mario, "0192e1a0-0000-7000-8000-000000000007"),
+    ).rejects.toEqual(
+      new DomainError("CART_NOT_FOUND", "Cart not found: 0192e1a0-0000-7000-8000-000000000007"),
     );
   });
 });
@@ -192,8 +197,13 @@ describe("MergeCart", () => {
 describe("EmptyOwnedCart", () => {
   it("empties only the cart of the given owner", async () => {
     const carts = new InMemoryCartRepository();
-    const own = stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0A", [["vino", 2]], mario.userId);
-    const other = stored(carts, "01JB2Q7Z8X4M3N5P6R7S8T9V0B", [["vino", 1]], lucia.userId);
+    const own = stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["vino", 2]], mario.userId);
+    const other = stored(
+      carts,
+      "0192e1a0-0000-7000-8000-000000000008",
+      [["vino", 1]],
+      lucia.userId,
+    );
 
     await new EmptyOwnedCart(carts).execute(mario.userId);
 

@@ -1,5 +1,6 @@
 import { RouterContextProvider } from "react-router";
 import { afterEach, describe, expect, it, type MockInstance, vi } from "vitest";
+import { loader as adminOrdersLoader } from "../routes/admin-orders.js";
 import { orderAdminAction } from "./orders-admin.server.js";
 import {
   createValkeySessionStorage,
@@ -25,7 +26,7 @@ async function context(role: "admin" | "customer" = "admin"): Promise<RouterCont
   );
   const state: RouterContextProvider = new RouterContextProvider();
   const session = await storage.getSession();
-  session.set("userId", "01JB2Q7Z8X4M3N5P6R7S8T9V0W");
+  session.set("userId", "0192e1a0-0000-7000-8000-000000000012");
   session.set("role", role);
   session.set("locale", "it");
   state.set(sessionContext, session);
@@ -33,7 +34,7 @@ async function context(role: "admin" | "customer" = "admin"): Promise<RouterCont
 }
 
 function post(fields: Record<string, string>, origin = "http://web.test"): Request {
-  return new Request("http://web.test/it/admin/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A", {
+  return new Request("http://web.test/it/admin/orders/0192e1a0-0000-7000-8000-000000000007", {
     method: "POST",
     headers: { origin, "x-actor": "forged" },
     body: new URLSearchParams(fields),
@@ -41,8 +42,8 @@ function post(fields: Record<string, string>, origin = "http://web.test"): Reque
 }
 
 const order = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-  userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+  id: "0192e1a0-0000-7000-8000-000000000007",
+  userId: "0192e1a0-0000-7000-8000-000000000013",
   lines: [
     {
       slug: "arrosticini-50",
@@ -77,11 +78,16 @@ describe("order administration", () => {
         post(fields, "http://evil.test"),
         await context(),
         "it",
-        "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+        "0192e1a0-0000-7000-8000-000000000007",
       ),
     ).rejects.toMatchObject({ status: 403 });
     await expect(
-      orderAdminAction(post(fields), await context("customer"), "it", "01JB2Q7Z8X4M3N5P6R7S8T9V0A"),
+      orderAdminAction(
+        post(fields),
+        await context("customer"),
+        "it",
+        "0192e1a0-0000-7000-8000-000000000007",
+      ),
     ).rejects.toMatchObject({ status: 403 });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -96,22 +102,22 @@ describe("order administration", () => {
       post({ intent: "ship", carrier: " BRT ", trackingNumber: " ", trackingUrl: " " }),
       await context(),
       "it",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "0192e1a0-0000-7000-8000-000000000007",
     );
 
     if (!(result instanceof Response)) expect.fail("Expected redirect");
     expect(result.status).toBe(303);
     expect(result.headers.get("Location")).toBe(
-      "/it/admin/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A?saved=shipment",
+      "/it/admin/orders/0192e1a0-0000-7000-8000-000000000007?saved=shipment",
     );
     const outgoing: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(outgoing.method).toBe("PUT");
     expect(new URL(outgoing.url).pathname).toBe(
-      "/ordering/admin/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A/shipment",
+      "/ordering/admin/orders/0192e1a0-0000-7000-8000-000000000007/shipment",
     );
     expect(await outgoing.json()).toEqual({ carrier: "BRT" });
     expect(outgoing.headers.get("x-actor")).toBe(
-      '{"userId":"01JB2Q7Z8X4M3N5P6R7S8T9V0W","role":"admin"}',
+      '{"userId":"0192e1a0-0000-7000-8000-000000000012","role":"admin"}',
     );
   });
 
@@ -135,22 +141,22 @@ describe("order administration", () => {
       }),
       await context(),
       "en",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "0192e1a0-0000-7000-8000-000000000007",
     );
     const closed = await orderAdminAction(
       post({ intent: "close", status: "LOST" }),
       await context(),
       "en",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "0192e1a0-0000-7000-8000-000000000007",
     );
 
     if (!(address instanceof Response) || !(closed instanceof Response))
       expect.fail("Expected redirects");
     expect(address.headers.get("Location")).toBe(
-      "/en/admin/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A?saved=address",
+      "/en/admin/orders/0192e1a0-0000-7000-8000-000000000007?saved=address",
     );
     expect(closed.headers.get("Location")).toBe(
-      "/en/admin/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A?saved=lost",
+      "/en/admin/orders/0192e1a0-0000-7000-8000-000000000007?saved=lost",
     );
     const addressRequest: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(await addressRequest.json()).toEqual({
@@ -163,7 +169,7 @@ describe("order administration", () => {
     });
     const closeRequest: Request = fetchMock.mock.calls[1]?.[0] as Request;
     expect(new URL(closeRequest.url).pathname).toBe(
-      "/ordering/admin/orders/01JB2Q7Z8X4M3N5P6R7S8T9V0A/close",
+      "/ordering/admin/orders/0192e1a0-0000-7000-8000-000000000007/close",
     );
     expect(await closeRequest.json()).toEqual({ status: "LOST" });
   });
@@ -180,13 +186,13 @@ describe("order administration", () => {
       }),
       await context(),
       "it",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "0192e1a0-0000-7000-8000-000000000007",
     );
     const status = await orderAdminAction(
       post({ intent: "close", status: "CANCELLED" }),
       await context(),
       "it",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "0192e1a0-0000-7000-8000-000000000007",
     );
 
     if (result instanceof Response || status instanceof Response) expect.fail("Expected errors");
@@ -215,11 +221,51 @@ describe("order administration", () => {
       post({ intent: "close", status: "DELIVERED" }),
       await context(),
       "it",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
+      "0192e1a0-0000-7000-8000-000000000007",
     );
 
     if (result instanceof Response) expect.fail("Expected an error");
     expect(result.init?.status).toBe(409);
     expect(result.data.error).toBe("orderInvalidTransition");
+  });
+});
+
+describe("admin order list", () => {
+  it("forwards the status filter and the cursor", async () => {
+    vi.stubEnv("API_URL", "http://api.test:4100");
+    const fetchMock: MockInstance<typeof fetch> = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json({ items: [order], nextCursor: "page-3" }));
+    const url = "http://web.test/it/admin/orders?status=PAID&cursor=page-2";
+
+    const result = await adminOrdersLoader({
+      request: new Request(url),
+      params: { lang: "it" },
+      url: new URL(url),
+      pattern: "/:lang/admin/orders",
+      context: await context(),
+    });
+
+    expect(result).toEqual({ items: [order], nextCursor: "page-3", status: "PAID" });
+    const outbound: Request = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(outbound.url).toBe(
+      "http://api.test:4100/ordering/admin/orders?status=PAID&cursor=page-2",
+    );
+  });
+
+  it("answers 400 for an unknown status without calling the API", async () => {
+    const fetchMock: MockInstance<typeof fetch> = vi.spyOn(globalThis, "fetch");
+    const url = "http://web.test/it/admin/orders?status=FORGED";
+
+    const error: unknown = await adminOrdersLoader({
+      request: new Request(url),
+      params: { lang: "it" },
+      url: new URL(url),
+      pattern: "/:lang/admin/orders",
+      context: await context(),
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ type: "DataWithResponseInit", init: { status: 400 } });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

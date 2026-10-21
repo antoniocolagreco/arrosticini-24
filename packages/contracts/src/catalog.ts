@@ -1,6 +1,14 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
-import { admin, CurrencyDto, IdDto, localizedTextDto } from "./common.js";
+import {
+  admin,
+  CurrencyDto,
+  Cursor,
+  IdDto,
+  invalidCursor,
+  localizedTextDto,
+  pageDto,
+} from "./common.js";
 
 export const PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -43,10 +51,11 @@ export const listProducts = oc
     z.object({
       q: z.string().trim().max(100).optional(),
       status: ProductStatus.optional(),
+      cursor: Cursor.optional(),
     }),
   )
-  .output(z.object({ items: z.array(ProductDto) }))
-  .errors({ FORBIDDEN: { status: 403 } });
+  .output(pageDto(ProductDto))
+  .errors({ FORBIDDEN: { status: 403 }, ...invalidCursor });
 
 export const getProduct = oc
   .route({ method: "GET", path: "/catalog/products/{slug}" })

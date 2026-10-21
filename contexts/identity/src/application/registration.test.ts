@@ -6,7 +6,7 @@ import { VerifyCredentials } from "./registration.js";
 
 const mario = User.register(
   {
-    id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+    id: "0192e1a0-0000-7000-8000-000000000012",
     email: "mario.rossi@example.com",
     password: { hash: "bWFyaW8=", salt: "c2FsZS1tYXJpbw==" },
     role: "customer",
@@ -20,7 +20,8 @@ const mario = User.register(
 const users: UserRepository = {
   findById: async (id) => (id === mario.id ? mario : undefined),
   findByEmail: async (email) => (email === mario.email ? mario : undefined),
-  listAll: async () => [mario],
+  listAll: async () => ({ items: [mario] }),
+  listByStatus: async () => ({ items: [mario] }),
   create: async () => {},
   save: async () => {},
 };
@@ -69,7 +70,7 @@ describe("VerifyCredentials", () => {
   it("rejects a suspended user only after a correct password", async () => {
     const giulia = User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        id: "0192e1a0-0000-7000-8000-000000000013",
         email: "giulia.verdi@example.com",
         password: { hash: "Z2l1bGlh", salt: "c2FsZS1naXVsaWE=" },
         role: "customer",

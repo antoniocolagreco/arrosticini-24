@@ -40,9 +40,10 @@ function toDto(product: Product): ProductDto {
 
 export function catalogRouter(useCases: CatalogUseCases) {
   return {
-    listProducts: os.listProducts.handler(async ({ input, context }) => ({
-      items: (await useCases.listProducts.execute(context.actor, input)).map(toDto),
-    })),
+    listProducts: os.listProducts.handler(async ({ input, context }) => {
+      const page = await useCases.listProducts.execute(context.actor, input);
+      return { ...page, items: page.items.map(toDto) };
+    }),
     getProduct: os.getProduct.handler(async ({ input, context }) =>
       toDto(await useCases.getProduct.execute(context.actor, input.slug)),
     ),

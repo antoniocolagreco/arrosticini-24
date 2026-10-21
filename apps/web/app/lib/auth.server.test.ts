@@ -46,7 +46,7 @@ function post(fields: Record<string, string>): Request {
 }
 
 const user: UserDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+  id: "0192e1a0-0000-7000-8000-000000000012",
   email: "antonio@example.com",
   firstName: "Antonio",
   lastName: "Colagreco",
@@ -57,7 +57,7 @@ const user: UserDto = {
 };
 
 const cart: CartDto = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+  id: "0192e1a0-0000-7000-8000-000000000013",
   lines: [],
   updatedAt: "2026-10-09T00:00:00.000Z",
 };
@@ -111,7 +111,7 @@ describe("authentication actions", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
         Response.json({
-          id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+          id: "0192e1a0-0000-7000-8000-000000000014",
           email: "admin@example.com",
           firstName: "Admin",
           lastName: "Arrosticini 24ore",
@@ -121,7 +121,7 @@ describe("authentication actions", () => {
         }),
       );
     const state = await context();
-    state.get(sessionContext).set("cartId", "01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    state.get(sessionContext).set("cartId", "0192e1a0-0000-7000-8000-000000000013");
     const result = await authenticate(
       post({ email: "admin@example.com", password: "long-password" }),
       state,

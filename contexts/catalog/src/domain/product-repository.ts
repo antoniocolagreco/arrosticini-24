@@ -1,3 +1,4 @@
+import type { Page, PageRequest } from "@arrosticini/kernel";
 import type { Product, ProductStatus } from "./product.js";
 
 export interface ProductSearch {
@@ -7,7 +8,7 @@ export interface ProductSearch {
 
 export interface ProductRepository {
   findBySlug(slug: string): Promise<Product | undefined>;
-  search(criteria: ProductSearch): Promise<Product[]>;
+  search(criteria: ProductSearch, page: PageRequest): Promise<Page<Product>>;
   create(product: Product): Promise<void>;
   save(product: Product): Promise<void>;
 }

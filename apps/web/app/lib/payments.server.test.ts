@@ -26,7 +26,7 @@ async function context(signedIn = true): Promise<RouterContextProvider> {
   const state: RouterContextProvider = new RouterContextProvider();
   const session = await sessions.getSession();
   if (signedIn) {
-    session.set("userId", "01JB2Q7Z8X4M3N5P6R7S8T9V0W");
+    session.set("userId", "0192e1a0-0000-7000-8000-000000000012");
     session.set("role", "customer");
     session.set("locale", "it");
   }
@@ -80,7 +80,7 @@ describe("saved card actions", () => {
       locale: "en",
     });
     expect(JSON.parse(sent.headers.get("x-actor") ?? "{}")).toEqual({
-      userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+      userId: "0192e1a0-0000-7000-8000-000000000012",
       role: "customer",
     });
   });
