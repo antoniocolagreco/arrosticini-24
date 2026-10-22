@@ -19,6 +19,10 @@ export const ProductSlug = z
   .max(64)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
+export const ProductImageFileName = z
+  .string()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/);
+
 export const ProductStatus = z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]);
 
 export const ProductImageDto = z.object({
@@ -107,6 +111,12 @@ export const addProductImage = admin
   .output(ProductDto)
   .errors({ ...productNotFound, INVALID_IMAGE: { status: 422 } });
 
+export const getProductImage = oc
+  .route({ method: "GET", path: "/catalog/products/{slug}/images/{fileName}" })
+  .input(z.object({ slug: ProductSlug, fileName: ProductImageFileName }))
+  .output(z.file())
+  .errors({ PRODUCT_IMAGE_NOT_FOUND: { status: 404 } });
+
 export const removeProductImage = admin
   .route({ method: "DELETE", path: "/catalog/products/{slug}/images/{imageId}" })
   .input(z.object({ slug: ProductSlug, imageId: IdDto }))
@@ -119,5 +129,6 @@ export const catalogContract = {
   createProduct,
   updateProduct,
   addProductImage,
+  getProductImage,
   removeProductImage,
 };

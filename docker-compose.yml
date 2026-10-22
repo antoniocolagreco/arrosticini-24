@@ -93,7 +93,6 @@ services:
       VALKEY_URL: redis://valkey:6379
       SESSION_SECRET: ${SESSION_SECRET:-}
       PUBLIC_ORIGIN: http://localhost:${WEB_PORT:-3100}
-      MEDIA_BASE_URL: ${MEDIA_BASE_URL:-http://localhost:9100/media}
     ports:
       - "${WEB_PORT:-3100}:3100"
     depends_on:

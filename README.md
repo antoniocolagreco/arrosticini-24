@@ -30,7 +30,7 @@ The shop sells arrosticini (Abruzzo's lamb skewers) worldwide, in Italian and En
 
 ```
                               ┌─ /assets/*  ──► S3 "static" (build JS/CSS)
-Browser ──► CloudFront + WAF ─┼─ /images/*  ──► S3 "media"  (product images)
+Browser ──► CloudFront + WAF ─┤
                               └─ default    ──► ALB ──► web (Fargate, ≥2 tasks, 2 AZs)
                                                          ├──► Valkey (sessions)
                                                          └──► api (Fargate, ≥2 tasks, 2 AZs, private)
@@ -43,6 +43,7 @@ Stripe ──► webhook ──► CloudFront ──► web /webhooks/stripe ─
 
 - ECS Fargate services spread across two Availability Zones behind an Application Load Balancer, scaling out when CPU goes above 80%.
 - `api` runs in private subnets and accepts traffic only from `web`, through ECS Service Connect.
+- Product images are served by `web` at `/images/products/...`, read through `api` from the private `media` bucket, and cached by CloudFront like any other path.
 - AWS WAF on CloudFront with a per-IP rate limit and SQL injection rules; Shield Standard covers network-layer attacks.
 - Infrastructure as code with AWS CDK in TypeScript. Releases build the images, push them to ECR and trigger a rolling update with automatic rollback.
 

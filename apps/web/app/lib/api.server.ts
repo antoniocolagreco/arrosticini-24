@@ -44,6 +44,7 @@ export function getApiError(
   error: unknown,
 ):
   | "PRODUCT_NOT_FOUND"
+  | "PRODUCT_IMAGE_NOT_FOUND"
   | "CART_NOT_FOUND"
   | "BAD_REQUEST"
   | "INVALID_CREDENTIALS"
@@ -55,6 +56,7 @@ export function getApiError(
   if (
     error instanceof ORPCError &&
     (error.code === "PRODUCT_NOT_FOUND" ||
+      error.code === "PRODUCT_IMAGE_NOT_FOUND" ||
       error.code === "CART_NOT_FOUND" ||
       error.code === "BAD_REQUEST" ||
       error.code === "INVALID_CREDENTIALS" ||

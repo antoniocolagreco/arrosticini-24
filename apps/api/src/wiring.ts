@@ -4,6 +4,7 @@ import {
   catalogRouter,
   DynamoDbProductRepository,
   GetProduct,
+  GetProductImage,
   ListProducts,
   RemoveProductImage,
   S3ImageStorage,
@@ -140,6 +141,7 @@ export function createApi(
       createProduct: new CreateProduct(products),
       updateProduct: new UpdateProduct(products),
       addProductImage: new AddProductImage(products, images),
+      getProductImage: new GetProductImage(images),
       removeProductImage: new RemoveProductImage(products, images),
     }),
     identity: identityRouter({

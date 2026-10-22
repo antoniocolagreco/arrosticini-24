@@ -49,4 +49,23 @@ describe("S3ImageStorage", () => {
       ),
     ).rejects.toBeInstanceOf(NotFound);
   });
+
+  it("reads a stored image with its content type", async () => {
+    const body = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45]);
+    await storage.put(
+      "products/vino/0192e1a0-0000-7000-8000-000000000008.webp",
+      body,
+      "image/webp",
+    );
+
+    const image = await storage.get("products/vino/0192e1a0-0000-7000-8000-000000000008.webp");
+
+    expect(image).toEqual({ body, contentType: "image/webp" });
+  });
+
+  it("returns nothing for a missing image", async () => {
+    expect(
+      await storage.get("products/vino/0192e1a0-0000-7000-8000-000000000009.webp"),
+    ).toBeUndefined();
+  });
 });

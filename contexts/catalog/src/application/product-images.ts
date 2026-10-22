@@ -3,7 +3,7 @@ import { detectImageType, IMAGE_EXTENSIONS } from "../domain/image-type.js";
 import type { Product } from "../domain/product.js";
 import type { ProductRepository } from "../domain/product-repository.js";
 import type { Actor } from "./actor.js";
-import type { ImageStorage } from "./image-storage.js";
+import type { ImageStorage, StoredImage } from "./image-storage.js";
 import { loadProductForAdmin } from "./load-product.js";
 
 export class AddProductImage {
@@ -27,6 +27,22 @@ export class AddProductImage {
     product.addImage({ id, key }, new Date());
     await this.#products.save(product);
     return product;
+  }
+}
+
+export class GetProductImage {
+  readonly #images: ImageStorage;
+
+  constructor(images: ImageStorage) {
+    this.#images = images;
+  }
+
+  async execute(slug: string, fileName: string): Promise<StoredImage> {
+    const image = await this.#images.get(`products/${slug}/${fileName}`);
+    if (image === undefined) {
+      throw new DomainError("PRODUCT_IMAGE_NOT_FOUND", `Image not found: ${fileName}`);
+    }
+    return image;
   }
 }
 

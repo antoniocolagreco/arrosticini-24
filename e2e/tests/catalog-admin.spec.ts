@@ -51,6 +51,16 @@ test("an admin creates a draft, uploads an image and publishes it in both langua
     )
     .toBe(true);
   expect(await image.evaluate((element) => getComputedStyle(element).objectFit)).toBe("cover");
+  const source: string | null = await image.getAttribute("src");
+  expect(source).toMatch(
+    new RegExp(
+      `^/images/products/${slug}/[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.png$`,
+    ),
+  );
+  const served: Awaited<ReturnType<typeof page.request.get>> = await page.request.get(source ?? "");
+  expect(served.status()).toBe(200);
+  expect(served.headers()["content-type"]).toBe("image/png");
+  expect(served.headers()["cache-control"]).toBe("public, max-age=31536000, immutable");
   await page.getByLabel("Stato", { exact: true }).selectOption("ACTIVE");
   await page.getByRole("button", { name: "Salva prodotto", exact: true }).click();
   await expect(
