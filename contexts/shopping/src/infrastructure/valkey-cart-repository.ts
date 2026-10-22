@@ -1,5 +1,5 @@
 import type { Id } from "@arrosticini/kernel";
-import type { ChainableCommander, Valkey } from "iovalkey";
+import type { Valkey } from "iovalkey";
 import { Cart, type CartLine } from "../domain/cart.js";
 import type { CartRepository } from "../domain/cart-repository.js";
 
@@ -35,24 +35,20 @@ export class ValkeyCartRepository implements CartRepository {
   }
 
   async save(cart: Cart): Promise<void> {
-    await this.#write(this.#valkey.multi(), cart).exec();
-  }
-
-  async saveMerged(cart: Cart, absorbedId: Id): Promise<void> {
-    await this.#write(this.#valkey.multi(), cart).del(cartKey(absorbedId)).exec();
-  }
-
-  #write(transaction: ChainableCommander, cart: Cart): ChainableCommander {
     const stored: StoredCart = {
       id: cart.id,
       ...(cart.ownerId === undefined ? {} : { ownerId: cart.ownerId }),
       lines: [...cart.lines],
       updatedAt: cart.updatedAt.toISOString(),
     };
-    transaction.set(cartKey(cart.id), JSON.stringify(stored), "EX", CART_TTL_SECONDS);
+    await this.#valkey.set(cartKey(cart.id), JSON.stringify(stored), "EX", CART_TTL_SECONDS);
     if (cart.ownerId !== undefined) {
-      transaction.set(ownerKey(cart.ownerId), cart.id, "EX", CART_TTL_SECONDS);
+      await this.#valkey.set(ownerKey(cart.ownerId), cart.id, "EX", CART_TTL_SECONDS);
     }
-    return transaction;
+  }
+
+  async saveMerged(cart: Cart, absorbedId: Id): Promise<void> {
+    await this.save(cart);
+    await this.#valkey.del(cartKey(absorbedId));
   }
 }
