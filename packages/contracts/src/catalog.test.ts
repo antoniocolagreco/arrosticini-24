@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addProductImage, ProductSlug } from "./catalog.js";
+import { addProductImage, ProductImageFileName, ProductSlug } from "./catalog.js";
 
 describe("ProductSlug", () => {
   it.each(["arrosticini-75", "vino", "pecora-diy"])("accepts %s", (slug) => {
@@ -43,5 +43,25 @@ describe("addProductImage input", () => {
     const result = await input?.["~standard"].validate({ slug: "vino", file });
 
     expect(result).toHaveProperty("issues");
+  });
+});
+
+describe("ProductImageFileName", () => {
+  it.each([
+    "0192e1a0-0000-7000-8000-000000000007.webp",
+    "0192e1a0-0000-7000-8000-000000000007.png",
+    "0192e1a0-0000-7000-8000-000000000007.jpg",
+  ])("accepts %s", (fileName) => {
+    expect(ProductImageFileName.safeParse(fileName).success).toBe(true);
+  });
+
+  it.each([
+    "0192e1a0-0000-7000-8000-000000000007.gif",
+    "0192e1a0-0000-7000-8000-000000000007",
+    "0192e1a0-0000-4000-8000-000000000007.webp",
+    "..%2F0192e1a0-0000-7000-8000-000000000007.webp",
+    "p_vino.webp",
+  ])("rejects %o", (fileName) => {
+    expect(ProductImageFileName.safeParse(fileName).success).toBe(false);
   });
 });

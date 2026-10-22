@@ -5,9 +5,9 @@ import type { ProductRepository, ProductSearch } from "../domain/product-reposit
 import type { Actor } from "./actor.js";
 import { CreateProduct } from "./create-product.js";
 import { GetProduct } from "./get-product.js";
-import type { ImageStorage } from "./image-storage.js";
+import type { ImageStorage, StoredImage } from "./image-storage.js";
 import { ListProducts } from "./list-products.js";
-import { AddProductImage, RemoveProductImage } from "./product-images.js";
+import { AddProductImage, GetProductImage, RemoveProductImage } from "./product-images.js";
 import { UpdateProduct } from "./update-product.js";
 
 class InMemoryProductRepository implements ProductRepository {
@@ -51,9 +51,15 @@ class InMemoryProductRepository implements ProductRepository {
 class RecordingImageStorage implements ImageStorage {
   readonly stored: { key: string; contentType: string; size: number }[] = [];
   readonly deleted: string[] = [];
+  readonly objects = new Map<string, StoredImage>();
 
   async put(key: string, body: Uint8Array, contentType: string) {
     this.stored.push({ key, contentType, size: body.length });
+    this.objects.set(key, { body, contentType });
+  }
+
+  async get(key: string) {
+    return this.objects.get(key);
   }
 
   async delete(key: string) {
@@ -285,6 +291,34 @@ describe("AddProductImage", () => {
     );
     expect(images.stored).toEqual([]);
     expect(products.saved).toEqual([]);
+  });
+});
+
+describe("GetProductImage", () => {
+  it("reads the image of the product from the storage", async () => {
+    const images = new RecordingImageStorage();
+    await images.put("products/vino/0192e1a0-0000-7000-8000-000000000007.png", png, "image/png");
+
+    const image = await new GetProductImage(images).execute(
+      "vino",
+      "0192e1a0-0000-7000-8000-000000000007.png",
+    );
+
+    expect(image).toEqual({ body: png, contentType: "image/png" });
+  });
+
+  it("fails on an image that is not stored", async () => {
+    await expect(
+      new GetProductImage(new RecordingImageStorage()).execute(
+        "vino",
+        "0192e1a0-0000-7000-8000-000000000007.png",
+      ),
+    ).rejects.toEqual(
+      new DomainError(
+        "PRODUCT_IMAGE_NOT_FOUND",
+        "Image not found: 0192e1a0-0000-7000-8000-000000000007.png",
+      ),
+    );
   });
 });
 
