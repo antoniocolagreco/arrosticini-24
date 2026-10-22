@@ -371,6 +371,10 @@ describe("catalog administration", () => {
     const stored = await s3.send(new GetObjectCommand({ Bucket: mediaBucket, Key: image?.key }));
     expect(stored.ContentType).toBe("image/png");
     expect(await stored.Body?.transformToByteArray()).toEqual(png);
+    const served = await request(app).get(`/catalog/products/salsiccia/images/${image?.id}.png`);
+    expect(served.status).toBe(200);
+    expect(served.headers["content-type"]).toBe("image/png");
+    expect(new Uint8Array(served.body as Buffer)).toEqual(png);
 
     const withoutImage = await client(admin).catalog.removeProductImage({
       slug: "salsiccia",
@@ -381,6 +385,32 @@ describe("catalog administration", () => {
     await expect(
       s3.send(new HeadObjectCommand({ Bucket: mediaBucket, Key: image?.key })),
     ).rejects.toBeInstanceOf(NotFound);
+    const error = await client()
+      .catalog.getProductImage({ slug: "salsiccia", fileName: `${image?.id}.png` })
+      .catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ code: "PRODUCT_IMAGE_NOT_FOUND", status: 404, defined: true });
+  });
+
+  it("serves an image to anonymous visitors through the client", async () => {
+    const { images } = await client(admin).catalog.addProductImage({
+      slug: "salsiccia",
+      file: new File([png], "salsiccia.png", { type: "image/png" }),
+    });
+    const [image] = images;
+
+    const file = await client().catalog.getProductImage({
+      slug: "salsiccia",
+      fileName: `${image?.id}.png`,
+    });
+
+    expect(file.type).toBe("image/png");
+    expect(new Uint8Array(await file.arrayBuffer())).toEqual(png);
+  });
+
+  it("rejects an image name that is not an image id", async () => {
+    const response = await request(app).get("/catalog/products/salsiccia/images/..%2Fsecret.png");
+
+    expect(response.status).toBe(400);
   });
 
   it("answers INVALID_IMAGE when the content is not an image", async () => {

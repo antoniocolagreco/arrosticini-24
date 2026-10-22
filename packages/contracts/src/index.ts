@@ -12,6 +12,7 @@ export {
   PRODUCT_IMAGE_TYPES,
   ProductDto,
   ProductImageDto,
+  ProductImageFileName,
   ProductSlug,
   ProductStatus,
 } from "./catalog.js";

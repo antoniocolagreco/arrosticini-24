@@ -31,7 +31,6 @@ import {
   DeleteBucketCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
-  PutBucketPolicyCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { DynamoDBDocumentClient, GetCommand, paginateQuery } from "@aws-sdk/lib-dynamodb";
@@ -209,22 +208,6 @@ export async function withStack(
     }
     await s3.send(new CreateBucketCommand({ Bucket: bucket }));
     bucketCreated = true;
-    await s3.send(
-      new PutBucketPolicyCommand({
-        Bucket: bucket,
-        Policy: JSON.stringify({
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: "*",
-              Action: ["s3:GetObject"],
-              Resource: [`arn:aws:s3:::${bucket}/*`],
-            },
-          ],
-        }),
-      }),
-    );
     const products: DynamoDbProductRepository = new DynamoDbProductRepository(
       document,
       tables.products,
@@ -297,7 +280,6 @@ export async function withStack(
       WEB_PORT: String(webPort),
       PUBLIC_ORIGIN: origin,
       SESSION_SECRET: secret,
-      MEDIA_BASE_URL: `${s3Endpoint}/${bucket}`,
     };
     runtimeEnv = env;
     if (docker) {

@@ -5,7 +5,11 @@ import type { Actor } from "../application/actor.js";
 import type { CreateProduct } from "../application/create-product.js";
 import type { GetProduct } from "../application/get-product.js";
 import type { ListProducts } from "../application/list-products.js";
-import type { AddProductImage, RemoveProductImage } from "../application/product-images.js";
+import type {
+  AddProductImage,
+  GetProductImage,
+  RemoveProductImage,
+} from "../application/product-images.js";
 import type { UpdateProduct } from "../application/update-product.js";
 import type { Product } from "../domain/product.js";
 
@@ -19,6 +23,7 @@ export interface CatalogUseCases {
   createProduct: CreateProduct;
   updateProduct: UpdateProduct;
   addProductImage: AddProductImage;
+  getProductImage: GetProductImage;
   removeProductImage: RemoveProductImage;
 }
 
@@ -75,6 +80,10 @@ export function catalogRouter(useCases: CatalogUseCases) {
         ),
       ),
     ),
+    getProductImage: os.getProductImage.handler(async ({ input }) => {
+      const image = await useCases.getProductImage.execute(input.slug, input.fileName);
+      return new File([image.body], input.fileName, { type: image.contentType });
+    }),
     removeProductImage: os.removeProductImage.handler(async ({ input, context }) =>
       toDto(await useCases.removeProductImage.execute(context.actor, input.slug, input.imageId)),
     ),

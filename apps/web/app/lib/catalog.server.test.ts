@@ -25,7 +25,6 @@ afterEach(() => {
 describe("public catalog loaders", () => {
   it("forwards only the trimmed search and request ID, with no browser actor", async () => {
     vi.stubEnv("API_URL", "http://api.test:4100");
-    vi.stubEnv("MEDIA_BASE_URL", "http://media.test/media/");
     const fetchMock: MockInstance<typeof fetch> = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json({ items: [product] }));
@@ -40,7 +39,7 @@ describe("public catalog loaders", () => {
     });
 
     expect(result.data).toEqual({
-      items: [{ product, image: "http://media.test/media/products/vino/red.webp" }],
+      items: [{ product, image: "/images/products/vino/red.webp" }],
       query: "vino",
       invalidSearch: false,
     });
@@ -118,7 +117,6 @@ describe("public catalog loaders", () => {
   });
 
   it("loads product details and resolves media URLs", async () => {
-    vi.stubEnv("MEDIA_BASE_URL", "/images");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(product));
     const result = await productLoader({
       request: new Request("http://web.test/en/products/vino"),

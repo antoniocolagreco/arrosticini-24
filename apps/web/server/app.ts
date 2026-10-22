@@ -6,6 +6,7 @@ import {
   REQUEST_ID_HEADER,
 } from "@arrosticini/ops";
 import express, { type Express } from "express";
+import { serveProductImage } from "./product-image.js";
 import { forwardStripeWebhook } from "./stripe-webhook.js";
 
 export function createApp(logger: Logger, lifecycle: Lifecycle): Express {
@@ -18,5 +19,6 @@ export function createApp(logger: Logger, lifecycle: Lifecycle): Express {
   });
   app.get("/healthz", healthz(lifecycle));
   app.post("/webhooks/stripe", express.raw({ type: "application/json" }), forwardStripeWebhook);
+  app.get("/images/products/:slug/:fileName", serveProductImage);
   return app;
 }
