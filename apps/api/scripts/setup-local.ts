@@ -28,11 +28,7 @@ import {
   ResourceInUseException,
   UpdateTimeToLiveCommand,
 } from "@aws-sdk/client-dynamodb";
-import {
-  BucketAlreadyOwnedByYou,
-  CreateBucketCommand,
-  PutBucketPolicyCommand,
-} from "@aws-sdk/client-s3";
+import { BucketAlreadyOwnedByYou, CreateBucketCommand } from "@aws-sdk/client-s3";
 import { z } from "zod";
 import { createDynamoDbClient, createS3Client } from "../src/aws.js";
 import { seedProducts } from "./seed-products.js";
@@ -70,7 +66,7 @@ async function createTable(definition: CreateTableCommandInput) {
   }
 }
 
-async function createPublicBucket(bucket: string) {
+async function createBucket(bucket: string) {
   try {
     await s3.send(new CreateBucketCommand({ Bucket: bucket }));
   } catch (error) {
@@ -78,23 +74,7 @@ async function createPublicBucket(bucket: string) {
       throw error;
     }
   }
-  await s3.send(
-    new PutBucketPolicyCommand({
-      Bucket: bucket,
-      Policy: JSON.stringify({
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Principal: "*",
-            Action: ["s3:GetObject"],
-            Resource: [`arn:aws:s3:::${bucket}/*`],
-          },
-        ],
-      }),
-    }),
-  );
-  console.log(`bucket ${bucket} ready with public read`);
+  console.log(`bucket ${bucket} ready`);
 }
 
 async function seedCatalog() {
@@ -155,6 +135,6 @@ await createTable(paymentsTableDefinition(env.PAYMENTS_TABLE));
 await createTable(paymentCustomersTableDefinition(env.PAYMENT_CUSTOMERS_TABLE));
 await createTable(stripeEventsTableDefinition(env.STRIPE_EVENTS_TABLE));
 await enableStripeEventsTimeToLive(env.STRIPE_EVENTS_TABLE);
-await createPublicBucket(env.MEDIA_BUCKET);
+await createBucket(env.MEDIA_BUCKET);
 await seedCatalog();
 await seedAdmin();

@@ -36,7 +36,7 @@ Riferimenti visivi: `docs/mock.png` (home) e `docs/images/` (immagini del sito e
 
 ```
                               ┌─ /assets/*  ──► S3 "static" (build JS/CSS)
-Browser ──► CloudFront + WAF ─┼─ /images/*  ──► S3 "media"  (immagini prodotto)
+Browser ──► CloudFront + WAF ─┤
                               └─ default    ──► ALB ──► web (Fargate, ≥2 task, 2 AZ)
                                                          ├──► Valkey (sessioni)
                                                          └──► api (Fargate, ≥2 task, 2 AZ, rete privata)
@@ -55,6 +55,7 @@ Stripe ──► webhook ──► CloudFront ──► web /webhooks/stripe ─
   - un NAT Gateway per AZ dà l'uscita verso internet (Stripe, ECR, CloudWatch), così la caduta di una AZ non lascia l'altra senza uscita.
 - **Comunicazione web→api:** ECS Service Connect.
 - **Webhook Stripe:** `web` espone `/webhooks/stripe` e inoltra ad `api` il corpo grezzo e l'header `Stripe-Signature`. È `api` a verificare la firma.
+- **Immagini prodotto:** `web` serve `/images/products/...` chiedendo il file ad `api`, che lo legge dal bucket privato `media`. CloudFront le mette in cache come ogni altro percorso dell'ALB, senza riscrivere il percorso: il sito funziona anche senza CloudFront.
 - **Una sola regione AWS.**
 - **Dominio:** l'URL predefinito di CloudFront (`dxxxx.cloudfront.net`), che cambia a ogni ricreazione dello stack. CDK lo passa a `web` nella variabile `PUBLIC_ORIGIN`, usata negli URL di ritorno di Stripe.
 
@@ -334,7 +335,7 @@ Regole:
 - **Animazioni Motion:** aggiunta al carrello, badge del carrello, aereo dell'hero, pecore.
 - **Cookie `__session`:** HttpOnly, Secure in produzione, SameSite=Lax.
 - **Asset:** `build/client/assets/*` con hash nel nome, serviti da S3 tramite CloudFront.
-- **Immagini prodotto:** URL `${MEDIA_BASE_URL}/products/...`. `MEDIA_BASE_URL` vale `/images` su AWS e l'endpoint di RustFS in locale.
+- **Immagini prodotto:** URL `/images/products/<slug>/<uuid>.<ext>`, uguale in locale e su AWS, con `Cache-Control: public, max-age=31536000, immutable`.
 
 ### Multilingua
 
@@ -473,7 +474,7 @@ Variabili GitHub: `AWS_REGION`, `AWS_ROLE_ARN`.
 - **`pnpm local:destroy`:** rimuove container e volumi.
 - **`pnpm local:reset`:** `local:destroy` seguito da `local:up`.
 - **`pnpm dev`:** avvia `web` e `api` sull'host. Il profilo compose `full` avvia tutto dalle immagini Docker.
-- **Profilo `full`:** dopo `pnpm local:up`, `docker compose --env-file .env.local --profile full up -d --build`. Usa tabelle, bucket, chiavi Stripe, `SESSION_SECRET`, `WEB_PORT` e `MEDIA_BASE_URL` di `.env.local`; gli endpoint di Valkey, DynamoDB e RustFS sono quelli della rete compose. È un'alternativa a `pnpm dev`, perché usa la stessa porta `WEB_PORT`.
+- **Profilo `full`:** dopo `pnpm local:up`, `docker compose --env-file .env.local --profile full up -d --build`. Usa tabelle, bucket, chiavi Stripe, `SESSION_SECRET` e `WEB_PORT` di `.env.local`; gli endpoint di Valkey, DynamoDB e RustFS sono quelli della rete compose. È un'alternativa a `pnpm dev`, perché usa la stessa porta `WEB_PORT`.
 - **Immagini:** la build si lancia dalla radice del repository, per esempio `docker build -f apps/api/Dockerfile --build-arg APP_VERSION=v1.0.0 .`. In `web` gli asset statici stanno in `/repo/apps/web/build/client`.
 - **Stripe in locale:** `STRIPE_SECRET_KEY` (chiave di test `sk_test_...`) sta in `.env.local`. `docker compose --env-file .env.local --profile stripe up -d stripe` inoltra i webhook a `web`; `docker compose --env-file .env.local --profile stripe run --rm stripe listen --print-secret` stampa il `whsec_...` da mettere in `STRIPE_WEBHOOK_SECRET`.
 - **Test:** usano `stripe/stripe-mock`, quindi non servono chiavi Stripe.
