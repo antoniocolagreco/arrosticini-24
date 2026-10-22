@@ -2,17 +2,26 @@ import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import {
-  catalogTableDefinition,
   DynamoDbProductRepository,
   Product,
   type ProductStatus,
+  productsTableDefinition,
 } from "@arrosticini/catalog";
 import { ACTOR_HEADER, contract } from "@arrosticini/contracts";
-import { DynamoDbUserRepository, identityTableDefinition, User } from "@arrosticini/identity";
+import {
+  DynamoDbUserRepository,
+  User,
+  userEmailsTableDefinition,
+  usersTableDefinition,
+} from "@arrosticini/identity";
 import { localizedText, Money } from "@arrosticini/kernel";
 import { createLogger, Lifecycle } from "@arrosticini/ops";
-import { orderingTableDefinition } from "@arrosticini/ordering";
-import { paymentsTableDefinition } from "@arrosticini/payments";
+import { ordersTableDefinition } from "@arrosticini/ordering";
+import {
+  paymentCustomersTableDefinition,
+  paymentsTableDefinition,
+  stripeEventsTableDefinition,
+} from "@arrosticini/payments";
 import { S3_TEST_CREDENTIALS } from "@arrosticini/testing";
 import { CreateTableCommand, DeleteTableCommand } from "@aws-sdk/client-dynamodb";
 import {
@@ -39,10 +48,13 @@ const logger = createLogger(
   { write: () => {} },
 );
 const tables = {
-  catalog: `catalog-test-${randomUUID()}`,
-  identity: `identity-test-${randomUUID()}`,
-  ordering: `ordering-test-${randomUUID()}`,
+  products: `products-test-${randomUUID()}`,
+  users: `users-test-${randomUUID()}`,
+  userEmails: `user-emails-test-${randomUUID()}`,
+  orders: `orders-test-${randomUUID()}`,
   payments: `payments-test-${randomUUID()}`,
+  paymentCustomers: `payment-customers-test-${randomUUID()}`,
+  stripeEvents: `stripe-events-test-${randomUUID()}`,
 };
 const mediaBucket = `media-test-${randomUUID()}`;
 const stripeWebhookSecret = "whsec_arrosticini";
@@ -86,8 +98,8 @@ function client(actor?: { userId: string; role: "customer" | "admin" }) {
   return createORPCClient<ContractRouterClient<typeof contract>>(link);
 }
 
-const admin = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W", role: "admin" } as const;
-const customer = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X", role: "customer" } as const;
+const admin = { userId: "0192e1a0-0000-7000-8000-000000000012", role: "admin" } as const;
+const customer = { userId: "0192e1a0-0000-7000-8000-000000000013", role: "customer" } as const;
 
 function product(slug: string, priceCents: number, status: ProductStatus): Product {
   return Product.create(
@@ -104,22 +116,27 @@ function product(slug: string, priceCents: number, status: ProductStatus): Produ
 }
 
 beforeAll(async () => {
-  await dynamo.send(new CreateTableCommand(catalogTableDefinition(tables.catalog)));
-  await dynamo.send(new CreateTableCommand(identityTableDefinition(tables.identity)));
-  await dynamo.send(new CreateTableCommand(orderingTableDefinition(tables.ordering)));
+  await dynamo.send(new CreateTableCommand(productsTableDefinition(tables.products)));
+  await dynamo.send(new CreateTableCommand(usersTableDefinition(tables.users)));
+  await dynamo.send(new CreateTableCommand(userEmailsTableDefinition(tables.userEmails)));
+  await dynamo.send(new CreateTableCommand(ordersTableDefinition(tables.orders)));
   await dynamo.send(new CreateTableCommand(paymentsTableDefinition(tables.payments)));
+  await dynamo.send(
+    new CreateTableCommand(paymentCustomersTableDefinition(tables.paymentCustomers)),
+  );
+  await dynamo.send(new CreateTableCommand(stripeEventsTableDefinition(tables.stripeEvents)));
   await s3.send(new CreateBucketCommand({ Bucket: mediaBucket }));
-  const products = new DynamoDbProductRepository(dynamo, tables.catalog);
+  const products = new DynamoDbProductRepository(dynamo, tables.products);
   await products.create(product("fornacella", 10000, "ACTIVE"));
   await products.create(product("vino", 500, "ACTIVE"));
   await products.create(product("carbone", 2000, "DRAFT"));
-  const users = new DynamoDbUserRepository(dynamo, tables.identity);
+  const users = new DynamoDbUserRepository(dynamo, tables.users, tables.userEmails);
   const registeredAt = new Date("2026-10-08T10:00:00.000Z");
   const password = { hash: "aGFzaA==", salt: "c2FsdA==" };
   await users.create(
     User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+        id: "0192e1a0-0000-7000-8000-000000000012",
         email: "admin@example.com",
         password,
         role: "admin",
@@ -133,7 +150,7 @@ beforeAll(async () => {
   await users.create(
     User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        id: "0192e1a0-0000-7000-8000-000000000013",
         email: "carla.conti@example.com",
         password,
         role: "customer",
@@ -147,7 +164,7 @@ beforeAll(async () => {
   await users.create(
     User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y",
+        id: "0192e1a0-0000-7000-8000-000000000014",
         email: "lucia.ferri@example.com",
         password,
         role: "customer",
@@ -161,7 +178,7 @@ beforeAll(async () => {
   await users.create(
     User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0V",
+        id: "0192e1a0-0000-7000-8000-000000000011",
         email: "stefano.greco@example.com",
         password,
         role: "customer",
@@ -177,10 +194,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   server.close();
-  await dynamo.send(new DeleteTableCommand({ TableName: tables.catalog }));
-  await dynamo.send(new DeleteTableCommand({ TableName: tables.identity }));
-  await dynamo.send(new DeleteTableCommand({ TableName: tables.ordering }));
-  await dynamo.send(new DeleteTableCommand({ TableName: tables.payments }));
+  for (const TableName of Object.values(tables)) {
+    await dynamo.send(new DeleteTableCommand({ TableName }));
+  }
   await valkey.quit();
 });
 
@@ -195,11 +211,11 @@ describe("GET /healthz", () => {
 });
 
 describe("catalog", () => {
-  it("lists active products, cheapest first", async () => {
+  it("lists active products, ordered by slug", async () => {
     const { items } = await client().catalog.listProducts({});
 
-    expect(items.map(({ slug }) => slug)).toEqual(["vino", "fornacella"]);
-    expect(items[0]).toEqual({
+    expect(items.map(({ slug }) => slug)).toEqual(["fornacella", "vino"]);
+    expect(items[1]).toEqual({
       slug: "vino",
       name: { it: "Prodotto vino", en: "Product vino" },
       description: { it: "Fatto in Abruzzo", en: "Made in Abruzzo" },
@@ -230,6 +246,14 @@ describe("catalog", () => {
 
     expect(error).toBeInstanceOf(ORPCError);
     expect(error).toMatchObject({ code: "FORBIDDEN", status: 403, defined: true });
+  });
+
+  it("answers INVALID_CURSOR for a cursor it did not issue", async () => {
+    const error = await client()
+      .catalog.listProducts({ cursor: "not-a-cursor" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "INVALID_CURSOR", status: 400, defined: true });
   });
 
   it("gets a product by slug", async () => {
@@ -383,7 +407,10 @@ describe("catalog administration", () => {
 
   it("answers PRODUCT_IMAGE_NOT_FOUND on an unknown image", async () => {
     const error = await client(admin)
-      .catalog.removeProductImage({ slug: "salsiccia", imageId: "01JB2Q7Z8X4M3N5P6R7S8T9V96" })
+      .catalog.removeProductImage({
+        slug: "salsiccia",
+        imageId: "0192e1a0-0000-7000-8000-000000000026",
+      })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "PRODUCT_IMAGE_NOT_FOUND", status: 404, defined: true });
@@ -423,7 +450,9 @@ describe("identity", () => {
     });
 
     expect(registered).toEqual({
-      id: expect.stringMatching(/^[0-9A-HJKMNP-TV-Z]{26}$/),
+      id: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      ),
       email: "luigi.verdi@example.com",
       role: "customer",
       status: "ACTIVE",
@@ -570,7 +599,7 @@ describe("identity", () => {
 
   it("answers ADDRESS_NOT_FOUND on an unknown address", async () => {
     const error = await client(mario)
-      .identity.deleteAddress({ id: "01JB2Q7Z8X4M3N5P6R7S8T9V99" })
+      .identity.deleteAddress({ id: "0192e1a0-0000-7000-8000-000000000029" })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "ADDRESS_NOT_FOUND", status: 404, defined: true });
@@ -601,7 +630,7 @@ describe("identity administration", () => {
 
   it("is reserved to admins", async () => {
     const anonymous = await client()
-      .identity.listUsers()
+      .identity.listUsers({})
       .catch((caught: unknown) => caught);
     const forbidden = await client(customer)
       .identity.setUserStatus({ id: paola.userId, status: "SUSPENDED" })
@@ -612,10 +641,15 @@ describe("identity administration", () => {
   });
 
   it("lists users and shows one with its addresses", async () => {
-    const { items } = await client(admin).identity.listUsers();
+    const { items } = await client(admin).identity.listUsers({});
+    const active = await client(admin).identity.listUsers({ status: "ACTIVE" });
     const card = await client(admin).identity.getUser({ id: paola.userId });
 
+    expect(items[0]?.email).toBe("paola.marini@example.com");
     expect(items.map(({ email }) => email)).toEqual(
+      expect.arrayContaining(["paola.marini@example.com", "admin@example.com"]),
+    );
+    expect(active.items.map(({ email }) => email)).toEqual(
       expect.arrayContaining(["paola.marini@example.com", "admin@example.com"]),
     );
     expect(card.user).toMatchObject({ id: paola.userId, status: "ACTIVE", firstName: "Paola" });
@@ -626,7 +660,7 @@ describe("identity administration", () => {
 
   it("answers USER_NOT_FOUND on an unknown user", async () => {
     const error = await client(admin)
-      .identity.getUser({ id: "01JB2Q7Z8X4M3N5P6R7S8T9V99" })
+      .identity.getUser({ id: "0192e1a0-0000-7000-8000-000000000029" })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "USER_NOT_FOUND", status: 404, defined: true });
@@ -670,7 +704,7 @@ describe("identity administration", () => {
       .get("/identity/me")
       .set(
         ACTOR_HEADER,
-        JSON.stringify({ userId: "01JB2Q7Z8X4M3N5P6R7S8T9V98", role: "customer" }),
+        JSON.stringify({ userId: "0192e1a0-0000-7000-8000-000000000028", role: "customer" }),
       );
 
     expect(response.status).toBe(401);
@@ -679,7 +713,7 @@ describe("identity administration", () => {
 });
 
 describe("shopping", () => {
-  const lucia = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", role: "customer" } as const;
+  const lucia = { userId: "0192e1a0-0000-7000-8000-000000000014", role: "customer" } as const;
 
   it("creates an empty cart and sets its lines", async () => {
     const created = await client().shopping.createCart();
@@ -725,7 +759,7 @@ describe("shopping", () => {
 
   it("answers CART_NOT_FOUND on an unknown cart", async () => {
     const error = await client()
-      .shopping.getCart({ id: "01JB2Q7Z8X4M3N5P6R7S8T9V98" })
+      .shopping.getCart({ id: "0192e1a0-0000-7000-8000-000000000028" })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "CART_NOT_FOUND", status: 404, defined: true });
@@ -782,7 +816,7 @@ describe("ordering", () => {
     country: "IT",
     phone: "+39 333 1111111",
   };
-  const lucia = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0Y", role: "customer" } as const;
+  const lucia = { userId: "0192e1a0-0000-7000-8000-000000000014", role: "customer" } as const;
   const checkout = { locale: "it", ordersUrl: "http://localhost:3100/it/orders" } as const;
   let anna: { userId: string; role: "customer" };
   let addressId: string;
@@ -814,7 +848,9 @@ describe("ordering", () => {
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
       order: {
-        id: expect.stringMatching(/^[0-9A-HJKMNP-TV-Z]{26}$/),
+        id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
         userId: anna.userId,
         lines: [
           {
@@ -842,11 +878,11 @@ describe("ordering", () => {
   });
 
   it("shows orders only to their owner", async () => {
-    const { items } = await client(anna).ordering.listOrders();
+    const { items } = await client(anna).ordering.listOrders({});
     expect(items.map(({ id }) => id)).toEqual([orderId]);
     expect(await client(anna).ordering.getOrder({ id: orderId })).toEqual(items[0]);
 
-    expect((await client(lucia).ordering.listOrders()).items).toEqual([]);
+    expect((await client(lucia).ordering.listOrders({})).items).toEqual([]);
     const error = await client(lucia)
       .ordering.getOrder({ id: orderId })
       .catch((caught: unknown) => caught);
@@ -859,6 +895,15 @@ describe("ordering", () => {
     expect((await client(admin).ordering.getOrder({ id: orderId })).id).toBe(orderId);
     const own = await client(admin).ordering.listAllOrders({ userId: anna.userId });
     expect(own.items.map(({ id }) => id)).toEqual([orderId]);
+    const pending = await client(admin).ordering.listAllOrders({ status: "PENDING_PAYMENT" });
+    expect(pending.items.map(({ id }) => id)).toContain(orderId);
+    const paid = await client(admin).ordering.listAllOrders({ status: "PAID" });
+    expect(paid.items.map(({ id }) => id)).not.toContain(orderId);
+
+    const both = await client(admin)
+      .ordering.listAllOrders({ userId: anna.userId, status: "PAID" })
+      .catch((caught: unknown) => caught);
+    expect(both).toMatchObject({ code: "BAD_REQUEST", status: 400 });
 
     const error = await client(anna)
       .ordering.listAllOrders({})
@@ -937,7 +982,11 @@ describe("ordering", () => {
 
   it("answers ADDRESS_NOT_FOUND on an address the user does not have", async () => {
     const error = await client(anna)
-      .ordering.placeOrder({ cartId, addressId: "01JB2Q7Z8X4M3N5P6R7S8T9V97", ...checkout })
+      .ordering.placeOrder({
+        cartId,
+        addressId: "0192e1a0-0000-7000-8000-000000000027",
+        ...checkout,
+      })
       .catch((caught: unknown) => caught);
 
     expect(error).toMatchObject({ code: "ADDRESS_NOT_FOUND", status: 404, defined: true });
@@ -955,14 +1004,14 @@ describe("ordering", () => {
   });
 
   it("answers PRODUCT_UNAVAILABLE when a product in the cart leaves the catalog", async () => {
-    await new DynamoDbProductRepository(dynamo, tables.catalog).create(
+    await new DynamoDbProductRepository(dynamo, tables.products).create(
       product("birra", 400, "ACTIVE"),
     );
     await client().shopping.setCartLine({ id: cartId, slug: "birra", quantity: 1 });
     await dynamo.send(
       new UpdateCommand({
-        TableName: tables.catalog,
-        Key: { PK: "PRODUCT#birra", SK: "META" },
+        TableName: tables.products,
+        Key: { slug: "birra" },
         UpdateExpression: "SET #status = :archived",
         ExpressionAttributeNames: { "#status": "status" },
         ExpressionAttributeValues: { ":archived": "ARCHIVED" },
@@ -986,7 +1035,7 @@ describe("payments", () => {
     country: "IT",
     phone: "+39 333 2222222",
   };
-  const stranger = { userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0V", role: "customer" } as const;
+  const stranger = { userId: "0192e1a0-0000-7000-8000-000000000011", role: "customer" } as const;
   let marco: { userId: string; role: "customer" };
   let addressId: string;
 

@@ -54,15 +54,17 @@ export function orderingRouter(useCases: OrderingUseCases) {
       const { order, paymentUrl } = await useCases.placeOrder.execute(context.actor, input);
       return { order: toDto(order), paymentUrl };
     }),
-    listOrders: os.listOrders.handler(async ({ context }) => ({
-      items: (await useCases.listOrders.execute(context.actor)).map(toDto),
-    })),
+    listOrders: os.listOrders.handler(async ({ input, context }) => {
+      const page = await useCases.listOrders.execute(context.actor, input.cursor);
+      return { ...page, items: page.items.map(toDto) };
+    }),
     getOrder: os.getOrder.handler(async ({ input, context }) =>
       toDto(await useCases.getOrder.execute(context.actor, input.id)),
     ),
-    listAllOrders: os.listAllOrders.handler(async ({ input, context }) => ({
-      items: (await useCases.listAllOrders.execute(context.actor, input.userId)).map(toDto),
-    })),
+    listAllOrders: os.listAllOrders.handler(async ({ input, context }) => {
+      const page = await useCases.listAllOrders.execute(context.actor, input);
+      return { ...page, items: page.items.map(toDto) };
+    }),
     changeShippingAddress: os.changeShippingAddress.handler(
       async ({ input: { id, line2, ...address }, context }) =>
         toDto(

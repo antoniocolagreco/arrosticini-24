@@ -3,10 +3,6 @@ import type { ProcessedEventRepository } from "../domain/processed-event-reposit
 
 export const PROCESSED_EVENT_TTL_SECONDS = 30 * 24 * 60 * 60;
 
-function eventKey(eventId: string) {
-  return { PK: `EVENT#${eventId}`, SK: "META" as const };
-}
-
 export class DynamoDbProcessedEventRepository implements ProcessedEventRepository {
   readonly #client: DynamoDBDocumentClient;
   readonly #tableName: string;
@@ -18,7 +14,7 @@ export class DynamoDbProcessedEventRepository implements ProcessedEventRepositor
 
   async has(eventId: string): Promise<boolean> {
     const { Item } = await this.#client.send(
-      new GetCommand({ TableName: this.#tableName, Key: eventKey(eventId) }),
+      new GetCommand({ TableName: this.#tableName, Key: { eventId } }),
     );
     return Item !== undefined;
   }
@@ -28,7 +24,7 @@ export class DynamoDbProcessedEventRepository implements ProcessedEventRepositor
       new PutCommand({
         TableName: this.#tableName,
         Item: {
-          ...eventKey(eventId),
+          eventId,
           receivedAt: now.toISOString(),
           ttl: Math.floor(now.getTime() / 1000) + PROCESSED_EVENT_TTL_SECONDS,
         },

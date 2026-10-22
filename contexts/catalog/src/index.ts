@@ -17,6 +17,6 @@ export {
 } from "./domain/product.js";
 export type { ProductRepository, ProductSearch } from "./domain/product-repository.js";
 export { type CatalogContext, type CatalogUseCases, catalogRouter } from "./http/router.js";
-export { catalogTableDefinition } from "./infrastructure/catalog-table.js";
 export { DynamoDbProductRepository } from "./infrastructure/dynamodb-product-repository.js";
+export { productsTableDefinition } from "./infrastructure/products-table.js";
 export { S3ImageStorage } from "./infrastructure/s3-image-storage.js";

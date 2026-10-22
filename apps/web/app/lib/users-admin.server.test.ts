@@ -25,7 +25,7 @@ async function context(role: "admin" | "customer" = "admin"): Promise<RouterCont
   );
   const state: RouterContextProvider = new RouterContextProvider();
   const session = await storage.getSession();
-  session.set("userId", "01JB2Q7Z8X4M3N5P6R7S8T9V0W");
+  session.set("userId", "0192e1a0-0000-7000-8000-000000000012");
   session.set("role", role);
   session.set("locale", "it");
   state.set(sessionContext, session);
@@ -33,7 +33,7 @@ async function context(role: "admin" | "customer" = "admin"): Promise<RouterCont
 }
 
 function post(intent: string, origin = "http://web.test"): Request {
-  return new Request("http://web.test/it/admin/users/01JB2Q7Z8X4M3N5P6R7S8T9V0X", {
+  return new Request("http://web.test/it/admin/users/0192e1a0-0000-7000-8000-000000000013", {
     method: "POST",
     headers: { origin, "x-actor": "forged" },
     body: new URLSearchParams({ intent }),
@@ -41,7 +41,7 @@ function post(intent: string, origin = "http://web.test"): Request {
 }
 
 const paola = {
-  id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+  id: "0192e1a0-0000-7000-8000-000000000013",
   email: "paola.marini@example.com",
   role: "customer",
   status: "SUSPENDED",
@@ -60,7 +60,7 @@ describe("user administration", () => {
         post("suspend", "http://evil.test"),
         await context(),
         "it",
-        "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        "0192e1a0-0000-7000-8000-000000000013",
       ),
     ).rejects.toMatchObject({ status: 403 });
     await expect(
@@ -68,7 +68,7 @@ describe("user administration", () => {
         post("suspend"),
         await context("customer"),
         "it",
-        "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        "0192e1a0-0000-7000-8000-000000000013",
       ),
     ).rejects.toMatchObject({ status: 403 });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -84,20 +84,22 @@ describe("user administration", () => {
       post("suspend"),
       await context(),
       "it",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+      "0192e1a0-0000-7000-8000-000000000013",
     );
 
     if (!(result instanceof Response)) expect.fail("Expected redirect");
     expect(result.status).toBe(303);
     expect(result.headers.get("Location")).toBe(
-      "/it/admin/users/01JB2Q7Z8X4M3N5P6R7S8T9V0X?saved=suspended",
+      "/it/admin/users/0192e1a0-0000-7000-8000-000000000013?saved=suspended",
     );
     const outgoing: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(outgoing.method).toBe("PATCH");
-    expect(new URL(outgoing.url).pathname).toBe("/identity/admin/users/01JB2Q7Z8X4M3N5P6R7S8T9V0X");
+    expect(new URL(outgoing.url).pathname).toBe(
+      "/identity/admin/users/0192e1a0-0000-7000-8000-000000000013",
+    );
     expect(await outgoing.json()).toEqual({ status: "SUSPENDED" });
     expect(outgoing.headers.get("x-actor")).toBe(
-      '{"userId":"01JB2Q7Z8X4M3N5P6R7S8T9V0W","role":"admin"}',
+      '{"userId":"0192e1a0-0000-7000-8000-000000000012","role":"admin"}',
     );
   });
 
@@ -119,7 +121,7 @@ describe("user administration", () => {
       post("suspend"),
       await context(),
       "en",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+      "0192e1a0-0000-7000-8000-000000000013",
     );
 
     if (result instanceof Response) expect.fail("Expected an error");
@@ -134,7 +136,7 @@ describe("user administration", () => {
       post("delete"),
       await context(),
       "it",
-      "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+      "0192e1a0-0000-7000-8000-000000000013",
     );
     const id = await userAdminAction(post("suspend"), await context(), "it", "not-an-id");
 

@@ -15,6 +15,7 @@ export {
   AuthorizeActor,
   GetUser,
   ListUsers,
+  type ListUsersQuery,
   SetUserStatus,
 } from "./application/administration.js";
 export {
@@ -39,5 +40,6 @@ export {
 export type { UserRepository } from "./domain/user-repository.js";
 export { type IdentityContext, type IdentityUseCases, identityRouter } from "./http/router.js";
 export { DynamoDbUserRepository } from "./infrastructure/dynamodb-user-repository.js";
-export { identityTableDefinition } from "./infrastructure/identity-table.js";
 export { ScryptPasswordHasher } from "./infrastructure/scrypt-password-hasher.js";
+export { userEmailsTableDefinition } from "./infrastructure/user-emails-table.js";
+export { usersTableDefinition } from "./infrastructure/users-table.js";

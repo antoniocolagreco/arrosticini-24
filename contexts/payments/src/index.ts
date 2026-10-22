@@ -32,7 +32,12 @@ export {
   DynamoDbProcessedEventRepository,
   PROCESSED_EVENT_TTL_SECONDS,
 } from "./infrastructure/dynamodb-processed-event-repository.js";
-export { paymentsTableDefinition, paymentsTimeToLive } from "./infrastructure/payments-table.js";
+export { paymentCustomersTableDefinition } from "./infrastructure/payment-customers-table.js";
+export { paymentsTableDefinition } from "./infrastructure/payments-table.js";
+export {
+  stripeEventsTableDefinition,
+  stripeEventsTimeToLive,
+} from "./infrastructure/stripe-events-table.js";
 export {
   CHECKOUT_SESSION_TTL_SECONDS,
   StripePaymentGateway,

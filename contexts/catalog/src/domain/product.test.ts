@@ -78,17 +78,17 @@ describe("Product images", () => {
   it("adds and removes images", () => {
     const product = Product.create(props(), now);
     const first = {
-      id: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      key: "products/vino/01JB2Q7Z8X4M3N5P6R7S8T9V0A.webp",
+      id: "0192e1a0-0000-7000-8000-000000000007",
+      key: "products/vino/0192e1a0-0000-7000-8000-000000000007.webp",
     };
     const second = {
-      id: "01JB2Q7Z8X4M3N5P6R7S8T9V0B",
-      key: "products/vino/01JB2Q7Z8X4M3N5P6R7S8T9V0B.png",
+      id: "0192e1a0-0000-7000-8000-000000000008",
+      key: "products/vino/0192e1a0-0000-7000-8000-000000000008.png",
     };
 
     product.addImage(first, now);
     product.addImage(second, now);
-    const removed = product.removeImage("01JB2Q7Z8X4M3N5P6R7S8T9V0A", later);
+    const removed = product.removeImage("0192e1a0-0000-7000-8000-000000000007", later);
 
     expect(removed).toEqual(first);
     expect(product.images).toEqual([second]);
@@ -98,8 +98,11 @@ describe("Product images", () => {
   it("fails to remove an unknown image", () => {
     const product = Product.create(props(), now);
 
-    expect(() => product.removeImage("01JB2Q7Z8X4M3N5P6R7S8T9V0C", later)).toThrow(
-      new DomainError("PRODUCT_IMAGE_NOT_FOUND", "Image not found: 01JB2Q7Z8X4M3N5P6R7S8T9V0C"),
+    expect(() => product.removeImage("0192e1a0-0000-7000-8000-000000000009", later)).toThrow(
+      new DomainError(
+        "PRODUCT_IMAGE_NOT_FOUND",
+        "Image not found: 0192e1a0-0000-7000-8000-000000000009",
+      ),
     );
   });
 });

@@ -6,7 +6,7 @@ describe("setCartLine input", () => {
 
   it.each([0, 1, 99])("accepts quantity %i", async (quantity) => {
     const result = await input?.["~standard"].validate({
-      id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+      id: "0192e1a0-0000-7000-8000-000000000012",
       slug: "vino",
       quantity,
     });
@@ -16,7 +16,7 @@ describe("setCartLine input", () => {
 
   it.each([-1, 100, 1.5])("rejects quantity %o", async (quantity) => {
     const result = await input?.["~standard"].validate({
-      id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+      id: "0192e1a0-0000-7000-8000-000000000012",
       slug: "vino",
       quantity,
     });

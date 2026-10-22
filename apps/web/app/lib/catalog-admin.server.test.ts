@@ -29,7 +29,7 @@ async function context(
   const state: RouterContextProvider = new RouterContextProvider();
   const session = await storage.getSession();
   if (role) {
-    session.set("userId", "01JB2Q7Z8X4M3N5P6R7S8T9V0W");
+    session.set("userId", "0192e1a0-0000-7000-8000-000000000012");
     session.set("role", role);
     session.set("locale", "it");
   }
@@ -118,7 +118,7 @@ describe("catalog administration", () => {
       status: "DRAFT",
     });
     expect(JSON.parse(sent.headers.get("x-actor") ?? "{}")).toEqual({
-      userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+      userId: "0192e1a0-0000-7000-8000-000000000012",
       role: "admin",
     });
   });
@@ -268,7 +268,11 @@ describe("catalog administration", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json(product));
     const response = await catalogAdminAction(
-      post({ intent: "removeImage", imageId: "01JB2Q7Z8X4M3N5P6R7S8T9V0W", slug: "forged" }),
+      post({
+        intent: "removeImage",
+        imageId: "0192e1a0-0000-7000-8000-000000000012",
+        slug: "forged",
+      }),
       await context(),
       "it",
       "test-pack",
@@ -276,6 +280,8 @@ describe("catalog administration", () => {
     expect(response).toMatchObject({ data: { success: "imageRemoved" } });
     const sent: Request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(sent.method).toBe("DELETE");
-    expect(sent.url).toContain("/catalog/products/test-pack/images/01JB2Q7Z8X4M3N5P6R7S8T9V0W");
+    expect(sent.url).toContain(
+      "/catalog/products/test-pack/images/0192e1a0-0000-7000-8000-000000000012",
+    );
   });
 });

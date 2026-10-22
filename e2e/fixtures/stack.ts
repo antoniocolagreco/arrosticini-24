@@ -5,16 +5,21 @@ import { createServer, type Server } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { catalogTableDefinition, DynamoDbProductRepository, Product } from "@arrosticini/catalog";
+import { DynamoDbProductRepository, Product, productsTableDefinition } from "@arrosticini/catalog";
 import {
   DynamoDbUserRepository,
-  identityTableDefinition,
   ScryptPasswordHasher,
   User,
+  userEmailsTableDefinition,
+  usersTableDefinition,
 } from "@arrosticini/identity";
 import { Money, newId } from "@arrosticini/kernel";
-import { orderingTableDefinition } from "@arrosticini/ordering";
-import { paymentsTableDefinition } from "@arrosticini/payments";
+import { DynamoDbOrderRepository, Order, ordersTableDefinition } from "@arrosticini/ordering";
+import {
+  paymentCustomersTableDefinition,
+  paymentsTableDefinition,
+  stripeEventsTableDefinition,
+} from "@arrosticini/payments";
 import {
   CreateTableCommand,
   type CreateTableCommandInput,
@@ -29,7 +34,7 @@ import {
   PutBucketPolicyCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { DynamoDBDocumentClient, paginateScan } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, paginateQuery } from "@aws-sdk/lib-dynamodb";
 import { Valkey } from "iovalkey";
 import { createCookie } from "react-router";
 import Stripe from "stripe";
@@ -111,9 +116,20 @@ async function stopProcess(child: ChildProcess): Promise<void> {
   }
 }
 
+export interface Customer {
+  id: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface TestStack {
   origin: string;
   admin: { email: string; password: string };
+  createCustomer: (firstName: string, lastName: string) => Promise<Customer>;
+  createPaidOrder: (customer: Customer) => Promise<string>;
+  createProducts: (slugs: string[]) => Promise<void>;
   cookie: ReturnType<typeof createCookie>;
   sessionIds: Set<string>;
   stripe: Stripe | undefined;
@@ -126,16 +142,27 @@ export async function withStack(
   workerIndex: string,
 ): Promise<void> {
   const suffix: string = `${workerIndex}-${randomUUID()}`;
-  const tables: { catalog: string; identity: string; ordering: string; payments: string } = {
-    catalog: `catalog-e2e-${suffix}`,
-    identity: `identity-e2e-${suffix}`,
-    ordering: `ordering-e2e-${suffix}`,
+  const tables: {
+    products: string;
+    users: string;
+    userEmails: string;
+    orders: string;
+    payments: string;
+    paymentCustomers: string;
+    stripeEvents: string;
+  } = {
+    products: `products-e2e-${suffix}`,
+    users: `users-e2e-${suffix}`,
+    userEmails: `user-emails-e2e-${suffix}`,
+    orders: `orders-e2e-${suffix}`,
     payments: `payments-e2e-${suffix}`,
+    paymentCustomers: `payment-customers-e2e-${suffix}`,
+    stripeEvents: `stripe-events-e2e-${suffix}`,
   };
   const bucket: string = `e2e-${suffix}`;
   const secret: string = randomUUID();
   const webhookSecret: string = `whsec_${randomUUID()}`;
-  const stripeKey: string | undefined = process.env.STRIPE_SECRET_KEY;
+  const stripeKey: string | undefined = process.env.STRIPE_SECRET_KEY || undefined;
   if (stripeKey && !stripeKey.startsWith("sk_test_"))
     throw new Error("E2E requires a Stripe test-mode secret key");
   const stripe: Stripe | undefined = stripeKey ? new Stripe(stripeKey) : undefined;
@@ -169,10 +196,13 @@ export async function withStack(
   try {
     await valkey.connect();
     for (const definition of [
-      catalogTableDefinition(tables.catalog),
-      identityTableDefinition(tables.identity),
-      orderingTableDefinition(tables.ordering),
+      productsTableDefinition(tables.products),
+      usersTableDefinition(tables.users),
+      userEmailsTableDefinition(tables.userEmails),
+      ordersTableDefinition(tables.orders),
       paymentsTableDefinition(tables.payments),
+      paymentCustomersTableDefinition(tables.paymentCustomers),
+      stripeEventsTableDefinition(tables.stripeEvents),
     ] satisfies CreateTableCommandInput[]) {
       await dynamo.send(new CreateTableCommand(definition));
       if (definition.TableName) createdTables.push(definition.TableName);
@@ -197,7 +227,7 @@ export async function withStack(
     );
     const products: DynamoDbProductRepository = new DynamoDbProductRepository(
       document,
-      tables.catalog,
+      tables.products,
     );
     await products.create(
       Product.create(
@@ -220,7 +250,11 @@ export async function withStack(
       email: `admin-${suffix}@example.com`,
       password: randomUUID(),
     };
-    const users: DynamoDbUserRepository = new DynamoDbUserRepository(document, tables.identity);
+    const users: DynamoDbUserRepository = new DynamoDbUserRepository(
+      document,
+      tables.users,
+      tables.userEmails,
+    );
     await users.create(
       User.register(
         {
@@ -248,10 +282,13 @@ export async function withStack(
       DYNAMODB_ENDPOINT: process.env.E2E_DYNAMODB_ENDPOINT ?? "http://localhost:8000",
       S3_ENDPOINT: s3Endpoint,
       MEDIA_BUCKET: bucket,
-      CATALOG_TABLE: tables.catalog,
-      IDENTITY_TABLE: tables.identity,
-      ORDERING_TABLE: tables.ordering,
+      PRODUCTS_TABLE: tables.products,
+      USERS_TABLE: tables.users,
+      USER_EMAILS_TABLE: tables.userEmails,
+      ORDERS_TABLE: tables.orders,
       PAYMENTS_TABLE: tables.payments,
+      PAYMENT_CUSTOMERS_TABLE: tables.paymentCustomers,
+      STRIPE_EVENTS_TABLE: tables.stripeEvents,
       VALKEY_URL: valkeyUrl,
       STRIPE_SECRET_KEY: stripeKey ?? "sk_test_e2e_unconfigured",
       STRIPE_WEBHOOK_SECRET: webhookSecret,
@@ -280,9 +317,78 @@ export async function withStack(
       children.push(await startProcess(["apps/api/dist/server.js"], env, apiPort));
       children.push(await startProcess(["apps/web/build/runtime/server.js"], env, webPort));
     }
+    const orders: DynamoDbOrderRepository = new DynamoDbOrderRepository(document, tables.orders);
     const stack: TestStack = {
       origin,
       admin,
+      createCustomer: async (firstName: string, lastName: string): Promise<Customer> => {
+        const customer: Customer = {
+          id: newId(),
+          email: `${randomUUID()}@example.com`,
+          password: randomUUID(),
+          firstName,
+          lastName,
+        };
+        await users.create(
+          User.register(
+            {
+              id: customer.id,
+              email: customer.email,
+              password: await new ScryptPasswordHasher().hash(customer.password),
+              role: "customer",
+              firstName,
+              lastName,
+              preferredLocale: "it",
+            },
+            new Date(),
+          ),
+        );
+        return customer;
+      },
+      createPaidOrder: async (customer: Customer): Promise<string> => {
+        const order: Order = Order.place(
+          {
+            id: newId(),
+            userId: customer.id,
+            lines: [
+              {
+                slug: "e2e-arrosticini",
+                name: { it: "Arrosticini di prova", en: "Test arrosticini" },
+                unitPrice: Money.ofCents(3750),
+                quantity: 2,
+              },
+            ],
+            shippingAddress: {
+              fullName: `${customer.firstName} ${customer.lastName}`,
+              line1: "Via Test 1",
+              city: "Chieti",
+              postalCode: "66100",
+              country: "IT",
+              phone: "+390871000000",
+            },
+          },
+          new Date(),
+        );
+        order.markPaid(new Date());
+        await orders.create(order);
+        return order.id;
+      },
+      createProducts: async (slugs: string[]): Promise<void> => {
+        for (const slug of slugs)
+          await products.create(
+            Product.create(
+              {
+                slug,
+                name: { it: `Prodotto ${slug}`, en: `Product ${slug}` },
+                description: { it: "Prodotto per la paginazione.", en: "Product for paging." },
+                price: Money.ofCents(1000),
+                images: [],
+                status: "ACTIVE",
+              },
+              new Date(),
+            ),
+          );
+      },
       cookie: createCookie("__session", { secrets: [secret] }),
       sessionIds,
       stripe,
@@ -331,23 +437,37 @@ export async function withStack(
       }
       keys.add(`sess:${id}`);
     }
-    if (createdTables.includes(tables.identity)) {
-      for await (const page of paginateScan({ client: document }, { TableName: tables.identity })) {
+    const userIds: string[] = [];
+    if (createdTables.includes(tables.users)) {
+      const pages = paginateQuery(
+        { client: document },
+        {
+          TableName: tables.users,
+          IndexName: "byCreatedAt",
+          KeyConditionExpression: "#kind = :kind",
+          ExpressionAttributeNames: { "#kind": "kind" },
+          ExpressionAttributeValues: { ":kind": "user" },
+        },
+      );
+      for await (const page of pages) {
         for (const item of page.Items ?? []) {
-          if (item.SK === "PROFILE" && typeof item.id === "string") {
-            const cartId: string | null = await valkey.get(`cart-owner:${item.id}`);
-            if (cartId) keys.add(`cart:${cartId}`);
-            keys.add(`cart-owner:${item.id}`);
-          }
+          if (typeof item.userId === "string") userIds.push(item.userId);
         }
       }
     }
+    for (const userId of userIds) {
+      const cartId: string | null = await valkey.get(`cart-owner:${userId}`);
+      if (cartId) keys.add(`cart:${cartId}`);
+      keys.add(`cart-owner:${userId}`);
+    }
     if (keys.size) await valkey.del(...keys);
-    if (stripe && createdTables.includes(tables.payments)) {
-      for await (const page of paginateScan({ client: document }, { TableName: tables.payments })) {
-        for (const item of page.Items ?? [])
-          if (typeof item.stripeCustomerId === "string")
-            await stripe.customers.del(item.stripeCustomerId);
+    if (stripe && createdTables.includes(tables.paymentCustomers)) {
+      for (const userId of userIds) {
+        const { Item } = await document.send(
+          new GetCommand({ TableName: tables.paymentCustomers, Key: { userId } }),
+        );
+        if (typeof Item?.stripeCustomerId === "string")
+          await stripe.customers.del(Item.stripeCustomerId);
       }
     }
     for (const TableName of createdTables) await dynamo.send(new DeleteTableCommand({ TableName }));

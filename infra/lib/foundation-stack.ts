@@ -1,5 +1,5 @@
 import { Stack, type StackProps } from "aws-cdk-lib";
-import { Repository, TagMutability } from "aws-cdk-lib/aws-ecr";
+import { Repository, TagMutability, TagStatus } from "aws-cdk-lib/aws-ecr";
 import {
   OidcProviderNative,
   OpenIdConnectPrincipal,
@@ -10,25 +10,26 @@ import type { Construct } from "constructs";
 
 interface ArrosticiniFoundationStackProps extends StackProps {
   projectId: string;
+  repositoryPath: string;
+  appsName: string[];
 }
 
 const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
-
-const PROJECT_REPOSITORY_PATH = "antoniocolagreco/arrosticini-24";
-const APPS_NAME = ["api", "web"];
 
 export class ArrosticiniFoundationStack extends Stack {
   constructor(scope: Construct, id: string, props: ArrosticiniFoundationStackProps) {
     super(scope, id, props);
 
-    const { projectId } = props;
+    const { projectId, appsName, repositoryPath } = props;
 
-    const repositories = APPS_NAME.map(
+    const repositories = appsName.map(
       (appName) =>
         new Repository(this, `${capitalize(appName)}Repository`, {
           repositoryName: `${projectId}/${appName}`,
           imageTagMutability: TagMutability.IMMUTABLE,
-          lifecycleRules: [{ maxImageCount: 20 }],
+          lifecycleRules: [
+            { tagStatus: TagStatus.TAGGED, tagPatternList: ["v*"], maxImageCount: 5 },
+          ],
         }),
     );
 
@@ -42,7 +43,7 @@ export class ArrosticiniFoundationStack extends Stack {
         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
       },
       StringLike: {
-        "token.actions.githubusercontent.com:sub": `repo:${PROJECT_REPOSITORY_PATH}:ref:refs/tags/v*`,
+        "token.actions.githubusercontent.com:sub": `repo:${repositoryPath}:ref:refs/tags/v*`,
       },
     });
 
@@ -52,7 +53,7 @@ export class ArrosticiniFoundationStack extends Stack {
     });
 
     for (const repository of repositories) {
-      repository.grantPush(ciRole);
+      repository.grantPullPush(ciRole);
     }
 
     const policy = new PolicyStatement({

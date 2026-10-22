@@ -7,7 +7,7 @@ const now = new Date("2026-10-08T10:00:00.000Z");
 function user(): User {
   return User.register(
     {
-      id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+      id: "0192e1a0-0000-7000-8000-000000000012",
       email: "mario.rossi@example.com",
       password: { hash: "aGFzaA==", salt: "c2FsdA==" },
       role: "customer",
@@ -39,12 +39,12 @@ const office: AddressFields = {
 };
 
 const ids = [
-  "01JB2Q7Z8X4M3N5P6R7S8T9V01",
-  "01JB2Q7Z8X4M3N5P6R7S8T9V02",
-  "01JB2Q7Z8X4M3N5P6R7S8T9V03",
-  "01JB2Q7Z8X4M3N5P6R7S8T9V04",
-  "01JB2Q7Z8X4M3N5P6R7S8T9V05",
-  "01JB2Q7Z8X4M3N5P6R7S8T9V06",
+  "0192e1a0-0000-7000-8000-000000000001",
+  "0192e1a0-0000-7000-8000-000000000002",
+  "0192e1a0-0000-7000-8000-000000000003",
+  "0192e1a0-0000-7000-8000-000000000004",
+  "0192e1a0-0000-7000-8000-000000000005",
+  "0192e1a0-0000-7000-8000-000000000006",
 ];
 
 function defaults(target: User) {
@@ -58,7 +58,7 @@ describe("User.register", () => {
       expect(() =>
         User.register(
           {
-            id: "01JB2Q7Z8X4M3N5P6R7S8T9V0W",
+            id: "0192e1a0-0000-7000-8000-000000000012",
             email,
             password: { hash: "aGFzaA==", salt: "c2FsdA==" },
             role: "customer",
@@ -184,7 +184,7 @@ describe("User status", () => {
   it("never suspends an admin", () => {
     const admin = User.register(
       {
-        id: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        id: "0192e1a0-0000-7000-8000-000000000013",
         email: "admin@example.com",
         password: { hash: "aGFzaA==", salt: "c2FsdA==" },
         role: "admin",

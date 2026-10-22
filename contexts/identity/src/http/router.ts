@@ -89,9 +89,10 @@ export function identityRouter(useCases: IdentityUseCases) {
     deleteAddress: os.deleteAddress.handler(async ({ input, context }) => {
       await useCases.deleteAddress.execute(context.actor, input.id);
     }),
-    listUsers: os.listUsers.handler(async ({ context }) => ({
-      items: (await useCases.listUsers.execute(context.actor)).map(toUserDto),
-    })),
+    listUsers: os.listUsers.handler(async ({ input, context }) => {
+      const page = await useCases.listUsers.execute(context.actor, input);
+      return { ...page, items: page.items.map(toUserDto) };
+    }),
     getUser: os.getUser.handler(async ({ input, context }) => {
       const user = await useCases.getUser.execute(context.actor, input.id);
       return { user: toUserDto(user), addresses: user.addresses.map(toAddressDto) };

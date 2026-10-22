@@ -13,7 +13,15 @@ export function localizedTextDto(maxLength: number) {
 
 export const CurrencyDto = z.literal(CURRENCY);
 
-export const IdDto = z.ulid();
+export const IdDto = z.uuidv7();
+
+export const Cursor = z.string().min(1).max(1024);
+
+export function pageDto<T extends z.ZodType>(item: T) {
+  return z.object({ items: z.array(item), nextCursor: Cursor.optional() });
+}
+
+export const invalidCursor = { INVALID_CURSOR: { status: 400 } } as const;
 
 export const authed = oc.errors({
   UNAUTHORIZED: { status: 401 },

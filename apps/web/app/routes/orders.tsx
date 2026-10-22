@@ -2,10 +2,12 @@ import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { AccountLayout } from "../components/account-layout.js";
+import { Pager } from "../components/pager.js";
 import { Price } from "../components/price.js";
 import { StatusBadge } from "../components/status-badge.js";
 import { Button } from "../components/ui/button.js";
 import { api } from "../lib/api.server.js";
+import { loadPage, readCursor } from "../lib/pagination.server.js";
 import { customerOnlyMiddleware, requireUser } from "../lib/session.server.js";
 import type { Route } from "./+types/orders.js";
 
@@ -13,7 +15,12 @@ export const middleware = [customerOnlyMiddleware];
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const user = requireUser(context, params.lang);
-  return api(request, { userId: user.userId, role: user.role }).ordering.listOrders();
+  const cursor: string | undefined = readCursor(request);
+  return loadPage(() =>
+    api(request, { userId: user.userId, role: user.role }).ordering.listOrders(
+      cursor ? { cursor } : {},
+    ),
+  );
 }
 
 export default function Orders({ loaderData }: Route.ComponentProps) {
@@ -58,6 +65,7 @@ export default function Orders({ loaderData }: Route.ComponentProps) {
           </Button>
         </div>
       )}
+      <Pager nextCursor={loaderData.nextCursor} />
     </AccountLayout>
   );
 }

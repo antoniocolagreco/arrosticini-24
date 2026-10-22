@@ -1684,6 +1684,12 @@ h2 {
 .admin-filters select {
   min-width: 180px;
 }
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
 .admin-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);

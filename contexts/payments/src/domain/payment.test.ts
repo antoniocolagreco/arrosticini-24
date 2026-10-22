@@ -9,8 +9,8 @@ const later = new Date("2026-10-09T10:09:00.000Z");
 function payment(): Payment {
   return Payment.start(
     {
-      orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-      userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
+      userId: "0192e1a0-0000-7000-8000-000000000013",
       stripeSessionId: "cs_test_a1",
       amount: Money.ofCents(6870),
     },
@@ -56,13 +56,13 @@ describe("Payment", () => {
     expect(() => succeeded.expire(later)).toThrow(
       new DomainError(
         "PAYMENT_INVALID_TRANSITION",
-        "Payment of order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from SUCCEEDED to EXPIRED",
+        "Payment of order 0192e1a0-0000-7000-8000-000000000007 cannot go from SUCCEEDED to EXPIRED",
       ),
     );
     expect(() => expired.succeed(later)).toThrow(
       new DomainError(
         "PAYMENT_INVALID_TRANSITION",
-        "Payment of order 01JB2Q7Z8X4M3N5P6R7S8T9V0A cannot go from EXPIRED to SUCCEEDED",
+        "Payment of order 0192e1a0-0000-7000-8000-000000000007 cannot go from EXPIRED to SUCCEEDED",
       ),
     );
   });

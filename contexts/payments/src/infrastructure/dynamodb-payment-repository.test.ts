@@ -41,8 +41,8 @@ describe("DynamoDbPaymentRepository", () => {
   it("saves a payment and its later status", async () => {
     const payment = Payment.start(
       {
-        orderId: "01JB2Q7Z8X4M3N5P6R7S8T9V0A",
-        userId: "01JB2Q7Z8X4M3N5P6R7S8T9V0X",
+        orderId: "0192e1a0-0000-7000-8000-000000000007",
+        userId: "0192e1a0-0000-7000-8000-000000000013",
         stripeSessionId: "cs_test_a1",
         amount: Money.ofCents(6870),
       },
@@ -58,6 +58,6 @@ describe("DynamoDbPaymentRepository", () => {
   });
 
   it("returns undefined for an order without payment", async () => {
-    expect(await repository.findByOrderId("01JB2Q7Z8X4M3N5P6R7S8T9V0Z")).toBeUndefined();
+    expect(await repository.findByOrderId("0192e1a0-0000-7000-8000-000000000015")).toBeUndefined();
   });
 });

@@ -26,7 +26,9 @@ describe("createHttpLogger", () => {
     const response = await request(server).get("/catalog/products?q=vino");
 
     const requestId = response.headers[REQUEST_ID_HEADER];
-    expect(requestId).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+    expect(requestId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
     expect(lines).toEqual([
       expect.objectContaining({
         level: 30,

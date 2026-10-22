@@ -10,3 +10,16 @@ TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW
 `
   .trim()
   .split(/\s+/);
+
+export interface Country {
+  code: string;
+  name: string;
+}
+
+export function countriesFor(locale: string): Country[] {
+  const regions = new Intl.DisplayNames([locale], { type: "region" });
+  const collator = new Intl.Collator(locale);
+  return COUNTRY_CODES.map((code) => ({ code, name: regions.of(code) ?? code })).sort((a, b) =>
+    collator.compare(a.name, b.name),
+  );
+}
