@@ -52,7 +52,7 @@ Stripe ──► webhook ──► CloudFront ──► web /webhooks/stripe ─
   - l'ALB sta nelle subnet pubbliche;
   - `web` e `api` stanno in subnet private, senza IP pubblico;
   - il security group di `api` accetta traffico solo da `web`;
-  - un NAT Gateway dà l'uscita verso internet (Stripe, ECR, CloudWatch).
+  - un NAT Gateway per AZ dà l'uscita verso internet (Stripe, ECR, CloudWatch), così la caduta di una AZ non lascia l'altra senza uscita.
 - **Comunicazione web→api:** ECS Service Connect.
 - **Webhook Stripe:** `web` espone `/webhooks/stripe` e inoltra ad `api` il corpo grezzo e l'header `Stripe-Signature`. È `api` a verificare la firma.
 - **Una sola regione AWS.**
@@ -528,7 +528,7 @@ La divisione tra i due agenti è in `docs/battle-plan.md`.
 | 6 | Admin catalogo | creazione e modifica prodotti IT/EN, upload immagini, archiviazione | prodotto creato visibile in lista con la sua immagine |
 | 7 | Stress | `whoami`, `/stress/status`, pannello pecore, `grill.js`, k6 | con 2 `web` e 2 `api` in locale compaiono 4 pecore |
 | 8 | Container | Dockerfile multi-stage `node:24-alpine`, `linux/amd64`, `turbo prune --docker` | profilo `full` funzionante |
-| 9 | Infra CDK | stack `foundation` e `app` (VPC su 2 AZ, ALB, 2 servizi Fargate con ECS Exec, Service Connect, DynamoDB, ElastiCache Serverless Valkey, 2 bucket S3, CloudFront con OAC, stack `waf`, NAT Gateway, parametri da Parameter Store, autoscaling all'80% di CPU) | sito raggiungibile da `*.cloudfront.net` |
+| 9 | Infra CDK | stack `foundation` e `app` (VPC su 2 AZ, ALB, 2 servizi Fargate con ECS Exec, Service Connect, DynamoDB, ElastiCache Serverless Valkey, 2 bucket S3, CloudFront con OAC, stack `waf`, un NAT Gateway per AZ, parametri da Parameter Store, autoscaling all'80% di CPU) | sito raggiungibile da `*.cloudfront.net` |
 | 10 | CI/CD | `ci.yml`, `release.yml` | una release aggiorna i servizi senza 5xx sotto k6 |
 | 11 | Script e runbook | **`up`:** `cdk deploy foundation`, `cdk deploy app` con il tag dell'ultima release, registrazione del webhook Stripe, `/arrosticini/stripe-webhook-secret` su Parameter Store, nuovo deployment di `api`, upload degli asset, seed (prodotti, immagini, admin). **`down`:** cancellazione del webhook, `cdk destroy app`, poi `cdk destroy waf`. Runbook del talk | `up` da account vuoto produce un sito con pagamento funzionante; `down` rimuove gli stack `app` e `waf` |
 
@@ -557,6 +557,5 @@ Strumenti: Vitest in tutti i package e in `web`, Playwright per i test end-to-en
 
 - Regione AWS.
 - Policy di scaling: target tracking all'80% oppure step scaling.
-- NAT Gateway: uno per AZ oppure uno solo.
 - Soglia e finestra della regola rate-based di WAF.
 - Font, da scegliere confrontandoli con il mock.
