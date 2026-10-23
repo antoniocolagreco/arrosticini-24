@@ -1,19 +1,14 @@
-import { readFile } from "node:fs/promises";
 import {
   DynamoDbProductRepository,
-  Product,
   productsTableDefinition,
   S3ImageStorage,
 } from "@arrosticini/catalog";
 import { Email } from "@arrosticini/contracts";
 import {
   DynamoDbUserRepository,
-  EnsureAdmin,
-  ScryptPasswordHasher,
   userEmailsTableDefinition,
   usersTableDefinition,
 } from "@arrosticini/identity";
-import { localizedText, Money, newId } from "@arrosticini/kernel";
 import { ordersTableDefinition } from "@arrosticini/ordering";
 import {
   paymentCustomersTableDefinition,
@@ -31,7 +26,7 @@ import {
 import { BucketAlreadyOwnedByYou, CreateBucketCommand } from "@aws-sdk/client-s3";
 import { z } from "zod";
 import { createDynamoDbClient, createS3Client } from "../src/aws.js";
-import { seedProducts } from "./seed-products.js";
+import { seedAdmin, seedCatalog } from "./seed.js";
 
 const env = z
   .object({
@@ -77,49 +72,6 @@ async function createBucket(bucket: string) {
   console.log(`bucket ${bucket} ready`);
 }
 
-async function seedCatalog() {
-  const products = new DynamoDbProductRepository(dynamo, env.PRODUCTS_TABLE);
-  const images = new S3ImageStorage(s3, env.MEDIA_BUCKET);
-  for (const seed of seedProducts) {
-    if (await products.findBySlug(seed.slug)) {
-      console.log(`product ${seed.slug} already exists`);
-      continue;
-    }
-    const imageId = newId();
-    const key = `products/${seed.slug}/${imageId}.webp`;
-    const body = await readFile(new URL(`../seed/images/${seed.image}`, import.meta.url));
-    await images.put(key, body, "image/webp");
-    await products.create(
-      Product.create(
-        {
-          slug: seed.slug,
-          name: localizedText(seed.name),
-          description: localizedText(seed.description),
-          ...(seed.pieces === undefined ? {} : { pieces: seed.pieces }),
-          price: Money.ofCents(seed.priceCents),
-          images: [{ id: imageId, key }],
-          status: seed.status,
-        },
-        new Date(),
-      ),
-    );
-    console.log(`product ${seed.slug} created`);
-  }
-}
-
-async function seedAdmin() {
-  if (env.ADMIN_EMAIL === undefined || env.ADMIN_PASSWORD === undefined) {
-    console.log("admin skipped: set ADMIN_EMAIL and ADMIN_PASSWORD (min 8 chars) in .env.local");
-    return;
-  }
-  const users = new DynamoDbUserRepository(dynamo, env.USERS_TABLE, env.USER_EMAILS_TABLE);
-  const result = await new EnsureAdmin(users, new ScryptPasswordHasher()).execute({
-    email: env.ADMIN_EMAIL,
-    password: env.ADMIN_PASSWORD,
-  });
-  console.log(`admin ${env.ADMIN_EMAIL} ${result === "created" ? "created" : "already exists"}`);
-}
-
 async function enableStripeEventsTimeToLive(tableName: string) {
   const ttl = await dynamo.send(new DescribeTimeToLiveCommand({ TableName: tableName }));
   if (ttl.TimeToLiveDescription?.TimeToLiveStatus === "DISABLED") {
@@ -136,5 +88,15 @@ await createTable(paymentCustomersTableDefinition(env.PAYMENT_CUSTOMERS_TABLE));
 await createTable(stripeEventsTableDefinition(env.STRIPE_EVENTS_TABLE));
 await enableStripeEventsTimeToLive(env.STRIPE_EVENTS_TABLE);
 await createBucket(env.MEDIA_BUCKET);
-await seedCatalog();
-await seedAdmin();
+await seedCatalog(
+  new DynamoDbProductRepository(dynamo, env.PRODUCTS_TABLE),
+  new S3ImageStorage(s3, env.MEDIA_BUCKET),
+);
+if (env.ADMIN_EMAIL === undefined || env.ADMIN_PASSWORD === undefined) {
+  console.log("admin skipped: set ADMIN_EMAIL and ADMIN_PASSWORD (min 8 chars) in .env.local");
+} else {
+  await seedAdmin(new DynamoDbUserRepository(dynamo, env.USERS_TABLE, env.USER_EMAILS_TABLE), {
+    email: env.ADMIN_EMAIL,
+    password: env.ADMIN_PASSWORD,
+  });
+}
