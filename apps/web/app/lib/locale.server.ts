@@ -1,11 +1,12 @@
 import { isLocale, type Locale } from "@arrosticini/kernel";
 import { createCookie } from "react-router";
+import { isHttpsOrigin } from "./utils.js";
 
 export const localeCookie = createCookie("locale", {
   path: "/",
   sameSite: "lax",
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: isHttpsOrigin(process.env.PUBLIC_ORIGIN),
   maxAge: 60 * 60 * 24 * 365,
 });
 

@@ -14,6 +14,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { Valkey } from "iovalkey";
 import { RouterContextProvider, type ServerBuild } from "react-router";
 import { createValkeySessionStorage, sessionStorageContext } from "./app/lib/session.server.js";
+import { isHttpsOrigin } from "./app/lib/utils.js";
 import { createApp } from "./server/app.js";
 import { type Config, loadConfig } from "./server/config.js";
 import { logger } from "./server/logger.js";
@@ -56,7 +57,7 @@ lifecycle.onShutdown(async () => {
 const sessions: ReturnType<typeof createValkeySessionStorage> = createValkeySessionStorage(
   valkey,
   config.SESSION_SECRET,
-  config.NODE_ENV === "production",
+  isHttpsOrigin(config.PUBLIC_ORIGIN),
 );
 const getLoadContext = (): RouterContextProvider => {
   const context: RouterContextProvider = new RouterContextProvider();
