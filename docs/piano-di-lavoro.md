@@ -163,6 +163,7 @@ arrosticini-24/
 │     ├─ src/wiring.ts         adapter porta→contesto, EventBus, handler degli eventi
 │     ├─ bin/grill.js          busy loop di CPU per lo stress manuale
 │     ├─ scripts/setup-local.ts  tabelle, bucket e seed in locale
+│     ├─ scripts/seed-aws.ts     seed di catalogo e admin sullo stack AWS
 │     └─ Dockerfile
 ├─ contexts/
 │  ├─ catalog/  identity/  shopping/  ordering/  payments/
