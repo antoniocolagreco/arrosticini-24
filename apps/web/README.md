@@ -21,7 +21,7 @@ The development server loads the root `.env.local` when present. Production rece
 | `API_URL` | `http://localhost:${API_PORT}` (`4000` when unset) | Internal API origin; set to `http://api:4000` for Service Connect, or `http://localhost:4100` for the frontend workdir |
 | `VALKEY_URL` | Required | Session store URL; use `redis://localhost:6379` with the shared local compose stack |
 | `SESSION_SECRET` | Required | At least 32 characters, shared by every web instance to sign the session cookie; generate a random value and keep it out of Git |
-| `PUBLIC_ORIGIN` | Required in production | Public HTTPS origin, such as the CloudFront origin; used to reject cross-origin form submissions behind the load balancer |
+| `PUBLIC_ORIGIN` | Required in production | Public origin, such as the CloudFront origin; used to reject cross-origin form submissions behind the load balancer. Session and locale cookies are `Secure` only when it is an `https` origin, so an HTTP-only test deployment keeps working |
 
 `GET /healthz` reports process health and returns 503 during shutdown. HTML responses persist the locale in an HttpOnly cookie; `/` selects the saved language before negotiating `Accept-Language`. The language switch preserves the path, query and hash.
 
