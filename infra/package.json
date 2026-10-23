@@ -8,9 +8,14 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "bootstrap": "cdk bootstrap --region eu-south-1",
-    "foundation:deploy": "cdk deploy arrosticini-foundation"
+    "foundation:deploy": "cdk deploy arrosticini-foundation",
+    "foundation:destroy": "cdk destroy arrosticini-foundation",
+    "app:deploy": "cdk deploy arrosticini-app",
+    "app:destroy": "cdk destroy arrosticini-app"
   },
   "dependencies": {
+    "@aws-sdk/client-ecr": "catalog:",
+    "@aws-sdk/client-ssm": "catalog:",
     "aws-cdk-lib": "catalog:",
     "constructs": "catalog:"
   },

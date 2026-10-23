@@ -11,7 +11,6 @@ import type { Construct } from "constructs";
 interface ArrosticiniFoundationStackProps extends StackProps {
   projectId: string;
   repositoryPath: string;
-  appsName: string[];
 }
 
 const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -20,9 +19,9 @@ export class ArrosticiniFoundationStack extends Stack {
   constructor(scope: Construct, id: string, props: ArrosticiniFoundationStackProps) {
     super(scope, id, props);
 
-    const { projectId, appsName, repositoryPath } = props;
+    const { projectId, repositoryPath } = props;
 
-    const repositories = appsName.map(
+    const repositories = ["web", "api"].map(
       (appName) =>
         new Repository(this, `${capitalize(appName)}Repository`, {
           repositoryName: `${projectId}/${appName}`,
