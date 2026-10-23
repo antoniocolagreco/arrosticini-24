@@ -8,6 +8,7 @@
     "dev": "tsx watch --env-file-if-exists=../../.env.local src/server.ts",
     "start": "node dist/server.js",
     "setup:local": "tsx --env-file-if-exists=../../.env.local scripts/setup-local.ts",
+    "seed:aws": "tsx scripts/seed-aws.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "test": "vitest run"
@@ -34,6 +35,8 @@
   "devDependencies": {
     "@arrosticini/testing": "workspace:*",
     "@arrosticini/tsconfig": "workspace:*",
+    "@aws-sdk/client-cloudformation": "catalog:",
+    "@aws-sdk/client-ssm": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
     "@orpc/openapi-client": "catalog:",
