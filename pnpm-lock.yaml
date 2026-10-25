@@ -782,6 +782,9 @@ importers:
 
   infra:
     dependencies:
+      '@aws-sdk/client-cloudformation':
+        specifier: 'catalog:'
+        version: 3.1147.0
       '@aws-sdk/client-ecr':
         specifier: 'catalog:'
         version: 3.1156.0

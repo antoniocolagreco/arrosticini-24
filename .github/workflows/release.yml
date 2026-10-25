@@ -81,4 +81,4 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile --filter @arrosticini/infra...
-      - run: pnpm aws:app:deploy --require-approval never
+      - run: pnpm --filter @arrosticini/infra app:deploy --require-approval never
