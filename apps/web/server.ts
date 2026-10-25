@@ -8,6 +8,7 @@ import {
   Lifecycle,
   loadTaskMetadata,
   shutdownOnSignals,
+  type TaskMetadata,
 } from "@arrosticini/ops";
 import { createRequestHandler } from "@react-router/express";
 import express, { type NextFunction, type Request, type Response } from "express";
@@ -28,13 +29,14 @@ const directory: string = fileURLToPath(
 );
 exitOnProcessErrors(logger);
 
-const cpu: CpuSampler = new CpuSampler(createCpuReader());
+const task: TaskMetadata = await loadTaskMetadata(process.env);
+const cpu: CpuSampler = new CpuSampler(createCpuReader(task.cpuLimit));
 cpu.start();
 lifecycle.onShutdown(async () => cpu.stop());
 const whoami: ReturnType<typeof createWhoAmI> = createWhoAmI({
   service: "web",
   version: config.APP_VERSION,
-  task: await loadTaskMetadata(process.env),
+  task,
   cpu,
 });
 app.get("/internal/whoami", (_req, res) => {

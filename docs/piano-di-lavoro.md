@@ -361,7 +361,7 @@ Regole:
   - una pecora che non risponde da 5 s diventa fantasma e poi sparisce;
   - una riga per `web` e una per `api`.
 - **CPU:** quella del pannello è istantanea e per task; lo scaling usa la media del servizio su un minuto (CloudWatch).
-- **Come si misura:** `packages/ops` legge ogni secondo i contatori cgroup del container (v2, poi v1) e li divide per il limite di CPU del task, quindi conta anche `grill.js`, che gira in un altro processo. Fuori da un container usa la CPU del processo su un core. Id del task e AZ arrivano dall'endpoint di metadata di ECS; in locale sono il nome dell'host e `local`.
+- **Come si misura:** `packages/ops` legge ogni secondo i contatori cgroup del container (v2, poi v1) e li divide per il limite di CPU, quindi conta anche `grill.js`, che gira in un altro processo. Il limite è quello del cgroup del container; se il cgroup non ne ha, come su Fargate, dove il limite sta sul task, è `Limits.CPU` dei metadata ECS, altrimenti un core. Fuori da un container usa la CPU del processo su un core. Id del task, AZ e limite di CPU arrivano dall'endpoint di metadata di ECS; in locale sono il nome dell'host e `local`.
 - **k6:** `k6 run -e BASE_URL=<origine> load/browse.js` e `k6 run -e BASE_URL=<origine> -e EMAIL=<account esistente> load/login-storm.js`, con `VUS` e `DURATION` opzionali. `login-storm` usa una password sbagliata: scrypt gira comunque e non nascono sessioni.
 - **ECS Exec richiede:** `enableExecuteCommand` sui servizi, permessi SSM nel task role, Session Manager plugin sul portatile.
 - **Init nei task:** `initProcessEnabled` nei container di `web` e `api`. Il processo 1 diventa l'init di ECS e node un suo figlio, così `pkill -9 node` fa morire il container.
