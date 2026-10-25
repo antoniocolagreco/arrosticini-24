@@ -23,6 +23,8 @@
     "aws:app:deploy": "pnpm --filter @arrosticini/infra app:deploy",
     "aws:app:seed": "pnpm --filter @arrosticini/api seed:aws",
     "aws:app:destroy": "pnpm --filter @arrosticini/infra app:destroy",
+    "aws:app:api:restart": "pnpm --filter @arrosticini/infra app:api:restart",
+    "aws:app:web:restart": "pnpm --filter @arrosticini/infra app:web:restart",
     "format": "biome format --write ."
   },
   "devDependencies": {

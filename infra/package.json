@@ -7,11 +7,13 @@
     "cdk": "cdk",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
-    "bootstrap": "cdk bootstrap --region eu-south-1",
+    "bootstrap": "cdk bootstrap",
     "foundation:deploy": "cdk deploy arrosticini-foundation",
     "foundation:destroy": "cdk destroy arrosticini-foundation",
     "app:deploy": "cdk deploy arrosticini-app",
-    "app:destroy": "cdk destroy arrosticini-app"
+    "app:destroy": "cdk destroy arrosticini-app arrosticini-waf",
+    "app:api:restart": "aws ecs update-service --region eu-south-1 --cluster arrosticini-cluster --service api --force-new-deployment",
+    "app:web:restart": "aws ecs update-service --region eu-south-1 --cluster arrosticini-cluster --service web --force-new-deployment"
   },
   "dependencies": {
     "@aws-sdk/client-ecr": "catalog:",
