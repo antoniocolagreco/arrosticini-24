@@ -53,7 +53,24 @@ export class ArrosticiniFoundationStack extends Stack {
 
     for (const repository of repositories) {
       repository.grantPullPush(ciRole);
+      repository.grant(ciRole, "ecr:DescribeImages");
     }
+
+    ciRole.addToPolicy(
+      new PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [
+          `arn:aws:ssm:${this.region}:${this.account}:parameter/${projectId}/repository-path`,
+        ],
+      }),
+    );
+
+    ciRole.addToPolicy(
+      new PolicyStatement({
+        actions: ["cloudformation:DescribeStacks"],
+        resources: ["*"],
+      }),
+    );
 
     const policy = new PolicyStatement({
       actions: ["sts:AssumeRole"],
