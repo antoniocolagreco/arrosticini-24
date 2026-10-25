@@ -21,7 +21,7 @@ export function updateStressTasks(
   for (const reading of readings) {
     tasks.set(`${reading.service}:${reading.taskId}`, { ...reading, lastSeen: now });
   }
-  return [...tasks.values()].filter((task) => now - task.lastSeen < 15000);
+  return [...tasks.values()].filter((task) => now - task.lastSeen < 60000);
 }
 
 export function sheepState(task: StressTask, now: number): SheepState {

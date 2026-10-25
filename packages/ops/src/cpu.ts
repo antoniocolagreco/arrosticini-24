@@ -15,11 +15,14 @@ async function readTextFile(path: string): Promise<string | undefined> {
   }
 }
 
-function quotaCores(quota: number, period: number): number {
-  return quota > 0 && period > 0 ? quota / period : 1;
+function quotaCores(quota: number, period: number, taskCpuLimit: number): number {
+  return quota > 0 && period > 0 ? quota / period : taskCpuLimit;
 }
 
-export async function readContainerCpu(read: ReadText): Promise<CpuReading | undefined> {
+export async function readContainerCpu(
+  read: ReadText,
+  taskCpuLimit = 1,
+): Promise<CpuReading | undefined> {
   if ((await read("/proc/self/cgroup"))?.trim() === "0::/") {
     const usage = (await read("/sys/fs/cgroup/cpu.stat"))?.match(/^usage_usec (\d+)$/m)?.[1];
     if (usage !== undefined) {
@@ -27,7 +30,8 @@ export async function readContainerCpu(read: ReadText): Promise<CpuReading | und
         (await read("/sys/fs/cgroup/cpu.max"))?.trim().split(" ") ?? [];
       return {
         usageMicros: Number(usage),
-        cores: quota === "max" ? 1 : quotaCores(Number(quota), Number(period)),
+        cores:
+          quota === "max" ? taskCpuLimit : quotaCores(Number(quota), Number(period), taskCpuLimit),
       };
     }
   }
@@ -38,15 +42,19 @@ export async function readContainerCpu(read: ReadText): Promise<CpuReading | und
       cores: quotaCores(
         Number(await read("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")),
         Number(await read("/sys/fs/cgroup/cpu/cpu.cfs_period_us")),
+        taskCpuLimit,
       ),
     };
   }
   return undefined;
 }
 
-export function createCpuReader(read: ReadText = readTextFile): () => Promise<CpuReading> {
+export function createCpuReader(
+  taskCpuLimit = 1,
+  read: ReadText = readTextFile,
+): () => Promise<CpuReading> {
   return async () => {
-    const container = await readContainerCpu(read);
+    const container = await readContainerCpu(read, taskCpuLimit);
     if (container !== undefined) {
       return container;
     }

@@ -17,6 +17,12 @@
     "local:stop": "docker compose stop",
     "local:destroy": "docker compose down -v",
     "local:reset": "pnpm local:destroy && pnpm local:up",
+    "aws:bootstrap": "pnpm --filter @arrosticini/infra bootstrap",
+    "aws:foundation:deploy": "pnpm --filter @arrosticini/infra foundation:deploy",
+    "aws:foundation:destroy": "pnpm --filter @arrosticini/infra foundation:destroy",
+    "aws:app:deploy": "pnpm --filter @arrosticini/infra app:deploy",
+    "aws:app:seed": "pnpm --filter @arrosticini/api seed:aws",
+    "aws:app:destroy": "pnpm --filter @arrosticini/infra app:destroy",
     "format": "biome format --write ."
   },
   "devDependencies": {

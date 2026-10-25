@@ -30,6 +30,45 @@ describe("readContainerCpu", () => {
     expect(reading).toEqual({ usageMicros: 42, cores: 1 });
   });
 
+  it("uses the task CPU limit when cgroup v2 has no CPU limit", async () => {
+    const reading = await readContainerCpu(
+      files({
+        "/proc/self/cgroup": "0::/\n",
+        "/sys/fs/cgroup/cpu.stat": "usage_usec 42\n",
+        "/sys/fs/cgroup/cpu.max": "max 100000\n",
+      }),
+      0.25,
+    );
+
+    expect(reading).toEqual({ usageMicros: 42, cores: 0.25 });
+  });
+
+  it("uses the task CPU limit when cgroup v1 has no CPU quota", async () => {
+    const reading = await readContainerCpu(
+      files({
+        "/sys/fs/cgroup/cpuacct/cpuacct.usage": "3000000000\n",
+        "/sys/fs/cgroup/cpu/cpu.cfs_quota_us": "-1\n",
+        "/sys/fs/cgroup/cpu/cpu.cfs_period_us": "100000\n",
+      }),
+      0.25,
+    );
+
+    expect(reading).toEqual({ usageMicros: 3_000_000, cores: 0.25 });
+  });
+
+  it("prefers the container CPU limit over the task CPU limit", async () => {
+    const reading = await readContainerCpu(
+      files({
+        "/proc/self/cgroup": "0::/\n",
+        "/sys/fs/cgroup/cpu.stat": "usage_usec 42\n",
+        "/sys/fs/cgroup/cpu.max": "50000 100000\n",
+      }),
+      0.25,
+    );
+
+    expect(reading).toEqual({ usageMicros: 42, cores: 0.5 });
+  });
+
   it("reads usage and CPU limit from cgroup v1", async () => {
     const reading = await readContainerCpu(
       files({
@@ -56,7 +95,7 @@ describe("readContainerCpu", () => {
 
 describe("createCpuReader", () => {
   it("falls back to the CPU time of the process on one core", async () => {
-    const reading = await createCpuReader(files({}))();
+    const reading = await createCpuReader(0.25, files({}))();
 
     expect(reading.cores).toBe(1);
     expect(reading.usageMicros).toBeGreaterThan(0);

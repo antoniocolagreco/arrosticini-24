@@ -1,4 +1,7 @@
 {
   "extends": "@arrosticini/tsconfig/base.json",
-  "include": ["bin", "lib"]
+  "include": ["bin", "lib"],
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": false
+  }
 }

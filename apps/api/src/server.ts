@@ -24,12 +24,13 @@ const logger = createLogger({
 });
 exitOnProcessErrors(logger);
 
-const cpu = new CpuSampler(createCpuReader());
+const task = await loadTaskMetadata(process.env);
+const cpu = new CpuSampler(createCpuReader(task.cpuLimit));
 cpu.start();
 const whoami = createWhoAmI({
   service: "api",
   version: config.APP_VERSION,
-  task: await loadTaskMetadata(process.env),
+  task,
   cpu,
 });
 const dynamo = createDynamoDbClient(config.AWS_REGION, config.DYNAMODB_ENDPOINT);

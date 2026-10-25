@@ -3,11 +3,13 @@ import { hostname } from "node:os";
 export interface TaskMetadata {
   taskId: string;
   availabilityZone: string;
+  cpuLimit?: number;
 }
 
 interface EcsTaskResponse {
   TaskARN: string;
   AvailabilityZone: string;
+  Limits?: { CPU?: number };
 }
 
 export async function loadTaskMetadata(
@@ -23,6 +25,10 @@ export async function loadTaskMetadata(
   if (!response.ok) {
     throw new Error(`ECS task metadata answered ${response.status}`);
   }
-  const { TaskARN, AvailabilityZone } = (await response.json()) as EcsTaskResponse;
-  return { taskId: TaskARN.split("/").at(-1) ?? TaskARN, availabilityZone: AvailabilityZone };
+  const { TaskARN, AvailabilityZone, Limits } = (await response.json()) as EcsTaskResponse;
+  return {
+    taskId: TaskARN.split("/").at(-1) ?? TaskARN,
+    availabilityZone: AvailabilityZone,
+    ...(Limits?.CPU !== undefined && Limits.CPU > 0 ? { cpuLimit: Limits.CPU } : {}),
+  };
 }

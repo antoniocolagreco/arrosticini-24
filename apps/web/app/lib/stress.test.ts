@@ -79,7 +79,7 @@ describe("stress task discovery", () => {
     expect(previous[0]?.lastSeen).toBe(0);
   });
 
-  it("turns a silent task into a ghost at five seconds and removes it at fifteen", () => {
+  it("turns a silent task into a ghost at five seconds and removes it at sixty", () => {
     const task: StressTask = {
       service: "web",
       version: "v1",
@@ -91,8 +91,8 @@ describe("stress task discovery", () => {
     };
     expect(sheepState(task, 4999)).toBe("calm");
     expect(sheepState(task, 5000)).toBe("ghost");
-    expect(updateStressTasks([task], [], 14999)).toEqual([task]);
-    expect(updateStressTasks([task], [], 15000)).toEqual([]);
+    expect(updateStressTasks([task], [], 59999)).toEqual([task]);
+    expect(updateStressTasks([task], [], 60000)).toEqual([]);
   });
 
   it.each([79.9, 80, 100])(

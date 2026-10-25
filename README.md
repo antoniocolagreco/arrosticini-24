@@ -154,6 +154,19 @@ docker compose --env-file .env.local --profile full up -d --build api web
 | `pnpm local:destroy` | remove the services and their data |
 | `pnpm local:reset` | destroy and start again from scratch |
 
+### AWS commands
+
+They need an AWS session (`aws login`).
+
+| Command | Effect |
+|---|---|
+| `pnpm aws:bootstrap` | bootstrap CDK in `eu-south-1` |
+| `pnpm aws:foundation:deploy` | deploy the foundation stack: ECR repositories and the GitHub OIDC role |
+| `pnpm aws:foundation:destroy` | destroy the foundation stack |
+| `pnpm aws:app:deploy` | deploy the app stack with the latest image tag present in both ECR repositories |
+| `pnpm aws:app:seed` | seed the catalog and the admin from the Parameter Store credentials |
+| `pnpm aws:app:destroy` | destroy the app stack |
+
 ## Quality checks
 
 ```sh
