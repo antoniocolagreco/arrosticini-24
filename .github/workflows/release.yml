@@ -21,6 +21,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      deploy: ${{ steps.app.outputs.deploy }}
     steps:
       - uses: actions/checkout@v7
       - uses: aws-actions/configure-aws-credentials@v6
@@ -48,3 +50,35 @@ jobs:
           tags: ${{ steps.ecr.outputs.registry }}/arrosticini/web:${{ github.ref_name }}
           provenance: false
           push: true
+      - id: app
+        run: |
+          if aws cloudformation describe-stacks --stack-name arrosticini-app > /dev/null 2> describe-error.txt; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          elif grep -q "does not exist" describe-error.txt; then
+            echo "::notice::arrosticini-app does not exist, deploy skipped"
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            cat describe-error.txt
+            exit 1
+          fi
+
+  deploy:
+    needs: release
+    if: needs.release.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @arrosticini/infra...
+      - run: pnpm aws:app:deploy --require-approval never

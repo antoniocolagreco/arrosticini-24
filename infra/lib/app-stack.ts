@@ -1,9 +1,22 @@
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from "aws-cdk-lib";
+import type { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
+import {
+  AllowedMethods,
+  type BehaviorOptions,
+  CachePolicy,
+  Distribution,
+  OriginProtocolPolicy,
+  OriginRequestPolicy,
+  ViewerProtocolPolicy,
+} from "aws-cdk-lib/aws-cloudfront";
+import { LoadBalancerV2Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 import { AttributeType, Billing, TableV2 } from "aws-cdk-lib/aws-dynamodb";
 import {
   GatewayVpcEndpointAwsService,
   IpAddresses,
+  Peer,
   Port,
+  PrefixList,
   SecurityGroup,
   SubnetType,
   Vpc,
@@ -35,13 +48,16 @@ interface ArrosticiniAppStackProps extends StackProps {
   projectId: string;
   webTagVer: string;
   apiTagVer: string;
+  domainName: string;
+  certificate: ICertificate;
+  webAclArn: string;
 }
 
 export class ArrosticiniAppStack extends Stack {
   constructor(scope: Construct, id: string, props: ArrosticiniAppStackProps) {
     super(scope, id, props);
 
-    const { projectId, env, apiTagVer, webTagVer } = props;
+    const { projectId, env, apiTagVer, webTagVer, domainName, certificate, webAclArn } = props;
     if (!env) throw new Error("No enviroment settings found!");
 
     const vpc = new Vpc(this, "Vpc", {
@@ -170,16 +186,6 @@ export class ArrosticiniAppStack extends Stack {
 
     new CfnOutput(this, "StripeEventsTableName", {
       value: stripeEventsTable.tableName,
-    });
-
-    const staticBucket = new Bucket(this, "StaticBucket", {
-      removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-      enforceSSL: true,
-    });
-
-    new CfnOutput(this, "StaticBucketName", {
-      value: staticBucket.bucketName,
     });
 
     const mediaBucket = new Bucket(this, "MediaBucket", {
@@ -317,7 +323,17 @@ export class ArrosticiniAppStack extends Stack {
       internetFacing: true,
       vpcSubnets: { subnetType: SubnetType.PUBLIC },
     });
-    const listener = loadBalancer.addListener("Http", { port: 80 });
+
+    const listener = loadBalancer.addListener("Http", { port: 80, open: false });
+
+    loadBalancer.connections.allowFrom(
+      Peer.prefixList(
+        PrefixList.fromLookup(this, "CloudFrontOriginFacing", {
+          prefixListName: "com.amazonaws.global.cloudfront.origin-facing",
+        }).prefixListId,
+      ),
+      Port.tcp(80),
+    );
 
     const webTaskDefinition = new FargateTaskDefinition(this, "WebTaskDefinition", {
       cpu: 256,
@@ -347,7 +363,7 @@ export class ArrosticiniAppStack extends Stack {
       environment: {
         VALKEY_URL: valkeyUrl,
         API_URL: "http://api:4000",
-        PUBLIC_ORIGIN: `http://${loadBalancer.loadBalancerDnsName}`,
+        PUBLIC_ORIGIN: `https://${domainName}`,
       },
       secrets: {
         SESSION_SECRET: Secret.fromSsmParameter(
@@ -380,7 +396,33 @@ export class ArrosticiniAppStack extends Stack {
 
     webService.node.addDependency(apiService);
 
-    const _targetGroup = listener.addTargets("Web", {
+    apiService
+      .autoScaleTaskCount({ minCapacity: 2, maxCapacity: 4 })
+      .scaleOnMetric("ApiCpuScaling", {
+        metric: apiService.metricCpuUtilization({ period: Duration.minutes(1) }),
+        scalingSteps: [
+          { upper: 30, change: -1 },
+          { lower: 80, change: 1 },
+          { lower: 95, change: 2 },
+        ],
+        evaluationPeriods: 1,
+        cooldown: Duration.seconds(120),
+      });
+
+    webService
+      .autoScaleTaskCount({ minCapacity: 2, maxCapacity: 4 })
+      .scaleOnMetric("WebCpuScaling", {
+        metric: webService.metricCpuUtilization({ period: Duration.minutes(1) }),
+        scalingSteps: [
+          { upper: 30, change: -1 },
+          { lower: 80, change: 1 },
+          { lower: 95, change: 2 },
+        ],
+        evaluationPeriods: 1,
+        cooldown: Duration.seconds(120),
+      });
+
+    listener.addTargets("Web", {
       port: 3100,
       protocol: ApplicationProtocol.HTTP,
       targets: [webService],
@@ -394,8 +436,35 @@ export class ArrosticiniAppStack extends Stack {
       deregistrationDelay: Duration.seconds(15),
     });
 
-    new CfnOutput(this, "LoadBalancerUrl", {
-      value: `http://${loadBalancer.loadBalancerDnsName}`,
+    const loadBalancerOrigin = new LoadBalancerV2Origin(loadBalancer, {
+      protocolPolicy: OriginProtocolPolicy.HTTP_ONLY,
+    });
+
+    const cachedBehaviour: BehaviorOptions = {
+      origin: loadBalancerOrigin,
+      viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+    };
+
+    const distribution = new Distribution(this, "Distribution", {
+      domainNames: [domainName],
+      certificate,
+      webAclId: webAclArn,
+      defaultBehavior: {
+        origin: loadBalancerOrigin,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
+      },
+      additionalBehaviors: {
+        "/assets/*": cachedBehaviour,
+        "/images/*": cachedBehaviour,
+      },
+    });
+
+    new CfnOutput(this, "DistributionDomainName", {
+      value: distribution.distributionDomainName,
     });
   }
 }

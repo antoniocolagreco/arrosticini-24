@@ -3,5 +3,11 @@
     "eu-south-1a",
     "eu-south-1b",
     "eu-south-1c"
+  ],
+  "cc-api-provider:account=494818770737:expectedMatchCount=exactly-one:propertiesToReturn.0=PrefixListId:propertyMatch.PrefixListName=com.amazonaws.global.cloudfront.origin-facing:region=eu-south-1:typeName=AWS$:$:EC2$:$:PrefixList": [
+    {
+      "PrefixListId": "pl-1bbc5972",
+      "Identifier": "pl-1bbc5972"
+    }
   ]
 }

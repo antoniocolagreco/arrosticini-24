@@ -156,16 +156,16 @@ docker compose --env-file .env.local --profile full up -d --build api web
 
 ### AWS commands
 
-They need an AWS session (`aws login`).
+They need an AWS session (`aws login`). Publishing a GitHub Release pushes the images and, when the app stack exists, runs `aws:app:deploy` from CI; when it does not, the deploy is skipped.
 
 | Command | Effect |
 |---|---|
-| `pnpm aws:bootstrap` | bootstrap CDK in `eu-south-1` |
+| `pnpm aws:bootstrap` | bootstrap CDK in `eu-south-1` and `us-east-1` |
 | `pnpm aws:foundation:deploy` | deploy the foundation stack: ECR repositories and the GitHub OIDC role |
 | `pnpm aws:foundation:destroy` | destroy the foundation stack |
-| `pnpm aws:app:deploy` | deploy the app stack with the latest image tag present in both ECR repositories |
+| `pnpm aws:app:deploy` | deploy the app stack with the latest image tag present in both ECR repositories, plus the certificate and web ACL stacks in `us-east-1` |
 | `pnpm aws:app:seed` | seed the catalog and the admin from the Parameter Store credentials |
-| `pnpm aws:app:destroy` | destroy the app stack |
+| `pnpm aws:app:destroy` | destroy the app stack and its web ACL; the certificate stack stays |
 
 ## Quality checks
 
