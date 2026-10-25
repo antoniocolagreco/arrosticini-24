@@ -1,3 +1,4 @@
+import { setDefaultAutoSelectFamilyAttemptTimeout } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -22,6 +23,7 @@ import { logger } from "./server/logger.js";
 import { createStressStatus } from "./server/stress-status.js";
 
 const config: Config = loadConfig(process.env);
+setDefaultAutoSelectFamilyAttemptTimeout(2000);
 const lifecycle: Lifecycle = new Lifecycle();
 const app = createApp(logger, lifecycle);
 const directory: string = fileURLToPath(
@@ -106,4 +108,6 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction): void 
 const server = app.listen(config.WEB_PORT, () => {
   logger.info({ port: config.WEB_PORT }, "web listening");
 });
+server.keepAliveTimeout = 65_000;
+server.headersTimeout = 66_000;
 shutdownOnSignals(server, lifecycle, logger);
