@@ -396,6 +396,32 @@ export class ArrosticiniAppStack extends Stack {
 
     webService.node.addDependency(apiService);
 
+    apiService
+      .autoScaleTaskCount({ minCapacity: 2, maxCapacity: 4 })
+      .scaleOnMetric("ApiCpuScaling", {
+        metric: apiService.metricCpuUtilization({ period: Duration.minutes(1) }),
+        scalingSteps: [
+          { upper: 30, change: -1 },
+          { lower: 80, change: 1 },
+          { lower: 95, change: 2 },
+        ],
+        evaluationPeriods: 1,
+        cooldown: Duration.seconds(120),
+      });
+
+    webService
+      .autoScaleTaskCount({ minCapacity: 2, maxCapacity: 4 })
+      .scaleOnMetric("WebCpuScaling", {
+        metric: webService.metricCpuUtilization({ period: Duration.minutes(1) }),
+        scalingSteps: [
+          { upper: 30, change: -1 },
+          { lower: 80, change: 1 },
+          { lower: 95, change: 2 },
+        ],
+        evaluationPeriods: 1,
+        cooldown: Duration.seconds(120),
+      });
+
     listener.addTargets("Web", {
       port: 3100,
       protocol: ApplicationProtocol.HTTP,
