@@ -15,7 +15,7 @@ The shop sells arrosticini (Abruzzo's lamb skewers) worldwide, in Italian and En
 
 ## Highlights
 
-- **Domain-Driven Design in a modular monolith:** five bounded contexts, each a package with its own domain, application, infrastructure and HTTP layers. Cross-context imports are rejected by `turbo boundaries`, so any context can be extracted into its own service.
+- **Domain-Driven Design across two services:** `web` and `api` ship as separate images. The API is split into five bounded contexts, each a package with its own domain, application, infrastructure and HTTP layers. Cross-context imports are rejected by `turbo boundaries`, so any context can be extracted into its own service.
 - **Contract-first API:** oRPC contracts with Zod schemas shared by API and web, with OpenAPI specs generated from them and checked in CI.
 - **Backend for Frontend:** the browser only talks to the SSR web app, which owns sessions, locale and rendering. The API sits in a private network.
 - **Stateless containers:** sessions and carts live in Valkey, so any task can die or be replaced without logging users out.
