@@ -2340,8 +2340,12 @@ h2 {
   .header-actions {
     gap: 0;
   }
+  .account-link {
+    width: 36px;
+  }
   .language-link {
     font-size: 12px;
+    min-width: 36px;
   }
   .language-link > span,
   .language-chevron {
