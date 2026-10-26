@@ -165,8 +165,9 @@ They need an AWS session (`aws login`). Publishing a GitHub Release pushes the i
 | `pnpm aws:foundation:destroy` | destroy the foundation stack |
 | `pnpm aws:app:deploy` | deploy the app stack with the latest image tag present in both ECR repositories, plus the certificate and web ACL stacks in `us-east-1`, then run `aws:dns:update` |
 | `pnpm aws:dns:update` | point the `arrosticini.colagreco.dev` CNAME on Cloudflare to the CloudFront domain, using the `/arrosticini/cloudflare-zone-id` and `/arrosticini/cloudflare-api-token` parameters |
+| `pnpm aws:dns:delete` | delete the `arrosticini.colagreco.dev` CNAME on Cloudflare, refusing while the app stack still serves a CloudFront domain |
 | `pnpm aws:app:seed` | seed the catalog and the admin from the Parameter Store credentials |
-| `pnpm aws:app:destroy` | destroy the app stack and its web ACL; the certificate stack stays |
+| `pnpm aws:app:destroy` | destroy the app stack and its web ACL, then run `aws:dns:delete`, so the next deploy can attach the domain to a new distribution; the certificate stack stays |
 
 ## Quality checks
 

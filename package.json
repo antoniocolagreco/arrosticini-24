@@ -22,8 +22,9 @@
     "aws:foundation:destroy": "pnpm --filter @arrosticini/infra foundation:destroy",
     "aws:app:deploy": "pnpm --filter @arrosticini/infra app:deploy && pnpm aws:dns:update",
     "aws:dns:update": "pnpm --filter @arrosticini/infra dns:update",
+    "aws:dns:delete": "pnpm --filter @arrosticini/infra dns:delete",
     "aws:app:seed": "pnpm --filter @arrosticini/api seed:aws",
-    "aws:app:destroy": "pnpm --filter @arrosticini/infra app:destroy",
+    "aws:app:destroy": "pnpm --filter @arrosticini/infra app:destroy && pnpm aws:dns:delete",
     "aws:app:api:restart": "pnpm --filter @arrosticini/infra app:api:restart",
     "aws:app:web:restart": "pnpm --filter @arrosticini/infra app:web:restart",
     "format": "biome format --write ."
