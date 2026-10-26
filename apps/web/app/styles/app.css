@@ -549,7 +549,8 @@ h2 {
   letter-spacing: -1.5px;
   margin-bottom: var(--space-6);
 }
-.section-title::after {
+.section-title::after,
+.hero h1 span + span::after {
   content: "";
   display: block;
   height: 9px;

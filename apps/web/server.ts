@@ -20,6 +20,7 @@ import { isHttpsOrigin } from "./app/lib/utils.js";
 import { createApp } from "./server/app.js";
 import { type Config, loadConfig } from "./server/config.js";
 import { logger } from "./server/logger.js";
+import { serveStaticFiles } from "./server/static-files.js";
 import { createStressStatus } from "./server/stress-status.js";
 
 const config: Config = loadConfig(process.env);
@@ -80,7 +81,7 @@ if (config.NODE_ENV === "production") {
     "/assets",
     express.static(path.join(directory, "build/client/assets"), { immutable: true, maxAge: "1y" }),
   );
-  app.use(express.static(path.join(directory, "build/client"), { maxAge: "1h" }));
+  app.use(await serveStaticFiles(path.join(directory, "build/client")));
   app.use(createRequestHandler({ build, mode: "production", getLoadContext }));
 } else {
   const { createServer } = await import("vite");
