@@ -55,6 +55,7 @@ export default function Welcome({ loaderData }: Route.ComponentProps) {
             alt=""
             width="1774"
             height="887"
+            fetchPriority="high"
           />
           <div className="hero-flight">
             <motion.img
