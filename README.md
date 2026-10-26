@@ -11,7 +11,7 @@ The shop sells arrosticini (Abruzzo's lamb skewers) worldwide, in Italian and En
 ## Status
 
 - **Application:** feature complete and running locally with Docker Compose, covered by unit, integration and end-to-end tests.
-- **AWS infrastructure:** in progress. The CDK stacks and the release pipeline are being written; the target architecture is described below.
+- **AWS infrastructure:** deployed with AWS CDK and served at https://arrosticini.colagreco.dev while the app stack is up. Publishing a GitHub Release builds the images and rolls them out.
 
 ## Highlights
 
@@ -22,30 +22,62 @@ The shop sells arrosticini (Abruzzo's lamb skewers) worldwide, in Italian and En
 - **Payments:** Stripe Checkout with signed webhooks, idempotent event handling and saved cards. Domain events move a paid order forward and empty the cart.
 - **Built for rolling updates:** `/healthz` returns 503 as soon as a task starts shutting down, and on `SIGTERM` the server finishes in-flight requests and closes its clients before exiting.
 - **Security:** scrypt password hashing with constant-time comparison, HttpOnly signed session cookies, same-origin checks on every form action, role checks in both web and API, account suspension enforced on every request.
+- **SEO:** the web app serves these, and the other pages are marked `noindex`:
+  - canonical and `hreflang` links for Italian and English;
+  - Open Graph and Twitter cards with a social preview image;
+  - JSON-LD for the organization, the website and each product with its offer and breadcrumbs;
+  - `robots.txt` and a `sitemap.xml` built from the catalog.
+- **Live stress panel:** `/:lang/stress` polls the web app every 500 ms and shows each web and api task it meets as a sheep, with its version, Availability Zone and CPU read from the container cgroup. Tasks appear when the service scales out and fade away when they stop.
 - **Testing at every level:** Vitest unit and integration tests against real DynamoDB, Valkey, S3 and Stripe mock containers (Testcontainers), Playwright end-to-end tests against the production builds and Docker images, and k6 load scripts.
 
 ## Architecture
 
-### Target on AWS
+### On AWS
 
 ```
-                              ┌─ /assets/*  ──► S3 "static" (build JS/CSS)
-Browser ──► CloudFront + WAF ─┤
-                              └─ default    ──► ALB ──► web (Fargate, ≥2 tasks, 2 AZs)
-                                                         ├──► Valkey (sessions)
-                                                         └──► api (Fargate, ≥2 tasks, 2 AZs, private)
-                                                                ├──► DynamoDB
-                                                                ├──► Valkey (carts)
-                                                                ├──► S3 "media"
-                                                                └──► Stripe API
+Browser ──► CloudFront + WAF ──► ALB ──► web (Fargate, 2-4 tasks, 2 AZs)
+            arrosticini.colagreco.dev     ├──► Valkey (sessions)
+                                          └──► api (Fargate, 2-4 tasks, 2 AZs, private)
+                                                 ├──► DynamoDB
+                                                 ├──► Valkey (carts)
+                                                 ├──► S3 "media"
+                                                 └──► Stripe API
 Stripe ──► webhook ──► CloudFront ──► web /webhooks/stripe ──► api /payments/webhooks/stripe
 ```
 
-- ECS Fargate services spread across two Availability Zones behind an Application Load Balancer, scaling out when CPU goes above 80%.
-- `api` runs in private subnets and accepts traffic only from `web`, through ECS Service Connect.
-- Product images are served by `web` at `/images/products/...`, read through `api` from the private `media` bucket, and cached by CloudFront like any other path.
-- AWS WAF on CloudFront with a per-IP rate limit and SQL injection rules; Shield Standard covers network-layer attacks.
-- Infrastructure as code with AWS CDK in TypeScript. Releases build the images, push them to ECR and trigger a rolling update with automatic rollback.
+- **Network:** a VPC across two Availability Zones with public, private and isolated subnets.
+  - The ALB sits in the public subnets and accepts traffic only from CloudFront, through the CloudFront origin-facing prefix list.
+  - The ECS tasks run in the private subnets. They reach Stripe, ECR, CloudWatch Logs and Parameter Store through one NAT gateway per AZ, and DynamoDB and S3 through gateway endpoints.
+  - Valkey Serverless runs in the isolated subnets and accepts connections only from `web` and `api`.
+- **Services:** `web` and `api` are ECS Fargate services with 0.25 vCPU tasks, spread across both AZs.
+  - `api` accepts traffic only from `web`, through ECS Service Connect.
+  - Each service scales between 2 and 4 tasks on its average CPU over one minute: one task more from 80%, two more from 95%, one less under 30%.
+- **CloudFront:** serves the custom domain with an ACM certificate in `us-east-1`.
+  - `/assets/*` (build JS and CSS) and `/images/*` are cached.
+  - Every other path goes to the ALB uncached.
+  - Product images are served by `web` at `/images/products/...`, read through `api` from the private `media` bucket.
+- **WAF:** the web ACL on CloudFront has these rules:
+  - a rate limit of 2000 requests per IP every 5 minutes;
+  - the AWS managed IP reputation list;
+  - the core rule set, with the body size rule in count mode;
+  - the known bad inputs rule set.
+
+  Shield Standard covers network-layer attacks.
+- **Rolling updates:** each service keeps 100% of its tasks healthy and starts the new ones alongside, up to 200%.
+  - `web` is updated after `api`.
+  - The deployment circuit breaker rolls a service back when its new tasks do not become healthy.
+- **DNS:** the `colagreco.dev` zone is on Cloudflare. The `arrosticini` CNAME points to the CloudFront domain and is set by the deploy scripts.
+
+The CDK app in `infra/` defines four stacks:
+
+| Stack | Region | Contents |
+|---|---|---|
+| `arrosticini-foundation` | `eu-south-1` | ECR repositories with immutable tags, keeping the last five `v*` images; GitHub OIDC provider and the `arrosticini-ci` role assumed by releases |
+| `arrosticini-edge` | `us-east-1` | ACM certificate for `arrosticini.colagreco.dev`; it stays when the app is destroyed |
+| `arrosticini-waf` | `us-east-1` | web ACL attached to CloudFront |
+| `arrosticini-app` | `eu-south-1` | VPC, DynamoDB tables, `media` bucket, Valkey, ECS cluster and services, ALB, CloudFront distribution |
+
+`arrosticini-waf` and `arrosticini-app` are synthesized only when ECR holds an image tag present in both repositories. The app always deploys the most recently pushed of these tags.
 
 ### Bounded contexts
 
@@ -70,7 +102,8 @@ Contexts communicate through ports declared in their application layer, wired in
 | Data | DynamoDB, Valkey, S3 |
 | Payments | Stripe |
 | Testing | Vitest, Testcontainers, Supertest, Playwright, k6 |
-| Delivery | Docker multi-stage images, GitHub Actions, AWS CDK |
+| AWS | ECS Fargate, ALB, CloudFront, WAF, ACM, DynamoDB, ElastiCache Serverless for Valkey, S3, ECR, Parameter Store |
+| Delivery | Docker multi-stage images, GitHub Actions, AWS CDK, Cloudflare DNS |
 
 ## Repository layout
 
@@ -85,9 +118,11 @@ packages/
   ops/          health checks, logging, graceful shutdown, CPU sampling
   testing/      Testcontainers setup shared by the test suites
   tsconfig/     shared TypeScript configuration
+infra/          AWS CDK app: stacks, Cloudflare DNS script
 e2e/            Playwright end-to-end tests
 load/           k6 load scripts
 docs/           work plan, design system, design references
+.github/        CI and release workflows
 ```
 
 ## Getting started
@@ -156,7 +191,9 @@ docker compose --env-file .env.local --profile full up -d --build api web
 
 ### AWS commands
 
-They need an AWS session (`aws login`). Publishing a GitHub Release pushes the images and, when the app stack exists, deploys it from CI; when it does not, the deploy is skipped. CI does not touch DNS: an update keeps the same CloudFront domain.
+They need an AWS session (`aws login`).
+
+Publishing a GitHub Release `vX.Y.Z` runs the CI checks, then builds the images and pushes them to ECR with the release tag. When the app stack exists, the release also runs `cdk deploy arrosticini-app`; when it does not, the deploy is skipped. CI does not touch DNS, because an update keeps the same CloudFront domain.
 
 | Command | Effect |
 |---|---|
@@ -168,6 +205,36 @@ They need an AWS session (`aws login`). Publishing a GitHub Release pushes the i
 | `pnpm aws:dns:delete` | delete the `arrosticini.colagreco.dev` CNAME on Cloudflare, refusing while the app stack still serves a CloudFront domain |
 | `pnpm aws:app:seed` | seed the catalog and the admin from the Parameter Store credentials |
 | `pnpm aws:app:destroy` | destroy the app stack and its web ACL, then run `aws:dns:delete`, so the next deploy can attach the domain to a new distribution; the certificate stack stays |
+| `pnpm aws:app:api:restart` | replace the `api` tasks with a rolling update on the same image |
+| `pnpm aws:app:web:restart` | replace the `web` tasks with a rolling update on the same image |
+
+Destroy the app stack with `pnpm aws:app:destroy`, not from the console. If the CNAME still points to a deleted distribution, CloudFront refuses to attach the domain to a new one.
+
+#### First deploy
+
+The deploy reads these Parameter Store parameters in `eu-south-1`:
+
+| Parameter | Type | Value |
+|---|---|---|
+| `/arrosticini/repository-path` | String | GitHub `owner/repository`, trusted by the CI role for `v*` tags |
+| `/arrosticini/session-secret` | SecureString | at least 32 random characters |
+| `/arrosticini/stripe-secret-key` | SecureString | Stripe test secret key |
+| `/arrosticini/stripe-webhook-secret` | SecureString | signing secret of the Stripe webhook endpoint |
+| `/arrosticini/admin-email` | String | admin account created by the seed |
+| `/arrosticini/admin-password` | SecureString | its password, at least 8 characters |
+| `/arrosticini/cloudflare-zone-id` | String | ID of the `colagreco.dev` zone |
+| `/arrosticini/cloudflare-api-token` | SecureString | Cloudflare API token allowed to edit DNS in that zone |
+
+The release workflow needs the GitHub repository variables `AWS_ROLE_ARN` (the `arrosticini-ci` role) and `AWS_REGION` (`eu-south-1`).
+
+From an empty account:
+
+1. `pnpm aws:bootstrap`.
+2. `pnpm aws:foundation:deploy`.
+3. Publish a GitHub Release, which pushes the first images. The deploy is skipped because the app stack does not exist yet.
+4. Create the Stripe webhook endpoint at `https://arrosticini.colagreco.dev/webhooks/stripe` for `checkout.session.completed` and `checkout.session.expired`, and store its signing secret in `/arrosticini/stripe-webhook-secret`. The `api` tasks read it at startup, so it must exist before the app.
+5. `pnpm aws:app:deploy`. The first time, the certificate stack waits for DNS validation: add to Cloudflare the validation CNAME shown in the ACM console, without proxy, and keep it for renewals.
+6. `pnpm aws:app:seed`.
 
 ## Quality checks
 
@@ -191,7 +258,9 @@ k6 run load/browse.js
 k6 run -e EMAIL=admin@arrosticini24ore.local load/login-storm.js
 ```
 
-`browse.js` navigates the storefront; `login-storm.js` sends failed logins to a registered account to load the CPU with password hashing. `BASE_URL`, `VUS` and `DURATION` override the target and the load.
+`browse.js` navigates the storefront with 50 virtual users. `login-storm.js` sends failed logins to a registered account with 20 virtual users, to load the CPU with password hashing. Both run for 5 minutes against `http://localhost:3100`. `BASE_URL`, `VUS` and `DURATION` override the target and the load.
+
+From a single IP, a run against AWS goes over the WAF rate limit: switch the `RateLimit` rule to count before it.
 
 ## Workflow
 
