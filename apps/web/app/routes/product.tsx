@@ -7,7 +7,25 @@ import { Price } from "../components/price.js";
 import { ProductImage } from "../components/product-image.js";
 import { api, getApiError } from "../lib/api.server.js";
 import { productImages } from "../lib/product.server.js";
+import { storefrontMeta } from "../lib/seo.js";
 import type { Route } from "./+types/product.js";
+
+export function meta({
+  loaderData,
+  matches,
+  location,
+  error,
+}: Route.MetaArgs): Route.MetaDescriptors {
+  const rootData: { origin: string } | undefined = matches.find((match) => match?.id === "root")
+    ?.loaderData as { origin: string } | undefined;
+  return storefrontMeta({
+    origin: rootData?.origin ?? "https://arrosticini.colagreco.dev",
+    pathname: location.pathname,
+    search: location.search,
+    product: loaderData?.product,
+    error: error != null || !loaderData,
+  });
+}
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   if (!ProductSlug.safeParse(params.slug).success) throw new Response(null, { status: 404 });
@@ -31,7 +49,7 @@ export default function Product({ loaderData }: Route.ComponentProps) {
       />
       <div className="product-detail">
         <div className="product-gallery">
-          <ProductImage src={images[0]} name="" />
+          <ProductImage src={images[0]} name={product.name[locale]} />
           {images.length > 1 && (
             <div className="product-thumbnails">
               {images.slice(1).map((image) => (

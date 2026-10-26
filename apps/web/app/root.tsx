@@ -16,6 +16,8 @@ import { SiteLayout } from "./components/site-layout.js";
 import { readCart } from "./lib/cart.server.js";
 import { countriesFor } from "./lib/countries.js";
 import { localeCookie } from "./lib/locale.server.js";
+import { storefrontMeta } from "./lib/seo.js";
+import { publicOrigin } from "./lib/seo.server.js";
 import { sessionContext, sessionMiddleware } from "./lib/session.server.js";
 import { getLocale, i18nextMiddleware } from "./middleware/i18next.js";
 import "./styles/app.css";
@@ -27,6 +29,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   return data(
     {
       locale,
+      origin: publicOrigin(request.url),
       version: process.env.APP_VERSION ?? "dev",
       requestId: request.headers.get("x-request-id"),
       signedIn: context.get(sessionContext).has("userId"),
@@ -57,8 +60,13 @@ export function links(): Route.LinkDescriptors {
   ];
 }
 
-export function meta(): Route.MetaDescriptors {
-  return [{ title: "Arrosticini 24ore" }];
+export function meta({ loaderData, location, error }: Route.MetaArgs): Route.MetaDescriptors {
+  return storefrontMeta({
+    origin: loaderData?.origin ?? "https://arrosticini.colagreco.dev",
+    pathname: location.pathname,
+    search: location.search,
+    error: error != null,
+  });
 }
 
 export function Layout({ children }: { children: ReactNode }) {

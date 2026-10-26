@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <title>Arrosticini 24ore — social card</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #faf5e9; color: #321b12; font-family: Georgia, serif; position: relative; }
+      .landscape { position: absolute; width: 1030px; right: -240px; bottom: -46px; opacity: .62; }
+      .shade { position: absolute; inset: 0; background: linear-gradient(90deg, #faf5e9 39%, #faf5e900 85%); }
+      header { position: absolute; top: 44px; left: 56px; display: flex; align-items: center; gap: 15px; }
+      .sheep { width: 82px; height: 82px; object-fit: contain; }
+      .brand { font-weight: bold; line-height: .95; font-size: 36px; color: #a52b1c; }
+      main { position: absolute; top: 196px; left: 62px; z-index: 1; }
+      .eyebrow { font-family: Arial, sans-serif; font-size: 16px; letter-spacing: 3px; font-weight: bold; color: #253d26; margin: 0 0 18px; }
+      h1 { font-size: 56px; line-height: 1.04; margin: 0; letter-spacing: -2px; }
+      h1 span { display: block; color: #a52b1c; }
+      .brand span { display: block; font-size: 29px; font-style: italic; color: #253d26; padding-top: 7px; }
+      .intro { font-family: Arial, sans-serif; font-size: 23px; line-height: 1.4; margin-top: 22px; }
+      .airplane { position: absolute; width: 650px; right: -5px; top: 176px; }
+      footer { position: absolute; bottom: 38px; left: 62px; right: 62px; border-top: 1px solid #c9b793; padding-top: 18px; font: 16px Arial, sans-serif; color: #6f6251; letter-spacing: .5px; }
+    </style>
+  </head>
+  <body>
+    <img class="landscape" src="public/images/background.webp" alt="" />
+    <div class="shade"></div>
+    <header><img class="sheep" src="public/images/sheep.webp" alt="" /><div class="brand">Arrosticini<span>24ore</span></div></header>
+    <img class="airplane" src="public/images/airplane.webp" alt="" />
+    <main><p class="eyebrow">DALL’ABRUZZO, CON LA BRACE NEL CUORE</p><h1>La pecora vola.<span>La tradizione<br />resta.</span></h1><p class="intro">Arrosticini d’Abruzzo,<br />direzione mondo.</p></main>
+    <footer>ARROSTICINI · VINI · ACCESSORI PER LA BRACE</footer>
+  </body>
+</html>
