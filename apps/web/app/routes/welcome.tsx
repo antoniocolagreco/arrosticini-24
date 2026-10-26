@@ -50,6 +50,8 @@ export default function Welcome({ loaderData }: Route.ComponentProps) {
           <img
             className="hero-landscape"
             src="/images/background.webp"
+            srcSet="/images/background-640.webp 640w, /images/background-1072.webp 1072w, /images/background.webp 1774w"
+            sizes="(max-width: 700px) 100vw, (max-width: 1000px) min(94vw, 912px), min(82vw, 1072px)"
             alt=""
             width="1774"
             height="887"
@@ -58,6 +60,8 @@ export default function Welcome({ loaderData }: Route.ComponentProps) {
             <motion.img
               className="hero-airplane"
               src="/images/airplane.webp"
+              srcSet="/images/airplane-640.webp 640w, /images/airplane-1072.webp 1072w, /images/airplane.webp 1774w"
+              sizes="(max-width: 700px) 100vw, (max-width: 1000px) 62vw, min(48vw, 737px)"
               alt=""
               width="1774"
               height="887"
