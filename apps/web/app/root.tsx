@@ -13,6 +13,8 @@ import {
 import type { Route } from "./+types/root.js";
 import { ErrorPage } from "./components/error-page.js";
 import { SiteLayout } from "./components/site-layout.js";
+import dmSans from "./fonts/dm-sans-latin.woff2?url";
+import robotoSerif from "./fonts/roboto-serif-latin.woff2?url";
 import { readCart } from "./lib/cart.server.js";
 import { countriesFor } from "./lib/countries.js";
 import { localeCookie } from "./lib/locale.server.js";
@@ -51,12 +53,8 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 export function links(): Route.LinkDescriptors {
   return [
     { rel: "icon", href: "/images/favicon.svg", type: "image/svg+xml" },
-    { rel: "preconnect", href: "https://fonts.googleapis.com" },
-    { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-    {
-      rel: "stylesheet",
-      href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto+Serif:opsz,wdth,wght@8..144,75,600;8..144,75,700;8..144,75,900&display=swap",
-    },
+    { rel: "preload", href: dmSans, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
+    { rel: "preload", href: robotoSerif, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
   ];
 }
 

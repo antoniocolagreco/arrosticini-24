@@ -33,9 +33,11 @@ catalog:
   "@orpc/openapi-client": 1.15.5
   "@orpc/server": 1.15.5
   "@orpc/zod": 1.15.5
+  "@types/compression": 1.8.1
   "@types/express": 5.0.6
   "@types/node": 24.19.1
   "@types/supertest": 7.2.1
+  compression: 1.8.2
   express: 5.2.1
   class-variance-authority: 0.7.1
   clsx: 2.1.1
