@@ -1,9 +1,18 @@
 import { CircleAlert, Cpu, Server } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Breadcrumb } from "../components/breadcrumb.js";
 import { SheepTile } from "../components/sheep-tile.js";
-import { StressStatus, type StressTask, sheepState, updateStressTasks } from "../lib/stress.js";
+import {
+  arrivedTasks,
+  StressStatus,
+  type StressTask,
+  sheepState,
+  stressTaskKey,
+  updateStressTasks,
+} from "../lib/stress.js";
+
+const ARRIVAL_GRACE_MS = 5000;
 
 export default function Stress() {
   const { t } = useTranslation("stress");
@@ -11,6 +20,23 @@ export default function Stress() {
   const [now, setNow] = useState<number>(0);
   const [connection, setConnection] = useState<"connecting" | "live" | "unavailable">("connecting");
   const [apiAvailable, setApiAvailable] = useState<boolean>(true);
+  const known = useRef<Set<string>>(new Set());
+  const mountedAt = useRef<number>(0);
+  const bleat = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    mountedAt.current = performance.now();
+    bleat.current = new Audio("/audio/sheep.mp3");
+  }, []);
+
+  useEffect(() => {
+    const arrivals: StressTask[] = arrivedTasks(tasks, known.current);
+    if (arrivals.length === 0) return;
+    for (const task of arrivals) known.current.add(stressTaskKey(task));
+    if (performance.now() - mountedAt.current < ARRIVAL_GRACE_MS || !bleat.current) return;
+    bleat.current.currentTime = 0;
+    bleat.current.play().catch(() => undefined);
+  }, [tasks]);
 
   useEffect(() => {
     let active: boolean = true;

@@ -17,7 +17,7 @@ Riferimenti visivi: `docs/mock.png` (home) e `docs/images/` (immagini del sito e
 ## Decisioni
 
 - **Monorepo:** pnpm workspace + Turborepo.
-- **Architettura:** DDD in un monolite modulare. Ogni bounded context si deve poter estrarre in un servizio autonomo.
+- **Architettura:** due servizi, `web` e `api`, con immagini separate. `api` è divisa in bounded context DDD, ognuno in un package che si deve poter estrarre in un servizio autonomo.
 - **web:** React Router v8 (framework mode, SSR) su Fargate. Tailwind v4, shadcn/ui, Motion, Lucide.
 - **api:** Express 5, Zod 4, AWS SDK v3 su Fargate. Non raggiungibile dalla rete pubblica.
 - **Contratto web↔api:** oRPC contract-first in `packages/contracts`.

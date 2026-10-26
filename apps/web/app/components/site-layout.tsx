@@ -1,4 +1,4 @@
-import { ChevronDown, Globe, ShoppingCart, UserRound } from "lucide-react";
+import { Activity, ChevronDown, Globe, ShoppingCart, UserRound } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,6 +41,13 @@ export function SiteLayout({
           <NavLink to={`/${locale}/delivery`}>{t("delivery")}</NavLink>
         </nav>
         <div className="header-actions">
+          <Link
+            className="account-link"
+            to={`/${locale}/stress`}
+            aria-label={t("title", { ns: "stress" })}
+          >
+            <Activity aria-hidden="true" size={20} />
+          </Link>
           {!isAdmin && (
             <Link
               className="account-link cart-link"
