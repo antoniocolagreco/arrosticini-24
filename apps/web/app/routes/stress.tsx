@@ -11,6 +11,7 @@ import {
   stressTaskKey,
   updateStressTasks,
 } from "../lib/stress.js";
+import { previewTasks } from "../lib/stress-preview.js";
 
 const ARRIVAL_GRACE_MS = 5000;
 
@@ -99,6 +100,7 @@ export default function Stress() {
         `${task.service} ${task.taskId.split("/").at(-1)?.slice(0, 8)}: ${t(sheepState(task, now))}`,
     )
     .join(". ");
+  const local: boolean = tasks.some((task) => task.availabilityZone === "local");
   return (
     <>
       <Breadcrumb items={[{ label: t("title") }]} />
@@ -169,6 +171,19 @@ export default function Stress() {
               </section>
             );
           })}
+          {local && (
+            <section className="stress-row" aria-labelledby="stress-preview">
+              <div className="stress-service">
+                <h2 id="stress-preview">{t("previewTitle")}</h2>
+                <p>{t("previewNote")}</p>
+              </div>
+              <ul className="stress-tiles">
+                {previewTasks(now).map((task) => (
+                  <SheepTile key={task.taskId} task={task} now={now} />
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
         <aside className="stress-note">
           <Cpu size={20} aria-hidden="true" />

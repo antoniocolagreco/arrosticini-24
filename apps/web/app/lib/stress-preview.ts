@@ -1,0 +1,78 @@
+import type { StressTask } from "./stress.js";
+
+export function previewTasks(now: number): StressTask[] {
+  return [
+    {
+      service: "web",
+      version: "v1.2.1",
+      taskId: "arn:aws:ecs:eu-south-1:000000000000:task/arrosticini-cluster/a1b2c3d4e5f6",
+      availabilityZone: "eu-south-1a",
+      cpuPercent: 12,
+      startedAt: "2026-10-26T09:00:00Z",
+      lastSeen: now,
+    },
+    {
+      service: "web",
+      version: "v1.2.2",
+      taskId: "arn:aws:ecs:eu-south-1:000000000000:task/arrosticini-cluster/b2c3d4e5f6a1",
+      availabilityZone: "eu-south-1b",
+      cpuPercent: 18,
+      startedAt: "2026-10-26T09:05:00Z",
+      lastSeen: now,
+    },
+    {
+      service: "api",
+      version: "v1.2.3",
+      taskId: "arn:aws:ecs:eu-south-1:000000000000:task/arrosticini-cluster/c3d4e5f6a1b2",
+      availabilityZone: "eu-south-1a",
+      cpuPercent: 25,
+      startedAt: "2026-10-26T09:10:00Z",
+      lastSeen: now,
+    },
+    {
+      service: "api",
+      version: "v1.2.4",
+      taskId: "arn:aws:ecs:eu-south-1:000000000000:task/arrosticini-cluster/d4e5f6a1b2c3",
+      availabilityZone: "eu-south-1b",
+      cpuPercent: 91,
+      startedAt: "2026-10-26T09:15:00Z",
+      lastSeen: now,
+    },
+    {
+      service: "web",
+      version: "v1.2.5",
+      taskId: "arn:aws:ecs:eu-south-1:000000000000:task/arrosticini-cluster/e5f6a1b2c3d4",
+      availabilityZone: "eu-south-1a",
+      cpuPercent: 9,
+      startedAt: "2026-10-26T09:20:00Z",
+      lastSeen: now,
+    },
+    {
+      service: "api",
+      version: "v1.2.6",
+      taskId: "arn:aws:ecs:eu-south-1:000000000000:task/arrosticini-cluster/f6a1b2c3d4e5",
+      availabilityZone: "eu-south-1b",
+      cpuPercent: 33,
+      startedAt: "2026-10-26T09:25:00Z",
+      lastSeen: now,
+    },
+    {
+      service: "api",
+      version: "v1.2.7",
+      taskId: "arn:aws:ecs:eu-south-1:000000000000:task/arrosticini-cluster/a7b8c9d0e1f2",
+      availabilityZone: "eu-south-1a",
+      cpuPercent: 0,
+      startedAt: "2026-10-26T09:27:00Z",
+      lastSeen: now - 10000,
+    },
+    {
+      service: "web",
+      version: "dev",
+      taskId: "preview-local",
+      availabilityZone: "local",
+      cpuPercent: 5,
+      startedAt: "2026-10-26T09:30:00Z",
+      lastSeen: now,
+    },
+  ];
+}

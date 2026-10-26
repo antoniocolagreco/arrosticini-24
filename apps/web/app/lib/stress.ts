@@ -32,6 +32,13 @@ export function arrivedTasks(tasks: StressTask[], known: ReadonlySet<string>): S
   return tasks.filter((task) => !known.has(stressTaskKey(task)));
 }
 
+const VERSION_TONES = 6;
+
+export function versionTone(version: string): number | null {
+  const match: RegExpExecArray | null = /^v?\d+\.\d+\.(\d+)$/.exec(version);
+  return match ? Number(match[1]) % VERSION_TONES : null;
+}
+
 export function sheepState(task: StressTask, now: number): SheepState {
   if (now - task.lastSeen >= 5000) return "ghost";
   return task.cpuPercent >= 80 ? "overdrive" : "calm";

@@ -22,6 +22,8 @@
   "noTasks": "Nessun task rilevato. Il pannello continua a cercare.",
   "connectionError": "Non riceviamo nuovi dati. Riproviamo automaticamente; i task già rilevati restano visibili finché non scadono.",
   "apiError": "Il servizio API non risponde. Riproviamo automaticamente.",
+  "previewTitle": "Anteprima",
+  "previewNote": "Solo in locale: task finti con versioni diverse, per controllare i colori.",
   "noteTitle": "CPU del task, in questo momento.",
   "note": "La percentuale è relativa alla CPU assegnata al singolo task. Lo scaling usa invece la media del servizio su un minuto, misurata da CloudWatch.",
   "sampling": "Il pannello raccoglie i task incontrati, non l’inventario completo. Dopo 5 secondi senza risposte diventano fantasmi; dopo 60 secondi scompaiono. Gli aggiornamenti si fermano quando la scheda è nascosta."
