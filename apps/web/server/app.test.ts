@@ -18,6 +18,18 @@ describe("web health", () => {
     expect(response.headers["x-powered-by"]).toBeUndefined();
   });
 
+  it("compresses text responses for clients that accept it", async () => {
+    const app: Express = createApp(logger, new Lifecycle());
+    app.get("/page", (_req, res) => {
+      res.type("html").send(`<p>${"arrosticini ".repeat(500)}</p>`);
+    });
+    const compressed = await request(app).get("/page").set("Accept-Encoding", "gzip");
+    const plain = await request(app).get("/page").set("Accept-Encoding", "identity");
+    expect(compressed.headers["content-encoding"]).toBe("gzip");
+    expect(compressed.text).toBe(`<p>${"arrosticini ".repeat(500)}</p>`);
+    expect(plain.headers["content-encoding"]).toBeUndefined();
+  });
+
   it("returns 503 when shutdown has started", async () => {
     const lifecycle: Lifecycle = new Lifecycle();
     const app: Express = createApp(logger, lifecycle);
