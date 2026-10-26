@@ -6,6 +6,7 @@ import {
   type StressTask,
   sheepState,
   updateStressTasks,
+  versionTone,
 } from "./stress.js";
 
 describe("stress task discovery", () => {
@@ -178,5 +179,24 @@ describe("stress task discovery", () => {
         api: null,
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("version tone", () => {
+  it("gives consecutive patch releases different tones", () => {
+    expect(versionTone("v1.2.6")).toBe(0);
+    expect(versionTone("v1.2.7")).toBe(1);
+    expect(versionTone("v1.2.11")).toBe(5);
+    expect(versionTone("v1.2.12")).toBe(0);
+  });
+
+  it("accepts versions without the v prefix", () => {
+    expect(versionTone("1.2.7")).toBe(1);
+  });
+
+  it("gives no tone to versions that are not releases", () => {
+    expect(versionTone("dev")).toBeNull();
+    expect(versionTone("v1.2")).toBeNull();
+    expect(versionTone("v1.2.7-rc.1")).toBeNull();
   });
 });

@@ -22,6 +22,8 @@
   "noTasks": "No tasks detected. The panel keeps looking.",
   "connectionError": "We are not receiving new data. Retrying automatically; previously detected tasks remain visible until they expire.",
   "apiError": "The API service is not responding. Retrying automatically.",
+  "previewTitle": "Preview",
+  "previewNote": "Local only: mock tasks with different versions, to check the colors.",
   "noteTitle": "Task CPU, right now.",
   "note": "The percentage is relative to the CPU allocated to each task. Scaling uses the service average over one minute, measured by CloudWatch.",
   "sampling": "The panel collects encountered tasks, not the full inventory. After 5 seconds without responses they become ghosts; after 60 seconds they disappear. Updates pause while this tab is hidden."

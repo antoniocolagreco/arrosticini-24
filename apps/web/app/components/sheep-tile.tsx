@@ -2,7 +2,7 @@ import { Cpu } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { type SheepState, type StressTask, sheepState } from "../lib/stress.js";
+import { type SheepState, type StressTask, sheepState, versionTone } from "../lib/stress.js";
 
 export function SheepTile({ task, now }: { task: StressTask; now: number }) {
   const { t, i18n } = useTranslation("stress");
@@ -16,6 +16,7 @@ export function SheepTile({ task, now }: { task: StressTask; now: number }) {
     return () => media.removeEventListener("change", update);
   }, []);
   const state: SheepState = sheepState(task, now);
+  const tone: number | null = versionTone(task.version);
   const shortId: string = task.taskId.split("/").at(-1)?.slice(0, 8) ?? task.taskId;
   const percent: string = new Intl.NumberFormat(i18n.language, {
     maximumFractionDigits: 1,
@@ -24,6 +25,7 @@ export function SheepTile({ task, now }: { task: StressTask; now: number }) {
     <li
       className="sheep-tile"
       data-state={state}
+      data-version-tone={tone ?? "none"}
       data-task-id={task.taskId}
       aria-label={t(state === "ghost" ? "taskGhost" : "taskLabel", {
         id: shortId,
@@ -70,10 +72,9 @@ export function SheepTile({ task, now }: { task: StressTask; now: number }) {
       <span className="sheep-bar" aria-hidden="true">
         <span style={{ width: `${state === "ghost" ? 0 : task.cpuPercent}%` }} />
       </span>
+      <span className="sheep-version">{task.version}</span>
       <p className="sheep-meta">
-        <span>
-          {task.version} · {task.availabilityZone}
-        </span>
+        <span>{task.availabilityZone}</span>
         <span title={task.taskId}>{shortId}</span>
       </p>
     </li>
