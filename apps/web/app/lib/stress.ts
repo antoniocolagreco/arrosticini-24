@@ -10,18 +10,26 @@ export type StressStatus = z.infer<typeof StressStatus>;
 export type StressTask = WhoAmIDto & { lastSeen: number };
 export type SheepState = "calm" | "overdrive" | "ghost";
 
+export function stressTaskKey(task: WhoAmIDto): string {
+  return `${task.service}:${task.taskId}`;
+}
+
 export function updateStressTasks(
   previous: StressTask[],
   readings: WhoAmIDto[],
   now: number,
 ): StressTask[] {
   const tasks: Map<string, StressTask> = new Map(
-    previous.map((task) => [`${task.service}:${task.taskId}`, task]),
+    previous.map((task) => [stressTaskKey(task), task]),
   );
   for (const reading of readings) {
-    tasks.set(`${reading.service}:${reading.taskId}`, { ...reading, lastSeen: now });
+    tasks.set(stressTaskKey(reading), { ...reading, lastSeen: now });
   }
   return [...tasks.values()].filter((task) => now - task.lastSeen < 60000);
+}
+
+export function arrivedTasks(tasks: StressTask[], known: ReadonlySet<string>): StressTask[] {
+  return tasks.filter((task) => !known.has(stressTaskKey(task)));
 }
 
 export function sheepState(task: StressTask, now: number): SheepState {

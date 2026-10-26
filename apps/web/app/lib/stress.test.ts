@@ -1,6 +1,12 @@
 import type { WhoAmIDto } from "@arrosticini/contracts";
 import { describe, expect, it } from "vitest";
-import { StressStatus, type StressTask, sheepState, updateStressTasks } from "./stress.js";
+import {
+  arrivedTasks,
+  StressStatus,
+  type StressTask,
+  sheepState,
+  updateStressTasks,
+} from "./stress.js";
 
 describe("stress task discovery", () => {
   it("retains alternating tasks and separates services with the same local hostname", () => {
@@ -111,6 +117,40 @@ describe("stress task discovery", () => {
       expect(sheepState(task, 5000)).toBe("ghost");
     },
   );
+
+  it("reports only the tasks that are not known yet, keeping services with the same id apart", () => {
+    const tasks: StressTask[] = [
+      {
+        service: "web",
+        version: "v1",
+        taskId: "task-1",
+        availabilityZone: "eu-south-1a",
+        cpuPercent: 10,
+        startedAt: "2026-10-09T12:00:00Z",
+        lastSeen: 0,
+      },
+      {
+        service: "api",
+        version: "v1",
+        taskId: "task-1",
+        availabilityZone: "eu-south-1a",
+        cpuPercent: 10,
+        startedAt: "2026-10-09T12:00:00Z",
+        lastSeen: 0,
+      },
+      {
+        service: "api",
+        version: "v2",
+        taskId: "task-2",
+        availabilityZone: "eu-south-1b",
+        cpuPercent: 10,
+        startedAt: "2026-10-09T13:00:00Z",
+        lastSeen: 500,
+      },
+    ];
+    expect(arrivedTasks(tasks, new Set(["web:task-1", "api:task-2"]))).toEqual([tasks[1]]);
+    expect(arrivedTasks(tasks, new Set(["web:task-1", "api:task-1", "api:task-2"]))).toEqual([]);
+  });
 
   it("accepts a partial outage but rejects swapped service identities", () => {
     const status: unknown = {
