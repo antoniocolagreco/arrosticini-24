@@ -12,7 +12,8 @@
     "foundation:destroy": "cdk destroy arrosticini-foundation",
     "app:deploy": "cdk deploy arrosticini-app",
     "app:destroy": "cdk destroy arrosticini-app arrosticini-waf",
-    "dns:update": "tsx scripts/update-dns.ts",
+    "dns:update": "tsx scripts/dns.ts update",
+    "dns:delete": "tsx scripts/dns.ts delete",
     "app:api:restart": "aws ecs update-service --region eu-south-1 --cluster arrosticini-cluster --service api --force-new-deployment",
     "app:web:restart": "aws ecs update-service --region eu-south-1 --cluster arrosticini-cluster --service web --force-new-deployment"
   },

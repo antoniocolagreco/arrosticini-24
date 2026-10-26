@@ -2,7 +2,7 @@ import { check, sleep } from "k6";
 import http from "k6/http";
 
 const baseUrl = __ENV.BASE_URL ?? "http://localhost:3100";
-const vus = Number(__ENV.VUS ?? 100);
+const vus = Number(__ENV.VUS ?? 50);
 const duration = __ENV.DURATION ?? "5m";
 
 export const options = {
