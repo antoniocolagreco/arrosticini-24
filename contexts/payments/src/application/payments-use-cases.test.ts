@@ -254,12 +254,12 @@ describe("HandleStripeEvent", () => {
     ]);
   });
 
-  it("ignores events it does not handle and payments it does not know", async () => {
+  it("ignores events it does not handle and expirations of payments it does not know", async () => {
     const { gateway, payments, processed, bus } = setup();
     gateway.events.sig_other = { id: "evt_other", kind: "IGNORED" };
     gateway.events.sig_unknown = {
       id: "evt_unknown",
-      kind: "CHECKOUT_PAID",
+      kind: "CHECKOUT_EXPIRED",
       orderId: "0192e1a0-0000-7000-8000-000000000008",
     };
     const handle = new HandleStripeEvent(payments, processed, gateway, bus);
@@ -269,6 +269,31 @@ describe("HandleStripeEvent", () => {
 
     expect(bus.published).toEqual([]);
     expect([...processed.events]).toEqual(["evt_unknown"]);
+  });
+
+  it("keeps a paid event retryable until its payment can be found", async () => {
+    const { gateway, payments, processed, bus } = setup();
+    gateway.events.sig_paid = {
+      id: "evt_paid",
+      kind: "CHECKOUT_PAID",
+      orderId: "0192e1a0-0000-7000-8000-000000000007",
+    };
+    const handle = new HandleStripeEvent(payments, processed, gateway, bus);
+
+    await expect(handle.execute("{}", "sig_paid")).rejects.toEqual(
+      new DomainError(
+        "PAYMENT_NOT_FOUND",
+        "Payment not found for order 0192e1a0-0000-7000-8000-000000000007",
+      ),
+    );
+    expect(processed.events.has("evt_paid")).toBe(false);
+
+    const payment = pendingPayment(payments);
+    await handle.execute("{}", "sig_paid");
+
+    expect(payment.status).toBe("SUCCEEDED");
+    expect(bus.published.map(({ type }) => type)).toEqual(["PaymentSucceeded"]);
+    expect(processed.events.has("evt_paid")).toBe(true);
   });
 
   it("rejects an invalid signature", async () => {
