@@ -27,6 +27,25 @@ class InMemoryCartRepository implements CartRepository {
   }
 }
 
+class ConflictingCartRepository extends InMemoryCartRepository {
+  #conflicts: number;
+  saves = 0;
+
+  constructor(conflicts: number) {
+    super();
+    this.#conflicts = conflicts;
+  }
+
+  override async save(cart: Cart) {
+    this.saves++;
+    if (this.#conflicts > 0) {
+      this.#conflicts--;
+      throw new DomainError("CART_CONFLICT", `Cart changed concurrently: ${cart.id}`);
+    }
+    await super.save(cart);
+  }
+}
+
 const products: ProductAvailability = {
   isAvailable: async (slug) => ["vino", "arrosticini-75"].includes(slug),
 };
@@ -107,6 +126,39 @@ describe("SetCartLine", () => {
     });
 
     expect(cart.lines).toEqual([]);
+  });
+
+  it("retries when the cart changed concurrently", async () => {
+    const carts = new ConflictingCartRepository(1);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", []);
+
+    const cart = await new SetCartLine(carts, products).execute({
+      cartId: "0192e1a0-0000-7000-8000-000000000007",
+      slug: "vino",
+      quantity: 3,
+    });
+
+    expect(cart.lines).toEqual([{ slug: "vino", quantity: 3 }]);
+    expect(carts.saves).toBe(2);
+  });
+
+  it("gives up after three conflicts", async () => {
+    const carts = new ConflictingCartRepository(3);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", []);
+
+    await expect(
+      new SetCartLine(carts, products).execute({
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        slug: "vino",
+        quantity: 3,
+      }),
+    ).rejects.toEqual(
+      new DomainError(
+        "CART_CONFLICT",
+        "Cart changed concurrently: 0192e1a0-0000-7000-8000-000000000007",
+      ),
+    );
+    expect(carts.saves).toBe(3);
   });
 
   it("fails for an unknown cart", async () => {

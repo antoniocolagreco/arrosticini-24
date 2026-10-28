@@ -4,12 +4,27 @@ import type { CartRepository } from "../domain/cart-repository.js";
 import type { Actor } from "./actor.js";
 import type { ProductAvailability } from "./product-availability.js";
 
+const CONFLICT_ATTEMPTS = 3;
+
 async function loadCart(carts: CartRepository, id: Id): Promise<Cart> {
   const cart = await carts.findById(id);
   if (cart === undefined) {
     throw new DomainError("CART_NOT_FOUND", `Cart not found: ${id}`);
   }
   return cart;
+}
+
+async function retryOnConflict<T>(update: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await update();
+    } catch (error) {
+      const conflict = error instanceof DomainError && error.code === "CART_CONFLICT";
+      if (!conflict || attempt === CONFLICT_ATTEMPTS) {
+        throw error;
+      }
+    }
+  }
 }
 
 export class CreateCart {
@@ -53,14 +68,16 @@ export class SetCartLine {
     this.#products = products;
   }
 
-  async execute({ cartId, slug, quantity }: SetCartLineCommand): Promise<Cart> {
-    const cart = await loadCart(this.#carts, cartId);
-    if (quantity > 0 && !(await this.#products.isAvailable(slug))) {
-      throw new DomainError("PRODUCT_NOT_FOUND", `Product not found: ${slug}`);
-    }
-    cart.setLine(slug, quantity, new Date());
-    await this.#carts.save(cart);
-    return cart;
+  execute({ cartId, slug, quantity }: SetCartLineCommand): Promise<Cart> {
+    return retryOnConflict(async () => {
+      const cart = await loadCart(this.#carts, cartId);
+      if (quantity > 0 && !(await this.#products.isAvailable(slug))) {
+        throw new DomainError("PRODUCT_NOT_FOUND", `Product not found: ${slug}`);
+      }
+      cart.setLine(slug, quantity, new Date());
+      await this.#carts.save(cart);
+      return cart;
+    });
   }
 }
 
