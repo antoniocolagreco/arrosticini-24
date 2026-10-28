@@ -124,7 +124,10 @@ const customers: CustomerDirectory = {
 
 const checkout = { locale: "it", ordersUrl: "https://shop.test/it/orders" } as const;
 
-function placeOrder(orders: OrderRepository, payments = new RecordingPaymentInitiator()) {
+function placeOrder(
+  orders: OrderRepository,
+  payments: PaymentInitiator = new RecordingPaymentInitiator(),
+) {
   return new PlaceOrder(orders, cartReader, pricing, customers, payments);
 }
 
@@ -295,6 +298,25 @@ describe("PlaceOrder", () => {
     ).rejects.toEqual(new DomainError("PRODUCT_UNAVAILABLE", "Product unavailable: carbone"));
     expect(orders.orders.size).toBe(0);
     expect(payments.requests).toEqual([]);
+  });
+
+  it("cancels the order when the payment cannot start", async () => {
+    const orders = new InMemoryOrderRepository();
+    const failure = new Error("Stripe is unavailable");
+    const payments: PaymentInitiator = {
+      start: async () => {
+        throw failure;
+      },
+    };
+
+    await expect(
+      placeOrder(orders, payments).execute(mario, {
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
+        ...checkout,
+      }),
+    ).rejects.toBe(failure);
+    expect([...orders.orders.values()].map(({ status }) => status)).toEqual(["CANCELLED"]);
   });
 });
 

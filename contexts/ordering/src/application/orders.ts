@@ -85,13 +85,19 @@ export class PlaceOrder {
       new Date(),
     );
     await this.#orders.create(order);
-    const paymentUrl = await this.#payments.start(buyer, {
-      orderId: order.id,
-      lines: order.lines,
-      locale,
-      returnUrl: `${ordersUrl.replace(/\/+$/, "")}/${order.id}`,
-    });
-    return { order, paymentUrl };
+    try {
+      const paymentUrl = await this.#payments.start(buyer, {
+        orderId: order.id,
+        lines: order.lines,
+        locale,
+        returnUrl: `${ordersUrl.replace(/\/+$/, "")}/${order.id}`,
+      });
+      return { order, paymentUrl };
+    } catch (error) {
+      order.cancel();
+      await this.#orders.save(order);
+      throw error;
+    }
   }
 }
 
