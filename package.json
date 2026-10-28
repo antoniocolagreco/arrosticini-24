@@ -27,7 +27,8 @@
     "aws:app:destroy": "pnpm --filter @arrosticini/infra app:destroy && pnpm aws:dns:delete",
     "aws:app:api:restart": "pnpm --filter @arrosticini/infra app:api:restart",
     "aws:app:web:restart": "pnpm --filter @arrosticini/infra app:web:restart",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "slides": "pnpm --dir docs/slides install && pnpm --dir docs/slides dev"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

@@ -12,14 +12,10 @@ Un'ora prima si controlla che k6 sia installato e che l'hotspot del telefono fun
 
 Il terminale si apre nella root del repository, con tre pannelli: il primo per deploy e seed, il secondo per k6, il terzo per le slide.
 
-Nel terzo pannello si avviano le slide. L'install serve solo la prima volta:
+Nel terzo pannello si avviano le slide:
 
 ```sh
-pnpm --dir docs/slides install
-```
-
-```sh
-pnpm --dir docs/slides dev
+pnpm slides
 ```
 
 Le slide si aprono nel browser su http://localhost:3030 e con F vanno a schermo intero.
