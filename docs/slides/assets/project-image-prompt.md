@@ -1,0 +1,5 @@
+# Container della slide 5
+
+Asset `project-container.png`, generato con Imagegen integrato e riutilizzato con dimensioni identiche per web e api.
+
+One single isolated small isometric software shipping container illustration for a conference slide, matching a traditional Italian pen-and-ink and watercolor editorial illustration. A beautiful sage forest-green corrugated shipping container, shallow three-quarter view, front long face clearly visible, refined dark brown ink crosshatching and translucent watercolor washes, muted warm amber highlights. Low wide silhouette, resting on a very small warm ivory cloud-like wash, no platform, no scene. Container occupies almost the whole landscape image with a narrow clean ivory margin. Background warm ivory #faf5e9 fading smoothly into paper. No words, no letters, no labels, no numbers, no logo, no other objects, no arrows, no computers, no people. This is one polished visual asset that will be reused twice at exactly equal dimensions to symbolize two Docker services. Balanced graceful proportions, low contrast paper edges, coherent with warm watercolor Abruzzo shop illustrations. Wide composition 3:2.
