@@ -102,13 +102,14 @@ export class MarkOrderPaid {
     this.#orders = orders;
   }
 
-  async execute(orderId: Id): Promise<void> {
+  async execute(orderId: Id): Promise<Order | undefined> {
     const order = await this.#orders.findById(orderId);
     if (order === undefined || order.paidAt !== undefined) {
-      return;
+      return undefined;
     }
     order.markPaid(new Date());
     await this.#orders.save(order);
+    return order;
   }
 }
 

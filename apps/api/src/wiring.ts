@@ -58,9 +58,9 @@ import {
 } from "@arrosticini/payments";
 import {
   CreateCart,
-  EmptyOwnedCart,
   GetCart,
   MergeCart,
+  RemovePurchasedLines,
   SetCartLine,
   shoppingRouter,
   ValkeyCartRepository,
@@ -126,10 +126,12 @@ export function createApi(
   const bus = new InProcessEventBus();
   const markOrderPaid = new MarkOrderPaid(orders);
   const cancelOrder = new CancelOrder(orders);
-  const emptyOwnedCart = new EmptyOwnedCart(carts);
+  const removePurchasedLines = new RemovePurchasedLines(carts);
   bus.subscribe<PaymentSucceeded>("PaymentSucceeded", async ({ payload }) => {
-    await markOrderPaid.execute(payload.orderId);
-    await emptyOwnedCart.execute(payload.userId);
+    const paid = await markOrderPaid.execute(payload.orderId);
+    if (paid !== undefined) {
+      await removePurchasedLines.execute(payload.userId, paid.lines);
+    }
   });
   bus.subscribe<PaymentExpired>("PaymentExpired", async ({ payload }) => {
     await cancelOrder.execute(payload.orderId);

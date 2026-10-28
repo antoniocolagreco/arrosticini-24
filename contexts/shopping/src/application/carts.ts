@@ -1,5 +1,5 @@
 import { DomainError, type Id, newId } from "@arrosticini/kernel";
-import { Cart } from "../domain/cart.js";
+import { Cart, type CartLine } from "../domain/cart.js";
 import type { CartRepository } from "../domain/cart-repository.js";
 import type { Actor } from "./actor.js";
 import type { ProductAvailability } from "./product-availability.js";
@@ -111,19 +111,21 @@ export class MergeCart {
   }
 }
 
-export class EmptyOwnedCart {
+export class RemovePurchasedLines {
   readonly #carts: CartRepository;
 
   constructor(carts: CartRepository) {
     this.#carts = carts;
   }
 
-  async execute(ownerId: Id): Promise<void> {
-    const cart = await this.#carts.findByOwner(ownerId);
-    if (cart === undefined || cart.lines.length === 0) {
-      return;
-    }
-    cart.clear(new Date());
-    await this.#carts.save(cart);
+  execute(ownerId: Id, purchased: readonly CartLine[]): Promise<void> {
+    return retryOnConflict(async () => {
+      const cart = await this.#carts.findByOwner(ownerId);
+      if (cart === undefined || cart.lines.length === 0) {
+        return;
+      }
+      cart.removePurchased(purchased, new Date());
+      await this.#carts.save(cart);
+    });
   }
 }

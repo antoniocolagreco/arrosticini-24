@@ -61,17 +61,52 @@ describe("Cart.absorb", () => {
   });
 });
 
-describe("Cart.clear", () => {
-  it("removes every line and keeps the owner", () => {
+describe("Cart.removePurchased", () => {
+  it("removes the purchased quantities and keeps the owner", () => {
     const target = cart();
     target.setLine("vino", 2, created);
+    target.setLine("arrosticini-75", 1, created);
     target.assignTo("0192e1a0-0000-7000-8000-000000000013");
 
-    target.clear(changed);
+    target.removePurchased(
+      [
+        { slug: "vino", quantity: 2 },
+        { slug: "arrosticini-75", quantity: 1 },
+      ],
+      changed,
+    );
 
     expect(target.lines).toEqual([]);
     expect(target.ownerId).toBe("0192e1a0-0000-7000-8000-000000000013");
     expect(target.updatedAt).toEqual(changed);
+  });
+
+  it("keeps lines and quantities added after checkout", () => {
+    const target = cart();
+    target.setLine("vino", 3, created);
+    target.setLine("arrosticini-75", 1, created);
+
+    target.removePurchased([{ slug: "vino", quantity: 1 }], changed);
+
+    expect(target.lines).toEqual([
+      { slug: "vino", quantity: 2 },
+      { slug: "arrosticini-75", quantity: 1 },
+    ]);
+  });
+
+  it("ignores purchased lines removed from the cart after checkout", () => {
+    const target = cart();
+    target.setLine("vino", 1, created);
+
+    target.removePurchased(
+      [
+        { slug: "vino", quantity: 2 },
+        { slug: "carbone", quantity: 1 },
+      ],
+      changed,
+    );
+
+    expect(target.lines).toEqual([]);
   });
 });
 

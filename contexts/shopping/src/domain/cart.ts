@@ -68,8 +68,11 @@ export class Cart {
     this.#props.updatedAt = now;
   }
 
-  clear(now: Date): void {
-    this.#props.lines = [];
+  removePurchased(purchased: readonly CartLine[], now: Date): void {
+    for (const { slug, quantity } of purchased) {
+      const current = this.#props.lines.find((line) => line.slug === slug)?.quantity ?? 0;
+      this.setLine(slug, Math.max(current - quantity, 0), now);
+    }
     this.#props.updatedAt = now;
   }
 
