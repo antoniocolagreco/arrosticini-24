@@ -85,13 +85,19 @@ export class PlaceOrder {
       new Date(),
     );
     await this.#orders.create(order);
-    const paymentUrl = await this.#payments.start(buyer, {
-      orderId: order.id,
-      lines: order.lines,
-      locale,
-      returnUrl: `${ordersUrl.replace(/\/+$/, "")}/${order.id}`,
-    });
-    return { order, paymentUrl };
+    try {
+      const paymentUrl = await this.#payments.start(buyer, {
+        orderId: order.id,
+        lines: order.lines,
+        locale,
+        returnUrl: `${ordersUrl.replace(/\/+$/, "")}/${order.id}`,
+      });
+      return { order, paymentUrl };
+    } catch (error) {
+      order.cancel();
+      await this.#orders.save(order);
+      throw error;
+    }
   }
 }
 
@@ -102,13 +108,14 @@ export class MarkOrderPaid {
     this.#orders = orders;
   }
 
-  async execute(orderId: Id): Promise<void> {
+  async execute(orderId: Id): Promise<Order | undefined> {
     const order = await this.#orders.findById(orderId);
     if (order === undefined || order.paidAt !== undefined) {
-      return;
+      return undefined;
     }
     order.markPaid(new Date());
     await this.#orders.save(order);
+    return order;
   }
 }
 

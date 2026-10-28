@@ -1,5 +1,7 @@
+import { DomainError } from "@arrosticini/kernel";
 import { Valkey } from "iovalkey";
 import { afterAll, describe, expect, inject, it } from "vitest";
+import { SetCartLine } from "../application/carts.js";
 import { Cart } from "../domain/cart.js";
 import { CART_TTL_SECONDS, ValkeyCartRepository } from "./valkey-cart-repository.js";
 
@@ -63,5 +65,41 @@ describe("ValkeyCartRepository", () => {
 
     expect((await repository.findById(owned.id))?.lines).toEqual([{ slug: "vino", quantity: 1 }]);
     expect(await repository.findById(anonymous.id)).toBeUndefined();
+  });
+
+  it("rejects a save based on a stale copy of the cart", async () => {
+    await repository.save(Cart.create("0192e1a0-0000-7000-8000-000000000026", created));
+    const first = (await repository.findById("0192e1a0-0000-7000-8000-000000000026")) as Cart;
+    const second = (await repository.findById("0192e1a0-0000-7000-8000-000000000026")) as Cart;
+    first.setLine("vino", 1, created);
+    second.setLine("arrosticini-75", 1, created);
+    await repository.save(first);
+
+    await expect(repository.save(second)).rejects.toEqual(
+      new DomainError(
+        "CART_CONFLICT",
+        "Cart changed concurrently: 0192e1a0-0000-7000-8000-000000000026",
+      ),
+    );
+    expect((await repository.findById(first.id))?.lines).toEqual([{ slug: "vino", quantity: 1 }]);
+  });
+
+  it("keeps every line when two requests change the cart at the same time", async () => {
+    const cart = Cart.create("0192e1a0-0000-7000-8000-000000000027", created);
+    cart.setLine("vino", 1, created);
+    await repository.save(cart);
+    const setCartLine = new SetCartLine(repository, { isAvailable: async () => true });
+
+    await Promise.all([
+      setCartLine.execute({ cartId: cart.id, slug: "arrosticini-75", quantity: 2 }),
+      setCartLine.execute({ cartId: cart.id, slug: "arrosticini-225", quantity: 1 }),
+    ]);
+
+    const lines = (await repository.findById(cart.id))?.lines ?? [];
+    expect([...lines].sort((a, b) => a.slug.localeCompare(b.slug))).toEqual([
+      { slug: "arrosticini-225", quantity: 1 },
+      { slug: "arrosticini-75", quantity: 2 },
+      { slug: "vino", quantity: 1 },
+    ]);
   });
 });

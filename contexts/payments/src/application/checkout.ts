@@ -1,4 +1,5 @@
 import {
+  DomainError,
   domainEvent,
   type EventBus,
   type Id,
@@ -86,6 +87,9 @@ export class HandleStripeEvent {
     }
     const now = new Date();
     const payment = await this.#payments.findByOrderId(event.orderId);
+    if (payment === undefined && event.kind === "CHECKOUT_PAID") {
+      throw new DomainError("PAYMENT_NOT_FOUND", `Payment not found for order ${event.orderId}`);
+    }
     if (payment !== undefined) {
       const settled: PaymentSettledPayload = {
         orderId: payment.orderId,

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Cart } from "../domain/cart.js";
 import type { CartRepository } from "../domain/cart-repository.js";
 import type { Actor } from "./actor.js";
-import { CreateCart, EmptyOwnedCart, GetCart, MergeCart, SetCartLine } from "./carts.js";
+import { CreateCart, GetCart, MergeCart, RemovePurchasedLines, SetCartLine } from "./carts.js";
 import type { ProductAvailability } from "./product-availability.js";
 
 class InMemoryCartRepository implements CartRepository {
@@ -24,6 +24,25 @@ class InMemoryCartRepository implements CartRepository {
   async saveMerged(cart: Cart, absorbedId: Id) {
     this.carts.set(cart.id, cart);
     this.carts.delete(absorbedId);
+  }
+}
+
+class ConflictingCartRepository extends InMemoryCartRepository {
+  #conflicts: number;
+  saves = 0;
+
+  constructor(conflicts: number) {
+    super();
+    this.#conflicts = conflicts;
+  }
+
+  override async save(cart: Cart) {
+    this.saves++;
+    if (this.#conflicts > 0) {
+      this.#conflicts--;
+      throw new DomainError("CART_CONFLICT", `Cart changed concurrently: ${cart.id}`);
+    }
+    await super.save(cart);
   }
 }
 
@@ -107,6 +126,39 @@ describe("SetCartLine", () => {
     });
 
     expect(cart.lines).toEqual([]);
+  });
+
+  it("retries when the cart changed concurrently", async () => {
+    const carts = new ConflictingCartRepository(1);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", []);
+
+    const cart = await new SetCartLine(carts, products).execute({
+      cartId: "0192e1a0-0000-7000-8000-000000000007",
+      slug: "vino",
+      quantity: 3,
+    });
+
+    expect(cart.lines).toEqual([{ slug: "vino", quantity: 3 }]);
+    expect(carts.saves).toBe(2);
+  });
+
+  it("gives up after three conflicts", async () => {
+    const carts = new ConflictingCartRepository(3);
+    stored(carts, "0192e1a0-0000-7000-8000-000000000007", []);
+
+    await expect(
+      new SetCartLine(carts, products).execute({
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        slug: "vino",
+        quantity: 3,
+      }),
+    ).rejects.toEqual(
+      new DomainError(
+        "CART_CONFLICT",
+        "Cart changed concurrently: 0192e1a0-0000-7000-8000-000000000007",
+      ),
+    );
+    expect(carts.saves).toBe(3);
   });
 
   it("fails for an unknown cart", async () => {
@@ -194,8 +246,8 @@ describe("MergeCart", () => {
   });
 });
 
-describe("EmptyOwnedCart", () => {
-  it("empties only the cart of the given owner", async () => {
+describe("RemovePurchasedLines", () => {
+  it("removes the purchased lines only from the cart of the given owner", async () => {
     const carts = new InMemoryCartRepository();
     const own = stored(carts, "0192e1a0-0000-7000-8000-000000000007", [["vino", 2]], mario.userId);
     const other = stored(
@@ -205,15 +257,54 @@ describe("EmptyOwnedCart", () => {
       lucia.userId,
     );
 
-    await new EmptyOwnedCart(carts).execute(mario.userId);
+    await new RemovePurchasedLines(carts).execute(mario.userId, [{ slug: "vino", quantity: 2 }]);
 
     expect(own.lines).toEqual([]);
     expect(other.lines).toEqual([{ slug: "vino", quantity: 1 }]);
   });
 
+  it("keeps products added after checkout", async () => {
+    const carts = new InMemoryCartRepository();
+    const own = stored(
+      carts,
+      "0192e1a0-0000-7000-8000-000000000007",
+      [
+        ["vino", 2],
+        ["arrosticini-75", 1],
+      ],
+      mario.userId,
+    );
+
+    await new RemovePurchasedLines(carts).execute(mario.userId, [{ slug: "vino", quantity: 2 }]);
+
+    expect(own.lines).toEqual([{ slug: "arrosticini-75", quantity: 1 }]);
+  });
+
   it("does nothing when the owner has no cart", async () => {
     await expect(
-      new EmptyOwnedCart(new InMemoryCartRepository()).execute(mario.userId),
+      new RemovePurchasedLines(new InMemoryCartRepository()).execute(mario.userId, [
+        { slug: "vino", quantity: 1 },
+      ]),
     ).resolves.toBeUndefined();
+  });
+
+  it("retries when the cart changed concurrently", async () => {
+    const carts = new ConflictingCartRepository(1);
+    stored(
+      carts,
+      "0192e1a0-0000-7000-8000-000000000007",
+      [
+        ["vino", 2],
+        ["arrosticini-75", 1],
+      ],
+      mario.userId,
+    );
+
+    await new RemovePurchasedLines(carts).execute(mario.userId, [{ slug: "vino", quantity: 2 }]);
+
+    expect(carts.saves).toBe(2);
+    expect(carts.carts.get("0192e1a0-0000-7000-8000-000000000007")?.lines).toEqual([
+      { slug: "arrosticini-75", quantity: 1 },
+    ]);
   });
 });

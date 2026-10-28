@@ -124,7 +124,10 @@ const customers: CustomerDirectory = {
 
 const checkout = { locale: "it", ordersUrl: "https://shop.test/it/orders" } as const;
 
-function placeOrder(orders: OrderRepository, payments = new RecordingPaymentInitiator()) {
+function placeOrder(
+  orders: OrderRepository,
+  payments: PaymentInitiator = new RecordingPaymentInitiator(),
+) {
   return new PlaceOrder(orders, cartReader, pricing, customers, payments);
 }
 
@@ -296,6 +299,25 @@ describe("PlaceOrder", () => {
     expect(orders.orders.size).toBe(0);
     expect(payments.requests).toEqual([]);
   });
+
+  it("cancels the order when the payment cannot start", async () => {
+    const orders = new InMemoryOrderRepository();
+    const failure = new Error("Stripe is unavailable");
+    const payments: PaymentInitiator = {
+      start: async () => {
+        throw failure;
+      },
+    };
+
+    await expect(
+      placeOrder(orders, payments).execute(mario, {
+        cartId: "0192e1a0-0000-7000-8000-000000000007",
+        addressId: "0192e1a0-0000-7000-8000-00000000000f",
+        ...checkout,
+      }),
+    ).rejects.toBe(failure);
+    expect([...orders.orders.values()].map(({ status }) => status)).toEqual(["CANCELLED"]);
+  });
 });
 
 describe("MarkOrderPaid", () => {
@@ -303,13 +325,15 @@ describe("MarkOrderPaid", () => {
     const orders = new InMemoryOrderRepository();
     const order = stored(orders, "0192e1a0-0000-7000-8000-00000000000c", mario.userId);
 
-    await new MarkOrderPaid(orders).execute(order.id);
+    const first = await new MarkOrderPaid(orders).execute(order.id);
     const paidAt = order.paidAt;
-    await new MarkOrderPaid(orders).execute(order.id);
+    const repeated = await new MarkOrderPaid(orders).execute(order.id);
 
     expect(order.status).toBe("PAID");
     expect(paidAt).toBeInstanceOf(Date);
     expect(order.paidAt).toBe(paidAt);
+    expect(first).toBe(order);
+    expect(repeated).toBeUndefined();
   });
 
   it("ignores unknown orders", async () => {
@@ -326,7 +350,7 @@ describe("MarkOrderPaid", () => {
     order.markPaid(new Date("2026-10-09T10:05:00.000Z"));
     order.ship({ carrier: "BRT", trackingNumber: "BRT0001" });
 
-    await new MarkOrderPaid(orders).execute(order.id);
+    await expect(new MarkOrderPaid(orders).execute(order.id)).resolves.toBeUndefined();
 
     expect(order.status).toBe("SHIPPED");
     expect(order.paidAt).toEqual(new Date("2026-10-09T10:05:00.000Z"));
