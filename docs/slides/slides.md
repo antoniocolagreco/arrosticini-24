@@ -116,5 +116,5 @@ layout: thanks
 
 <!--
 Ringraziamenti. Genos combatte i bot dell'attacco DDoS, Saitama cucina gli arrosticini alla fornacella. La coppia di clienti della slide 3 torna nella scena: il signore mangia un arrosticino e conversa con Saitama guardandolo negli occhi, senza borse. La signora guarda in basso verso Genos e i bot, spaventata e con una mano sulla bocca.
-Illustrazione modificata con Imagegen integrato in assets/thanks-anime-v4.png; prompt in assets/thanks-anime-v4-prompt.md. Il titolo Grazie resta testo modificabile nella slide.
+Illustrazione modificata con Imagegen integrato in assets/thanks-anime-v5.png; prompt in assets/thanks-anime-v5-prompt.md. Paesaggio ispirato alla Maiella, usando come riferimento https://www.italiainblu.it/roccascalegna.html e la fotografia https://www.italiainblu.it/borghi/roccascalegna/14.jpg. Il titolo Grazie resta testo modificabile nella slide.
 -->
