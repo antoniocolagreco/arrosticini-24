@@ -44,17 +44,6 @@ layout: aws-solutions
 # Come rispondiamo?
 
 ---
-layout: project
----
-
-# Il progetto
-
-<!--
-Loghi a colori: https://github.com/devicons/devicon/tree/master/icons (TypeScript, pnpm, Docker, React, React Router, Tailwind CSS, AWS); https://cdn.simpleicons.org/ (Turborepo, Zod, Stripe, pino); https://github.com/simple-icons/simple-icons/blob/develop/icons/express.svg; https://orpc.dev/icon.svg; https://valkey.io/img/valkey-horizontal.svg; https://github.com/testcontainers/testcontainers-node/blob/main/docs/site/logo.svg.
-Riferimento per la leggibilita del diagramma: https://learn.microsoft.com/en-us/azure/well-architected/architect-role/design-diagrams. Container illustrato con Imagegen, prompt in assets/project-image-prompt.md.
--->
-
----
 layout: cloud
 ---
 
@@ -69,6 +58,12 @@ Icone: https://github.com/lucide-icons/lucide. Rack e data center generati con I
 -->
 
 ---
+layout: cloud-market
+---
+
+# Il mercato del cloud
+
+---
 layout: infrastructure-code
 ---
 
@@ -81,6 +76,17 @@ Illustrazione generata con Imagegen integrato; prompt in assets/infrastructure-c
 -->
 
 ---
+layout: project
+---
+
+# Il progetto
+
+<!--
+Loghi a colori: https://github.com/devicons/devicon/tree/master/icons (TypeScript, pnpm, Docker, React, React Router, Tailwind CSS, AWS); https://cdn.simpleicons.org/ (Turborepo, Zod, Stripe, pino); https://github.com/simple-icons/simple-icons/blob/develop/icons/express.svg; https://orpc.dev/icon.svg; https://valkey.io/img/valkey-horizontal.svg; https://github.com/testcontainers/testcontainers-node/blob/main/docs/site/logo.svg.
+Riferimento per la leggibilita del diagramma: https://learn.microsoft.com/en-us/azure/well-architected/architect-role/design-diagrams. Container illustrato con Imagegen, prompt in assets/project-image-prompt.md.
+-->
+
+---
 layout: architecture
 ---
 
@@ -90,6 +96,30 @@ layout: architecture
 Schema illustrato in assets/arrosticini-aws-minimal-v4.png. Prompt in assets/arrosticini-aws-minimal-v4-prompt.md. Fonti CDK in assets/arrosticini-aws-architecture-sources.md.
 CloudFront e rappresentato come rete globale, con Shield e WAF associati. Nella VPC di Milano, due colonne rappresentano le AZ e tre fasce rappresentano subnet pubbliche, private e isolate. ALB e Valkey sono servizi condivisi sulle due AZ; ogni AZ ha un NAT e una coppia nominale web/api. Service Connect permette a ogni web di raggiungere entrambe le api.
 Valkey riceve sessioni dal web e carrelli dalle api. DynamoDB e S3 sono nella regione, fuori dalla VPC. Quattro frecce indipendenti mostrano l'accesso di entrambe le api a entrambi i servizi dati: due rosse e due verdi, senza raccordi comuni. Le api raggiungono Stripe tramite il NAT della propria AZ. Per leggibilita sono omessi DNS, Internet Gateway, endpoint, porte e servizi di gestione. Il diagramma tecnico completo resta disponibile in assets/arrosticini-aws-architecture.svg.
+-->
+
+---
+layout: aws-services
+---
+
+# I servizi usati
+
+<!--
+Tutti i servizi AWS usati dal progetto, compresi quelli del diagramma. Esclusi Cloudflare, Stripe e GitHub Actions. Fonti: infra/lib/app-stack.ts, infra/lib/edge-stack.ts, infra/lib/foundation-stack.ts, infra/bin/app.ts, infra/scripts/dns.ts, .github/workflows/release.yml.
+-->
+
+---
+layout: cloudfront
+clicks: 3
+---
+
+# Come funziona CloudFront
+
+<!--
+Fonte: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/HowCloudFrontWorks.html.
+Tre casi per contenuti memorizzabili in cache: hit nel PoP, miss nel PoP con hit regionale, miss in entrambi con accesso all’origine. Due PoP condividono schematicamente una regional edge cache. Le frecce a doppia punta rappresentano richiesta e risposta; i rack sono illustrazioni, non la topologia fisica del servizio.
+Ultimo clic: le richieste dinamiche saltano le regional edge cache. Non tutti i miss passano dalla cache regionale: PUT, POST, PATCH, OPTIONS e DELETE vanno direttamente all’origine; un’origine S3 nella stessa regione della cache regionale ottimale può essere raggiunta direttamente dal PoP.
+Nel progetto CloudFront usa l’ALB come origine; /assets/* e /images/* usano CACHING_OPTIMIZED, il comportamento predefinito usa CACHING_DISABLED. Fonte: infra/lib/app-stack.ts.
 -->
 
 ---
