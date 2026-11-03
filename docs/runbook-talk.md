@@ -66,9 +66,35 @@ Un servizio su internet deve restare disponibile anche in questi quattro casi. I
 
 Per ogni caso AWS ha una risposta: un secondo task che prende il posto di quello caduto, il rolling update, un filtro davanti al sito e l'autoscaling.
 
-### Minuto 2 · Il progetto
+### Minuto 2 · Il cloud
 
-**SLIDE 6**: il monorepo. In alto web e api, sotto i cinque domini, in fondo i package condivisi, con il logo di ogni tecnologia.
+**SLIDE 6**: a sinistra un data center proprio, a destra una regione AWS con le sue AZ.
+
+Con un data center proprio i server si comprano per reggere il picco, e restano fermi il resto del tempo. Nel cloud si paga quello che si usa.
+
+Un server nuovo arriva in settimane, un task nuovo parte in un minuto.
+
+Ogni regione AWS ha più zone di disponibilità, dette AZ. Ogni AZ è formata da uno o più data center, separati da quelli delle altre AZ, quindi se una si guasta le altre continuano a funzionare. Per usare due AZ basta indicarlo nella configurazione. Con un data center proprio, invece, bisognerebbe costruirne un secondo.
+
+Database, cache, CDN e firewall li gestisce AWS, e tutto si crea con il codice.
+
+Il cloud ha anche dei contro: con un carico alto e costante può costare di più, e lega al fornitore.
+
+Un esempio è 37signals, l'azienda di Basecamp e HEY. Nel 2022 spendeva circa 3,2 milioni di dollari l'anno di cloud per un carico stabile e prevedibile. Ha comprato server Dell per circa 700.000 dollari e ha riportato le applicazioni nei propri data center, risparmiando quasi 2 milioni l'anno. Poi ha spostato anche i file da S3, e stima un risparmio di oltre 10 milioni in cinque anni. Sono cifre dichiarate dall'azienda.
+
+**SLIDE 7**: il mercato del cloud. A sinistra le quote nel mondo, a destra le stime per l'Europa, in basso Vercel, Supabase e Neon sopra AWS.
+
+AWS è il primo fornitore cloud, con circa un quarto del mercato mondiale, davanti a Azure e Google Cloud. In Europa le stime danno lo stesso ordine. Anche piattaforme molto usate come Vercel, Supabase e Neon girano su AWS: ci aggiungono il loro software e la loro gestione.
+
+### Minuto 3 · Infrastructure as Code
+
+**SLIDE 8**: codice TypeScript → CDK → template CloudFormation → risorse su AWS.
+
+Le risorse non si creano a mano dalla console, ma si descrivono in un file. Il file sta in Git con il resto del codice, si può rivedere e ricrea sempre lo stesso ambiente.
+
+### Minuto 4 · Il progetto
+
+**SLIDE 9**: il monorepo. In alto web e api, sotto i cinque domini, in fondo i package condivisi, con il logo di ogni tecnologia.
 
 Il progetto è un monorepo TypeScript gestito con pnpm e Turborepo. Contiene due servizi, web e api, ognuno con la sua immagine Docker.
 
@@ -85,28 +111,6 @@ Turborepo blocca anche gli import di file fuori dal proprio package e gli import
 ```sh
 pnpm turbo boundaries
 ```
-
-### Minuto 3 · Il cloud
-
-**SLIDE 7**: a sinistra un data center proprio, a destra una regione AWS con le sue AZ.
-
-Con un data center proprio i server si comprano per reggere il picco, e restano fermi il resto del tempo. Nel cloud si paga quello che si usa.
-
-Un server nuovo arriva in settimane, un task nuovo parte in un minuto.
-
-Ogni regione AWS ha più zone di disponibilità, dette AZ. Ogni AZ è formata da uno o più data center, separati da quelli delle altre AZ, quindi se una si guasta le altre continuano a funzionare. Per usare due AZ basta indicarlo nella configurazione. Con un data center proprio, invece, bisognerebbe costruirne un secondo.
-
-Database, cache, CDN e firewall li gestisce AWS, e tutto si crea con il codice.
-
-Il cloud ha anche dei contro: con un carico alto e costante può costare di più, e lega al fornitore.
-
-Un esempio è 37signals, l'azienda di Basecamp e HEY. Nel 2022 spendeva circa 3,2 milioni di dollari l'anno di cloud per un carico stabile e prevedibile. Ha comprato server Dell per circa 700.000 dollari e ha riportato le applicazioni nei propri data center, risparmiando quasi 2 milioni l'anno. Poi ha spostato anche i file da S3, e stima un risparmio di oltre 10 milioni in cinque anni. Sono cifre dichiarate dall'azienda.
-
-### Minuto 4 · Infrastructure as Code
-
-**SLIDE 8**: codice TypeScript → CDK → template CloudFormation → risorse su AWS.
-
-Le risorse non si creano a mano dalla console, ma si descrivono in un file. Il file sta in Git con il resto del codice, si può rivedere e ricrea sempre lo stesso ambiente.
 
 ### Minuto 5 · Parte il deploy
 
@@ -156,7 +160,7 @@ Poi si apre la console di CloudFormation. Quando waf è completo, nella console 
 
 ### Minuto 9 · Il percorso di una richiesta
 
-**SLIDE 9**: l'infrastruttura su AWS, minimale. Resta sullo schermo fino al minuto 14. Il prompt per costruirla è in fondo al documento.
+**SLIDE 10**: l'infrastruttura su AWS, minimale. Resta sullo schermo fino alla fine del minuto 13. Il prompt per costruirla è in fondo al documento.
 
 Il browser trova il sito con il DNS di Cloudflare, che lo manda a CloudFront. CloudFront gestisce HTTPS e fa controllare ogni richiesta al WAF. Immagini e asset tornano subito dalla sua cache. Il resto passa al load balancer, che lo distribuisce tra i task web. Web costruisce la pagina e chiede i dati ad api.
 
@@ -186,11 +190,21 @@ Un sito può cadere anche senza nessun guasto: se qualcuno lo inonda di richiest
 
 CloudFront è l'unico ingresso pubblico. Shield Standard ferma gli attacchi DDoS più comuni, quelli che inondano la rete. Il WAF blocca troppe richieste dallo stesso IP, gli IP con cattiva reputazione e gli attacchi noti.
 
+**SLIDE 11**: tutti i servizi AWS usati dal progetto.
+
+Il diagramma mostra solo il percorso di una richiesta. Qui ci sono tutti i servizi AWS, compresi quelli che non si vedono: Certificate Manager per HTTPS, Cloud Map per Service Connect, CloudWatch per log e scaling, Parameter Store per i segreti. IAM, ECR e CloudFormation servono al rilascio e si vedono nella slide sulla CI/CD.
+
 ### Minuto 14 · Eventi del deploy
 
 Nella console di CloudFormation si guardano gli eventi dello stack app. CloudFormation crea in parallelo tutte le risorse che non dipendono da altre.
 
 CloudFront parte quando il load balancer è pronto, e poi deve copiare la configurazione in tutti i suoi nodi nel mondo. Negli ultimi deploy ci ha messo da 3 a 9 minuti.
+
+**SLIDE 12**: come funziona CloudFront. Ogni clic mostra un caso.
+
+Un edge è un punto di presenza vicino all'utente. Se ha una copia valida, risponde subito. Se non ce l'ha, la chiede alla regional edge cache, più grande e condivisa tra più edge. Solo se manca anche lì si arriva all'origine, che nel progetto è il load balancer. I contenuti dinamici saltano la cache regionale e vanno dritti all'origine.
+
+Nel progetto CloudFront tiene in cache solo immagini e asset. Le pagine passano sempre dall'origine.
 
 ### Minuto 15 · Seed
 
@@ -248,7 +262,7 @@ k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=20 -e DURATION=13m l
 
 ### Minuto 23 · CI/CD
 
-**SLIDE 10**: push → controlli → build delle immagini → ECR → deploy → rolling update.
+**SLIDE 13**: push → controlli → build delle immagini → ECR → deploy → rolling update.
 
 Poi si mostra GitHub Actions con la run in corso, e nell'editor i due workflow:
 
@@ -295,7 +309,7 @@ Si torna alla slide 5: i quattro casi, ognuno con la soluzione che l'ha retto.
 
 ### Minuto 40 · Grazie e domande
 
-**SLIDE 11**: grazie.
+**SLIDE 14**: grazie.
 
 Durante le domande, sullo schermo resta la pagina stress. Quando k6 finisce e la CPU scende sotto il 30%, web torna gradualmente a 2 task.
 
@@ -321,7 +335,7 @@ pnpm aws:app:destroy
 
 ## Se qualcosa va storto
 
-Se il deploy è lento, si allunga la spiegazione della slide 9.
+Se il deploy è lento, si allunga la spiegazione della slide 10.
 
 Se si è in ritardo prima del deploy, si salta l'esempio di 37signals. Le spiegazioni durante il deploy e il rolling update non recuperano tempo, perché si aspetta comunque AWS. Se il rolling update finisce tardi, al test 3 si avvia k6 e lo scaling si guarda durante le domande.
 
@@ -339,10 +353,10 @@ Se al minuto 38 le nuove pecore web non ci sono ancora, si mostrano la CPU e l'a
 
 Quanto durano davvero deploy, CI e rolling update. Se il webhook di Stripe arriva al sito su AWS e l'ordine risulta pagato. Se l'acquisto completo sta in 3 minuti. Se con 20 utenti virtuali le pecore web restano sotto l'80% di CPU durante il rolling update. Se il rolling update finisce con 0% di errori. Quanto ci mette browse con 50 utenti virtuali a far scalare web. Quanto ci mette il WAF a bloccare k6 con RateLimit in Block.
 
-## Prompt per la slide 9
+## Prompt per la slide 10
 
 ```text
-Costruisci la slide 9 del deck Slidev come layout Vue con SVG, come la slide del monorepo, non come immagine generata. Mostra l'infrastruttura di Arrosticini 24ore su AWS ridotta all'essenziale: deve leggersi da lontano mentre parlo per cinque minuti. Testo di almeno 18px, al massimo una dozzina di elementi, frecce senza etichetta o con una sola parola, icone ufficiali AWS solo dove aiutano a riconoscere il servizio.
+Costruisci la slide 10 del deck Slidev come layout Vue con SVG, come la slide del monorepo, non come immagine generata. Mostra l'infrastruttura di Arrosticini 24ore su AWS ridotta all'essenziale: deve leggersi da lontano mentre parlo per cinque minuti. Testo di almeno 18px, al massimo una dozzina di elementi, frecce senza etichetta o con una sola parola, icone ufficiali AWS solo dove aiutano a riconoscere il servizio.
 
 Il pubblico deve capire tre cose: c'è un solo ingresso, tutto è doppio sulle due AZ e i dati stanno fuori dai task.
 
