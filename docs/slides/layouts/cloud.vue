@@ -26,17 +26,17 @@ import alert from '../assets/logos/circle-alert.svg'
     </section>
 
     <section class="cloud-comparison cloud-premises-points">
-      <p><span><img :src="capacity" alt="" /></span>Capacità acquistata per il picco</p>
-      <p><span><img :src="clock" alt="" /></span>Nuovo hardware: settimane</p>
-      <p><span><img :src="settings" alt="" /></span>Hardware e ridondanza da gestire</p>
+      <p><span><img :src="capacity" alt="" /></span>Compri i server per il picco</p>
+      <p><span><img :src="clock" alt="" /></span>Un server nuovo arriva in settimane</p>
+      <p><span><img :src="settings" alt="" /></span>Guasti e ridondanza li gestisci tu</p>
     </section>
     <section class="cloud-comparison cloud-region-points">
-      <p><span><img :src="capacity" alt="" /></span>Risorse attive fatturate a consumo</p>
-      <p><span><img :src="clock" alt="" /></span>Nuove risorse: minuti</p>
-      <p><span><img :src="settings" alt="" /></span>Servizi gestiti e infrastruttura via codice</p>
+      <p><span><img :src="capacity" alt="" /></span>Paghi solo quello che usi</p>
+      <p><span><img :src="clock" alt="" /></span>Un server nuovo parte in minuti</p>
+      <p><span><img :src="settings" alt="" /></span>Guasti e ridondanza li gestisce AWS</p>
     </section>
 
-    <aside class="cloud-tradeoff"><img :src="alert" alt="" /><strong>Contro del cloud</strong><p>Con carichi stabili il cloud può costare di più. Dipendenza dal fornitore.</p></aside>
+    <aside class="cloud-tradeoff"><img :src="alert" alt="" /><strong>Contro del cloud</strong><p>Con un carico stabile può costare di più, e lega al fornitore.</p></aside>
     <footer class="cloud-case">37signals: quasi 2 M$/anno risparmiati uscendo dal cloud · Dati dichiarati dall’azienda, 2024</footer>
     <SlideCurrentNo class="talk-page-number" />
   </div>

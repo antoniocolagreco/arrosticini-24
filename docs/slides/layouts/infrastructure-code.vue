@@ -15,7 +15,7 @@ import workflow from '../assets/infrastructure-code-flow-v2.png'
     </div>
     <footer class="iac-benefits">
       <section><h3>Versionato in Git</h3><p>La storia delle modifiche</p></section>
-      <section><h3>Rivedibile</h3><p>Il diff prima del deploy</p></section>
+      <section><h3>Prevedibile</h3><p>Il diff prima del deploy</p></section>
       <section><h3>Riproducibile</h3><p>Stessa definizione dell’ambiente</p></section>
     </footer>
     <SlideCurrentNo class="talk-page-number" />
