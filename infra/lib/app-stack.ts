@@ -380,6 +380,9 @@ export class ArrosticiniAppStack extends Stack {
     valkeySecurityGroup.addIngressRule(webSecurityGroup, Port.tcp(6379));
     apiSecurityGroup.addIngressRule(webSecurityGroup, Port.tcp(4000));
 
+    // Warning: web and api are updated in parallel, with no dependency between the two services.
+    // During a rolling update a new web task can call an old api task and vice versa: contracts must stay backward compatible.
+    // On a fresh deploy web can start before api: the first requests that call api can fail.
     const webService = new FargateService(this, "WebService", {
       cluster,
       serviceName: "web",
@@ -393,8 +396,6 @@ export class ArrosticiniAppStack extends Stack {
       enableExecuteCommand: true,
       serviceConnectConfiguration: {},
     });
-
-    webService.node.addDependency(apiService);
 
     apiService
       .autoScaleTaskCount({ minCapacity: 2, maxCapacity: 4 })
