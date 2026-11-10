@@ -38,6 +38,7 @@ import { CfnServerlessCache } from "aws-cdk-lib/aws-elasticache";
 import {
   ApplicationLoadBalancer,
   ApplicationProtocol,
+  TargetGroupLoadBalancingAlgorithmType,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Bucket } from "aws-cdk-lib/aws-s3";
@@ -427,6 +428,7 @@ export class ArrosticiniAppStack extends Stack {
       port: 3100,
       protocol: ApplicationProtocol.HTTP,
       targets: [webService],
+      loadBalancingAlgorithmType: TargetGroupLoadBalancingAlgorithmType.LEAST_OUTSTANDING_REQUESTS,
       healthCheck: {
         path: "/healthz",
         interval: Duration.seconds(5),
