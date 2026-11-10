@@ -27,6 +27,8 @@
     "aws:app:destroy": "pnpm --filter @arrosticini/infra app:destroy && pnpm aws:dns:delete",
     "aws:app:api:restart": "pnpm --filter @arrosticini/infra app:api:restart",
     "aws:app:web:restart": "pnpm --filter @arrosticini/infra app:web:restart",
+    "aws:load:light": "k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=20 -e DURATION=10m load/browse.js",
+    "aws:load:stress": "k6 run -e BASE_URL=https://arrosticini.colagreco.dev -e VUS=100 -e DURATION=10m load/browse.js",
     "format": "biome format --write .",
     "slides": "pnpm --dir docs/slides install && pnpm --dir docs/slides dev"
   },

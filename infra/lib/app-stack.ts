@@ -407,7 +407,7 @@ export class ArrosticiniAppStack extends Stack {
           { lower: 95, change: 2 },
         ],
         evaluationPeriods: 1,
-        cooldown: Duration.seconds(120),
+        cooldown: Duration.seconds(60),
       });
 
     webService
@@ -420,7 +420,7 @@ export class ArrosticiniAppStack extends Stack {
           { lower: 95, change: 2 },
         ],
         evaluationPeriods: 1,
-        cooldown: Duration.seconds(120),
+        cooldown: Duration.seconds(60),
       });
 
     listener.addTargets("Web", {

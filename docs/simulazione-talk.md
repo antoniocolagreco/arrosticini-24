@@ -38,7 +38,9 @@ L'AI abbassa il costo del codice. Il valore si sposta su progettazione, decision
 
 **SLIDE 3**: il ciclo del product engineer.
 
-Il product engineer segue tutto il ciclo: capisce il problema, progetta la soluzione, la costruisce, la mette in produzione, osserva come si comporta e la migliora.
+Il Product Engineer è un ingegnere che trasforma problemi e bisogni degli utenti in prodotti software funzionanti, occupandosi dell'intero ciclo di vita, dalla progettazione allo sviluppo, fino al rilascio e al miglioramento continuo, con l'obiettivo di generare valore reale per utenti e business.
+
+Il ciclo è questo: capisce il problema, progetta la soluzione, la costruisce, la mette in produzione e osserva come si comporta. Quello che osserva diventa il problema del giro dopo.
 
 Per questo, dopo cinque anni di frontend, ho iniziato a lavorare sul backend, ho studiato AWS e a ottobre ho preso la certificazione Solutions Architect. Questo progetto è il modo in cui ho messo in pratica quello che ho studiato.
 

@@ -66,13 +66,15 @@ export function createCpuReader(
 export class CpuSampler {
   readonly #read: () => Promise<CpuReading>;
   readonly #intervalMs: number;
-  #previous: { usageMicros: number; atMs: number } | undefined;
+  readonly #windowMs: number;
+  readonly #samples: { usageMicros: number; atMs: number }[] = [];
   #percent = 0;
   #timer: NodeJS.Timeout | undefined;
 
-  constructor(read: () => Promise<CpuReading>, intervalMs = 1000) {
+  constructor(read: () => Promise<CpuReading>, intervalMs = 1000, windowMs = 30_000) {
     this.#read = read;
     this.#intervalMs = intervalMs;
+    this.#windowMs = windowMs;
   }
 
   get percent(): number {
@@ -81,12 +83,19 @@ export class CpuSampler {
 
   async sample(atMs: number = performance.now()): Promise<void> {
     const { usageMicros, cores } = await this.#read();
-    const previous = this.#previous;
-    this.#previous = { usageMicros, atMs };
-    if (previous === undefined || atMs <= previous.atMs) {
+    const last = this.#samples.at(-1);
+    if (last !== undefined && atMs <= last.atMs) {
       return;
     }
-    const used = (usageMicros - previous.usageMicros) / ((atMs - previous.atMs) * 1000 * cores);
+    this.#samples.push({ usageMicros, atMs });
+    while (this.#samples.length > 2 && (this.#samples[1]?.atMs ?? atMs) <= atMs - this.#windowMs) {
+      this.#samples.shift();
+    }
+    const first = this.#samples[0];
+    if (first === undefined || first.atMs === atMs) {
+      return;
+    }
+    const used = (usageMicros - first.usageMicros) / ((atMs - first.atMs) * 1000 * cores);
     this.#percent = Math.round(Math.min(Math.max(used, 0), 1) * 1000) / 10;
   }
 
