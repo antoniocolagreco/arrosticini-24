@@ -22,6 +22,18 @@ layout: cover
 Antonio Colagreco
 
 ---
+layout: engineering-ownership
+---
+
+# L'evoluzione dei ruoli
+
+---
+layout: product-engineer
+---
+
+# Product Engineer: dall'idea alla produzione
+
+---
 layout: shop-open
 ---
 
@@ -83,7 +95,7 @@ layout: project
 
 <!--
 Loghi a colori: https://github.com/devicons/devicon/tree/master/icons (TypeScript, pnpm, Docker, React, React Router, Tailwind CSS, AWS); https://cdn.simpleicons.org/ (Turborepo, Zod, Stripe, pino); https://github.com/simple-icons/simple-icons/blob/develop/icons/express.svg; https://orpc.dev/icon.svg; https://valkey.io/img/valkey-horizontal.svg; https://github.com/testcontainers/testcontainers-node/blob/main/docs/site/logo.svg.
-Riferimento per la leggibilita del diagramma: https://learn.microsoft.com/en-us/azure/well-architected/architect-role/design-diagrams. Container illustrato con Imagegen, prompt in assets/project-image-prompt.md.
+Riferimento per la leggibilita del diagramma: https://learn.microsoft.com/en-us/azure/well-architected/architect-role/design-diagrams.
 -->
 
 ---
@@ -93,9 +105,9 @@ layout: architecture
 # Arrosticini 24ore su AWS
 
 <!--
-Schema illustrato in assets/arrosticini-aws-minimal-v4.png. Prompt in assets/arrosticini-aws-minimal-v4-prompt.md. Fonti CDK in assets/arrosticini-aws-architecture-sources.md.
+Schema illustrato in assets/arrosticini-aws-html-preview.png. Prompt in assets/arrosticini-aws-html-preview-prompt.md. Fonti CDK in assets/arrosticini-aws-architecture-sources.md.
 CloudFront e rappresentato come rete globale, con Shield e WAF associati. Nella VPC di Milano, due colonne rappresentano le AZ e tre fasce rappresentano subnet pubbliche, private e isolate. ALB e Valkey sono servizi condivisi sulle due AZ; ogni AZ ha un NAT e una coppia nominale web/api. Service Connect permette a ogni web di raggiungere entrambe le api.
-Valkey riceve sessioni dal web e carrelli dalle api. DynamoDB e S3 sono nella regione, fuori dalla VPC. Quattro frecce indipendenti mostrano l'accesso di entrambe le api a entrambi i servizi dati: due rosse e due verdi, senza raccordi comuni. Le api raggiungono Stripe tramite il NAT della propria AZ. Per leggibilita sono omessi DNS, Internet Gateway, endpoint, porte e servizi di gestione. Il diagramma tecnico completo resta disponibile in assets/arrosticini-aws-architecture.svg.
+Le api accedono a Valkey e, tramite gateway endpoint, a DynamoDB e S3 nella regione, fuori dalla VPC. Il collegamento condiviso rappresenta l'accesso di entrambe le api ai due servizi dati. Le api raggiungono Stripe tramite il NAT della propria AZ. Per leggibilita sono omessi DNS, Internet Gateway, porte e servizi di gestione. Il diagramma tecnico completo resta disponibile in assets/arrosticini-aws-architecture.svg.
 -->
 
 ---
