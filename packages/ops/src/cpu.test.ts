@@ -120,6 +120,29 @@ describe("CpuSampler", () => {
     expect(cpu.percent).toBe(80);
   });
 
+  it("averages the CPU used over the last 30 seconds", async () => {
+    const cpu = sampler([
+      { usageMicros: 0, cores: 0.25 },
+      { usageMicros: 2_500_000, cores: 0.25 },
+      { usageMicros: 2_500_000, cores: 0.25 },
+      { usageMicros: 2_500_000, cores: 0.25 },
+      { usageMicros: 2_500_000, cores: 0.25 },
+    ]);
+
+    await cpu.sample(0);
+    await cpu.sample(10_000);
+    expect(cpu.percent).toBe(100);
+
+    await cpu.sample(20_000);
+    expect(cpu.percent).toBe(50);
+
+    await cpu.sample(30_000);
+    expect(cpu.percent).toBe(33.3);
+
+    await cpu.sample(40_000);
+    expect(cpu.percent).toBe(0);
+  });
+
   it("caps the value at 100", async () => {
     const cpu = sampler([
       { usageMicros: 0, cores: 0.25 },
