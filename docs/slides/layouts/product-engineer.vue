@@ -21,7 +21,7 @@
       <p class="product-cycle-center">Prodotto</p>
     </div>
 
-    <footer class="product-message"><p>Non conta quanto codice produce.</p><p><strong>È un ingegnere che possiede il problema e risponde del risultato.</strong></p></footer>
+    <footer class="product-message"><p>Trasforma problemi e bisogni degli utenti in prodotti software funzionanti.</p><p><strong>Ne segue l’intero ciclo di vita, per generare valore reale per utenti e business.</strong></p></footer>
     <SlideCurrentNo class="talk-page-number" />
   </div>
 </template>
@@ -40,6 +40,6 @@
 .observe { left: 60px; top: 105px; }
 .product-cycle .product-cycle-center { position: absolute; left: 440px; top: 168px; width: 280px; text-align: center; font-family: 'Roboto Serif', serif; font-size: 32px; font-weight: 700; color: #687858; }
 .product-message { position: absolute; left: 62px; right: 62px; top: 623px; border-top: 1px solid #bfc7af; padding-top: 13px; }
-.product-message p { font-size: 23px; line-height: 1.35; color: #52604c; }
+.product-message p { font-size: 23px; line-height: 1.35; color: #244a2d; font-weight: 750; }
 .product-message strong { color: #244a2d; font-weight: 750; }
 </style>
