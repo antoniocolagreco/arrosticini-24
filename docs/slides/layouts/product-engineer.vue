@@ -21,7 +21,7 @@
       <p class="product-cycle-center">Prodotto</p>
     </div>
 
-    <footer class="product-message"><p>Trasforma problemi e bisogni degli utenti in prodotti software funzionanti.</p><p><strong>Ne segue l’intero ciclo di vita, per generare valore reale per utenti e business.</strong></p></footer>
+    <footer class="product-message"><p>Trasforma problemi e bisogni degli utenti in software funzionante.</p><p><strong>Ne segue l’intero ciclo di vita, per generare valore reale per utenti e business.</strong></p></footer>
     <SlideCurrentNo class="talk-page-number" />
   </div>
 </template>
