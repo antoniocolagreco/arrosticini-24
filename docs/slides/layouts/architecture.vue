@@ -1,5 +1,5 @@
 <script setup>
-import architecture from '../assets/arrosticini-aws-minimal-v4.png'
+import architecture from '../assets/arrosticini-aws-html-preview.png'
 </script>
 
 <template>
